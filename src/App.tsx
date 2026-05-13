@@ -22,7 +22,7 @@ import {
   Maximize,
   Minimize
 } from 'lucide-react';
-import { motion, AnimatePresence, Reorder, useDragControls, useSpring, useTransform } from 'motion/react';
+import { motion, AnimatePresence, Reorder, useDragControls, useSpring, useTransform, useScroll, useMotionValueEvent } from 'motion/react';
 import { cn } from './lib/utils';
 // @ts-ignore - webm-muxer types might be missing in some environments
 import { Muxer, ArrayBufferTarget } from 'webm-muxer';
@@ -101,24 +101,39 @@ const TypingDescription = () => {
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
+  const { scrollY } = useScroll();
+
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    const previous = scrollY.getPrevious() || 0;
+    const diff = latest - previous;
+    
+    if (latest > 100) {
+      if (diff > 10) { // Scrolling down
+        setIsHidden(true);
+      } else if (diff < -10) { // Scrolling up
+        setIsHidden(false);
+      }
+    } else {
+      setIsHidden(false);
+    }
+    setIsScrolled(latest > 50);
+  });
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-      
+    const handleSection = () => {
       const home = document.getElementById('home');
-      const about = document.getElementById('about');
+      const documentation = document.getElementById('documentation');
       const faq = document.getElementById('faq');
-      
       const scrollPos = window.scrollY + 100;
       
       if (faq && scrollPos >= faq.offsetTop) setActiveSection('faq');
-      else if (about && scrollPos >= about.offsetTop) setActiveSection('about');
+      else if (documentation && scrollPos >= documentation.offsetTop) setActiveSection('documentation');
       else setActiveSection('home');
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleSection);
+    return () => window.removeEventListener('scroll', handleSection);
   }, []);
 
   const scrollTo = (id: string) => {
@@ -129,21 +144,25 @@ const Navbar = () => {
   return (
     <motion.nav
       initial={{ y: -100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
+      animate={{ 
+        y: isHidden ? -120 : 0, 
+        opacity: isHidden ? 0 : 1 
+      }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
-        "fixed top-6 left-1/2 -translate-x-1/2 z-[500] p-1.5 rounded-full border transition-all duration-500 flex items-center justify-center",
+        "fixed top-4 sm:top-6 left-1/2 -translate-x-1/2 z-[500] p-1 sm:p-1.5 rounded-full border transition-all duration-500 flex items-center",
         isScrolled 
-          ? "bg-black/40 backdrop-blur-2xl border-white/20 shadow-[0_10px_40px_rgba(0,0,0,0.5)]" 
+          ? "bg-black/40 backdrop-blur-2xl border-white/20 f1-shadow" 
           : "bg-black/10 backdrop-blur-md border-white/10"
       )}
     >
-      <div className="flex items-center relative">
-        {['home', 'about', 'faq'].map((item) => (
+      <div className="flex items-center relative px-2">
+        {['home', 'documentation', 'faq'].map((item) => (
           <button
             key={item}
             onClick={() => item === 'home' ? window.scrollTo({ top: 0, behavior: 'smooth' }) : scrollTo(item)}
             className={cn(
-              "relative px-6 py-2 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] transition-all duration-500 z-10",
+              "relative px-4 sm:px-5 py-2 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.3em] transition-all duration-500 z-10",
               activeSection === item ? "text-black" : "text-zinc-500 hover:text-white"
             )}
           >
@@ -177,83 +196,93 @@ const BackgroundElements = () => {
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-[#020202]">
-      {/* Refined Tech Grid */}
-      <div 
-        className="absolute inset-0 opacity-[0.04]" 
+      {/* Dynamic Moving Tech Grid */}
+      <motion.div 
+        animate={{ 
+          backgroundPosition: ["0% 0%", "100% 100%"]
+        }}
+        transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+        className="absolute inset-0 opacity-[0.12] sm:opacity-[0.05]" 
         style={{ 
           backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)',
-          backgroundSize: '60px 60px',
+          backgroundSize: 'clamp(40px, 10vw, 80px) clamp(40px, 10vw, 80px)',
         }} 
       />
 
-      {/* Global Pulsing Light */}
+      {/* Primary Pulsing Glow */}
       <motion.div 
         animate={{ 
-          opacity: [0.02, 0.05, 0.02],
-          scale: [1, 1.05, 1]
+          opacity: [0.03, 0.08, 0.03],
+          scale: [1, 1.1, 1]
         }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute inset-0 bg-radial-gradient from-white/10 to-transparent pointer-events-none"
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute inset-0 bg-radial-gradient from-white/10 via-transparent to-transparent pointer-events-none"
       />
 
-      {/* Digital "Data Stream" Columns */}
-      <div className="absolute inset-0 flex justify-around opacity-[0.03]">
-        {[...Array(6)].map((_, i) => (
-          <motion.div
-            key={i}
-            initial={{ y: "-100%" }}
-            animate={{ y: "100%" }}
-            transition={{ 
-              duration: 10 + i * 5, 
-              repeat: Infinity, 
-              ease: "linear",
-              delay: i * -2 
-            }}
-            className="w-[1px] h-full bg-gradient-to-b from-transparent via-white to-transparent"
-          />
-        ))}
-      </div>
-
-      {/* Interactive Floating Squares */}
-      {[...Array(8)].map((_, i) => (
+      {/* Floating 3D Cubes / Boxes */}
+      {[...Array(12)].map((_, i) => (
         <motion.div
-          key={`square-${i}`}
+          key={`cube-${i}`}
           style={{
-            x: useTransform(mouseX, x => x * (40 + i * 15)),
-            y: useTransform(mouseY, y => y * (40 + i * 15)),
+            x: useTransform(mouseX, x => x * (50 + i * 20)),
+            y: useTransform(mouseY, y => y * (50 + i * 20)),
+            left: `${(i * 15) % 100}%`,
+            top: `${(i * 25) % 100}%`,
           }}
           className="absolute"
         >
           <motion.div
-            initial={{ opacity: 0 }}
+            initial={{ opacity: 0, scale: 0 }}
             animate={{ 
-              opacity: [0.05, 0.1, 0.05],
-              rotate: [0, 90, 180, 270, 360]
+              opacity: [0.1, 0.2, 0.1],
+              scale: [1, 1.1, 1],
+              rotateX: [0, 360],
+              rotateY: [0, 180],
+              y: [0, -20, 0]
             }}
             transition={{ 
-              duration: 20 + i * 10, 
+              duration: 10 + i * 2, 
               repeat: Infinity, 
-              ease: "linear" 
+              ease: "linear",
+              delay: i * 0.2
             }}
             style={{
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              width: `${20 + i * 10}px`,
-              height: `${20 + i * 10}px`,
+              width: `${30 + (i % 3) * 20}px`,
+              height: `${30 + (i % 3) * 20}px`,
+              perspective: "1000px",
             }}
-            className="border border-white/20 rounded-sm"
+            className="border border-white/40 rounded-none bg-white/10 backdrop-blur-md f1-shadow"
           />
         </motion.div>
       ))}
 
-      {/* Subtle Scanning Bar */}
+      {/* Energy Beams */}
+      {[...Array(3)].map((_, i) => (
+        <motion.div
+          key={`beam-${i}`}
+          animate={{ 
+            opacity: [0, 0.1, 0],
+            x: ["-20%", "120%"],
+          }}
+          transition={{ 
+            duration: 15 + i * 10, 
+            repeat: Infinity, 
+            ease: "easeInOut",
+            delay: i * 8
+          }}
+          className="absolute top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-white to-transparent blur-[1px]"
+          style={{ left: `${20 + i * 30}%` }}
+        />
+      ))}
+
+      {/* Scanning Bar - Vertical Migration */}
       <motion.div 
         animate={{ 
-          y: ["-20%", "120%"],
-          opacity: [0, 0.1, 0]
+          y: ["-30%", "130%"],
+          opacity: [0, 0.2, 0]
         }}
-        transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-        className="absolute inset-x-0 h-[100px] bg-gradient-to-b from-transparent via-white/[0.05] to-transparent pointer-events-none"
+        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+        className="absolute inset-x-0 h-[150px] bg-gradient-to-b from-transparent via-white/[0.1] to-transparent pointer-events-none"
       />
     </div>
   );
@@ -297,7 +326,7 @@ const AboutSection = () => {
   }, [titleVisible, displayedTitle]);
 
   return (
-    <section id="about" className="min-h-screen w-full bg-[#050505] flex flex-col lg:flex-row items-center justify-center p-6 sm:p-12 lg:p-24 gap-12 sm:gap-24 relative overflow-hidden border-t border-white/5">
+    <section id="documentation" className="min-h-screen w-full bg-[#050505] flex flex-col lg:flex-row items-center justify-center p-6 sm:p-12 lg:p-24 gap-12 sm:gap-24 relative overflow-hidden border-t border-white/5">
       <BackgroundElements />
 
       <motion.div 
@@ -326,14 +355,16 @@ const AboutSection = () => {
           <p className="text-[10px] sm:text-xs text-zinc-400 uppercase tracking-[0.3em] leading-relaxed">
             Platform revolusioner untuk para filmmaker menghemat waktu dalam pembuatan closing credits. Dengan sistem otomatisasi engine kami, anda cukup memasukkan data dan biarkan kami yang bekerja menciptakan visual sinematik yang memukau.
           </p>
-          <div className="grid grid-cols-2 gap-8 pt-8">
-            <div className="space-y-2">
-               <div className="text-2xl font-black italic tracking-tighter text-white">01_AUTO</div>
-               <div className="text-[8px] sm:text-[9px] font-bold text-zinc-600 uppercase tracking-[0.2em]">Automated Workflow</div>
+          <div className="grid grid-cols-2 gap-4 sm:gap-8 pt-8">
+            <div className="space-y-4 p-6 sm:p-8 border border-white/10 bg-white/[0.03] backdrop-blur-2xl shadow-[0_50px_100px_-20px_rgba(0,0,0,1),0_0_30px_rgba(255,255,255,0.02)] relative overflow-hidden group hover:bg-white/[0.05] hover:border-white/20 hover:shadow-[0_70px_140px_-30px_rgba(0,0,0,1),0_0_40px_rgba(255,255,255,0.05)] transition-all duration-500">
+               <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 -rotate-45 translate-x-10 -translate-y-10" />
+               <div className="text-3xl sm:text-5xl font-black italic tracking-tighter text-white">01_AUTO</div>
+               <div className="text-[10px] sm:text-[11px] font-bold text-zinc-500 uppercase tracking-[0.4em]">Automated Workflow</div>
             </div>
-            <div className="space-y-2">
-               <div className="text-2xl font-black italic tracking-tighter text-white">02_PRO</div>
-               <div className="text-[8px] sm:text-[9px] font-bold text-zinc-600 uppercase tracking-[0.2em]">Cine-Grade Visuals</div>
+            <div className="space-y-4 p-6 sm:p-8 border border-white/10 bg-white/[0.03] backdrop-blur-2xl shadow-[0_50px_100px_-20px_rgba(0,0,0,1),0_0_30px_rgba(255,255,255,0.02)] relative overflow-hidden group hover:bg-white/[0.05] hover:border-white/20 hover:shadow-[0_70px_140px_-30px_rgba(0,0,0,1),0_0_40px_rgba(255,255,255,0.05)] transition-all duration-500">
+               <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 -rotate-45 translate-x-10 -translate-y-10" />
+               <div className="text-3xl sm:text-5xl font-black italic tracking-tighter text-white">02_PRO</div>
+               <div className="text-[10px] sm:text-[11px] font-bold text-zinc-600 uppercase tracking-[0.4em]">Cine-Grade Visuals</div>
             </div>
           </div>
         </div>
@@ -399,8 +430,8 @@ const FAQItem: React.FC<FAQProps> = ({ faq, index }) => {
       className="relative"
     >
       <div className={cn(
-        "bg-white/[0.02] border border-white/5 overflow-hidden transition-all duration-500",
-        isOpen ? "bg-white/[0.05] border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)]" : "hover:border-white/10"
+        "bg-white/[0.02] border border-white/5 overflow-hidden transition-all duration-500 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)]",
+        isOpen ? "bg-white/[0.05] border-white/20 shadow-[0_80px_150px_-30px_rgba(0,0,0,1)]" : "hover:border-white/10 hover:bg-white/[0.03] hover:shadow-[0_60px_120px_-25px_rgba(0,0,0,0.9)]"
       )}>
         <button 
           onClick={() => setIsOpen(!isOpen)}
@@ -600,11 +631,13 @@ const FONT_OPTIONS = [
   { name: 'SPACE GROTESK', value: 'Space Grotesk' },
   { name: 'SORA GEOMETRIC', value: 'Sora' },
   { name: 'BEBAS NEUE', value: 'Bebas Neue' },
+  { name: 'CINZEL DECORATIVE', value: 'Cinzel' },
   { name: 'ARCHIVE BLACK', value: 'Archivo Black' },
   { name: 'MONTSERRAT', value: 'Montserrat' },
   { name: 'SYNE BOLD', value: 'Syne' },
+  { name: 'CRIMSON SERIF', value: 'Crimson Text' },
   { name: 'UNBOUNDED', value: 'Unbounded' },
-  { name: 'PLAYFAIR SERIF', value: 'Playfair Display' },
+  { name: 'PLAYFAIR DISPLAY', value: 'Playfair Display' },
   { name: 'OSWALD CONDENSED', value: 'Oswald' },
   { name: 'KANIT BLACK', value: 'Kanit' },
   { name: 'SYSTEM MONO', value: 'JetBrains Mono' },
@@ -757,7 +790,7 @@ const ConsoleContent = ({ settings, setSettings, activeConsole, setActiveConsole
                           "w-full text-left px-5 py-4 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all border-b border-white/5 last:border-0",
                           settings.fontFamily === font.value ? "bg-white/10 text-white" : "text-zinc-500"
                         )}
-                        style={{ fontFamily: font.value }}
+                        style={{ fontFamily: `'${font.value}', sans-serif` }}
                       >
                         {font.name}
                       </button>
@@ -1157,7 +1190,7 @@ export default function App() {
   const [settings, setSettings] = useState(() => {
     const saved = localStorage.getItem('daftarkru_settings');
     const defaultSettings = {
-      fontFamily: 'Inter',
+      fontFamily: 'Kanit',
       fontSize: 36,
       roleColor: '#ffffff',
       roleOpacity: 0.2,
@@ -1564,7 +1597,7 @@ export default function App() {
           maxWidth: `${canvasWidth}px`,
           minWidth: `${canvasWidth}px`,
           imageRendering: 'auto',
-          fontFamily: settings.fontFamily // Force target font
+          fontFamily: `'${settings.fontFamily}', sans-serif` // Force target font
         },
         // Filter to avoid crashing on cross-origin stylesheets that don't have CORS headers
         filter: (node: any) => {
@@ -1760,6 +1793,21 @@ export default function App() {
     }
   };
 
+  const [tagTextIndex, setTagTextIndex] = useState(0);
+  const tagTexts = [
+    "Next Generation Credits Engine",
+    "Sangat mudah digunakan",
+    "Buat credit dengan gratis",
+    "Buat credit dimana pun dan kapanpun"
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTagTextIndex((prev) => (prev + 1) % tagTexts.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className={cn(
       "min-h-screen bg-black text-white font-sans selection:bg-white selection:text-black",
@@ -1780,7 +1828,7 @@ export default function App() {
             >
               <BackgroundElements />
               
-              <div className="max-w-7xl space-y-12 md:space-y-16 z-10 w-full px-4 pt-32 pb-20">
+              <div className="max-w-7xl space-y-12 md:space-y-16 z-10 w-full px-4 pt-20 sm:pt-32 pb-10 sm:pb-20">
                 <div className="space-y-6">
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
@@ -1789,25 +1837,35 @@ export default function App() {
                     className="inline-flex items-center gap-4 px-4 py-2 border border-white/10 rounded-none bg-white/5 backdrop-blur-md mb-8"
                   >
                     <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                    <span className="text-[9px] font-black uppercase tracking-[0.5em] text-zinc-400">Next Generation Credits Engine</span>
+                    <AnimatePresence mode="wait">
+                      <motion.span 
+                        key={tagTexts[tagTextIndex]}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.5 }}
+                        className="text-[9px] font-black uppercase tracking-[0.5em] text-zinc-400"
+                      >
+                        {tagTexts[tagTextIndex]}
+                      </motion.span>
+                    </AnimatePresence>
                   </motion.div>
                   
                   <motion.h1 
-                    initial={{ y: 30, opacity: 0 }}
-                    whileInView={{ y: 0, opacity: 1 }}
+                    initial={{ y: 30, opacity: 0, skewX: -5 }}
+                    whileInView={{ y: 0, opacity: 1, skewX: -5 }}
                     viewport={{ once: false }}
-                    whileHover={{ 
-                      skewX: -5,
-                      scale: 1.02,
-                      transition: { duration: 0.2 }
+                    animate={{ x: [0, 2, -2, 0], y: [0, -4, 0], skewX: -5 }}
+                    transition={{ 
+                      y: { duration: 1, ease: [0.16, 1, 0.3, 1] },
+                      animate: { duration: 5, repeat: Infinity, ease: "easeInOut" }
                     }}
-                    transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                    className="text-6xl sm:text-8xl md:text-9xl lg:text-[12rem] font-black tracking-tighter uppercase leading-[0.75] whitespace-normal cursor-default select-none"
+                    className="text-6xl sm:text-8xl md:text-9xl lg:text-[12rem] font-black tracking-tighter uppercase leading-[0.75] whitespace-normal cursor-default select-none italic"
                   >
                     Daftar<span 
                       className="inline-block" 
                       style={{ 
-                        WebkitTextStroke: '1px rgba(255,255,255,1)', 
+                        WebkitTextStroke: isMobileDevice ? '0.5px rgba(255,255,255,1)' : '1px rgba(255,255,255,1)', 
                         color: 'transparent',
                         background: 'none'
                       }}
@@ -1821,42 +1879,64 @@ export default function App() {
                     whileInView={{ opacity: 1 }}
                     viewport={{ once: false }}
                     transition={{ delay: 0.5 }}
-                    className="text-[10px] sm:text-xs md:text-sm uppercase tracking-[0.4em] font-light text-zinc-500 max-w-2xl mx-auto h-6 flex items-center justify-center py-8"
+                    className="text-[11px] sm:text-[13px] md:text-[15px] uppercase tracking-[0.4em] font-medium text-white/40 max-w-2xl mx-auto h-6 flex items-center justify-center py-12"
                   >
                     <TypingDescription />
                   </motion.div>
                 </div>
 
-                <div className="flex flex-col items-center gap-10">
+                <div className="flex flex-col items-center gap-12">
                   <motion.button 
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: false }}
                     transition={{ delay: 0.8 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => {
                       setView('editor');
                       window.scrollTo({ top: 0 });
                     }}
-                    className="group relative px-12 sm:px-20 py-6 sm:py-8 text-[11px] sm:text-[13px] font-black uppercase tracking-[0.5em] transition-all overflow-hidden border border-white rounded-none"
+                    className="group relative px-6 sm:px-10 py-3 sm:py-4 text-[10px] sm:text-[12px] font-black uppercase tracking-[0.5em] transition-all overflow-hidden border border-white/40 rounded-none bg-black/50 backdrop-blur-xl shadow-[0_0_50px_rgba(255,255,255,0.05)] hover:shadow-[0_0_80px_rgba(255,255,255,0.15)] active:scale-[0.98]"
                   >
-                    {/* Idle Scan Animation */}
+                    {/* Pulsing Core */}
                     <motion.div 
                       animate={{ 
-                        left: ['-100%', '200%']
+                        opacity: [0.1, 0.3, 0.1],
+                        scale: [1, 1.1, 1]
+                      }}
+                      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                      className="absolute inset-0 bg-white/5 z-0"
+                    />
+
+                    {/* Advanced Shimmer Animation */}
+                    <motion.div 
+                      animate={{ 
+                        left: ['-100%', '200%'],
+                        opacity: [0, 0.4, 0]
                       }}
                       transition={{ 
-                        duration: 4, 
+                        duration: 3, 
                         repeat: Infinity, 
                         ease: "easeInOut",
-                        repeatDelay: 1
+                        repeatDelay: 0.5
                       }}
-                      className="absolute top-0 bottom-0 w-[40%] bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-[-20deg] z-0"
+                      className="absolute top-0 bottom-0 w-[50%] bg-gradient-to-r from-transparent via-white/50 to-transparent skew-x-[-30deg] z-10"
                     />
 
                     <div className="absolute inset-0 bg-white translate-x-[-101%] group-hover:translate-x-0 transition-transform duration-700 ease-[0.16, 1, 0.3, 1] z-0" />
-                    <span className="relative z-10 text-white group-hover:text-black transition-colors duration-500 flex items-center gap-6">
+                    <span className="relative z-20 text-white group-hover:text-black transition-colors duration-500 flex items-center gap-10">
                       Mulai Produksi
-                      <Rocket className="w-5 h-5" />
+                      <motion.div
+                        animate={{ 
+                          scale: [1, 1.2, 1], 
+                          rotate: [0, 15, -15, 0],
+                        }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                        className="flex items-center justify-center p-2"
+                      >
+                        <Rocket className="w-5 h-5 sm:w-6 sm:h-6" />
+                      </motion.div>
                     </span>
                   </motion.button>
                   
@@ -2236,7 +2316,7 @@ export default function App() {
                             settings.direction
                           )}
                           style={{
-                            fontFamily: settings.fontFamily,
+                            fontFamily: `'${settings.fontFamily}', sans-serif`,
                             textAlign: 'center',
                             left: `50%`,
                             top: 0,
@@ -2337,7 +2417,7 @@ export default function App() {
                                   }}
                                   className="flex flex-col items-center w-full"
                                   style={{
-                                    fontFamily: settings.fontFamily,
+                                    fontFamily: `'${settings.fontFamily}', sans-serif`,
                                     textAlign: 'center',
                                     width: `100%`,
                                   }}
@@ -2513,7 +2593,7 @@ export default function App() {
                         settings.direction
                       )}
                       style={{
-                        fontFamily: settings.fontFamily,
+                        fontFamily: `'${settings.fontFamily}', sans-serif`,
                         textAlign: 'center',
                         left: `50%`,
                         top: 0,
@@ -2552,7 +2632,7 @@ export default function App() {
                               exit={{ opacity: 0, y: settings.animationType === 'fade' ? -10 : settings.animationType === 'slide' ? -40 : 0, scale: settings.animationType === 'zoom' ? 1.1 : 1, filter: settings.animationType === 'blur' ? 'blur(40px)' : 'none' }}
                               transition={{ duration: settings.animationType === 'glitch' ? 0.3 : 1, ease: "easeInOut" }}
                               className="flex flex-col items-center w-full"
-                              style={{ fontFamily: settings.fontFamily, textAlign: 'center', width: `100%` }}
+                              style={{ fontFamily: `'${settings.fontFamily}', sans-serif`, textAlign: 'center', width: `100%` }}
                             >
                               <div className="flex flex-col items-center" style={{ width: `100%`, maxWidth: `80%` }}>
                                 <div className="uppercase tracking-[0.8em] w-full" style={{ fontSize: `${settings.roleFontSize}px`, marginBottom: `${settings.roleNameGap}px`, color: settings.roleColor, opacity: settings.roleOpacity, fontWeight: settings.roleBold ? 900 : 500, fontStyle: settings.roleItalic ? 'italic' : 'normal', textAlign: 'center' }}>{credits[fadeIndex % credits.length].role}</div>
@@ -2591,8 +2671,6 @@ export default function App() {
       </AnimatePresence>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bebas+Neue&family=Bungee&family=Cormorant+Garamond:wght@300;400;700&family=Fraunces:opsz,wght@9..144,300;400;700;900&family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;700&family=Kanit:wght@300;400;700;900&family=Manrope:wght@400;700;800&family=Montserrat:wght@400;700;900&family=Oswald:wght@300;400;700&family=Playfair+Display:wght@400;700;900&family=Plus+Jakarta+Sans:wght@400;700;800&family=Poppins:wght@300;400;500;700&family=Roboto+Mono:wght@400;700&family=Sora:wght@400;700;800&family=Space+Grotesk:wght@300;400;700&family=Syne:wght@400;700;800&family=Teko:wght@300;400;700&family=Unbounded:wght@300;400;700;900&display=swap');
-
         .scanline-effect {
           background: linear-gradient(
             to bottom,
