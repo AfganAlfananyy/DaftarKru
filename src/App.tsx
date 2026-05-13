@@ -177,60 +177,84 @@ const BackgroundElements = () => {
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-[#020202]">
-      {/* Dynamic Glows */}
-      {[...Array(3)].map((_, i) => (
-        <motion.div
-          key={i}
-          animate={{
-            scale: [1, 1.1, 1],
-            opacity: [0.03, 0.05, 0.03]
-          }}
-          style={{
-            x: useTransform(mouseX, x => x * (50 + i * 20)),
-            y: useTransform(mouseY, y => y * (50 + i * 20)),
-            top: `${(i % 2) * 60 + 10}%`,
-            left: `${Math.floor(i / 2) * 60 + 10}%`,
-          }}
-          transition={{
-            duration: 15 + i * 5,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          className="absolute w-[800px] h-[800px] rounded-full blur-[180px] bg-white translate-x-[-15%] translate-y-[-15%]"
-        />
-      ))}
-      
-      {/* Tech Grid */}
+      {/* Refined Tech Grid */}
       <div 
-        className="absolute inset-0 opacity-[0.02]" 
+        className="absolute inset-0 opacity-[0.04]" 
         style={{ 
           backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)',
-          backgroundSize: '100px 100px',
+          backgroundSize: '60px 60px',
         }} 
       />
 
-      {/* Floating Particles */}
-      {[...Array(15)].map((_, i) => (
+      {/* Global Pulsing Light */}
+      <motion.div 
+        animate={{ 
+          opacity: [0.02, 0.05, 0.02],
+          scale: [1, 1.05, 1]
+        }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute inset-0 bg-radial-gradient from-white/10 to-transparent pointer-events-none"
+      />
+
+      {/* Digital "Data Stream" Columns */}
+      <div className="absolute inset-0 flex justify-around opacity-[0.03]">
+        {[...Array(6)].map((_, i) => (
+          <motion.div
+            key={i}
+            initial={{ y: "-100%" }}
+            animate={{ y: "100%" }}
+            transition={{ 
+              duration: 10 + i * 5, 
+              repeat: Infinity, 
+              ease: "linear",
+              delay: i * -2 
+            }}
+            className="w-[1px] h-full bg-gradient-to-b from-transparent via-white to-transparent"
+          />
+        ))}
+      </div>
+
+      {/* Interactive Floating Squares */}
+      {[...Array(8)].map((_, i) => (
         <motion.div
-          key={`dot-${i}`}
-          initial={{ 
-            x: Math.random() * 100 + "%", 
-            y: Math.random() * 100 + "%",
-            opacity: 0
+          key={`square-${i}`}
+          style={{
+            x: useTransform(mouseX, x => x * (40 + i * 15)),
+            y: useTransform(mouseY, y => y * (40 + i * 15)),
           }}
-          animate={{ 
-            y: ["-10%", "110%"],
-            opacity: [0, 0.2, 0]
-          }}
-          transition={{ 
-            duration: 12 + Math.random() * 18, 
-            repeat: Infinity, 
-            ease: "linear",
-            delay: Math.random() * 10
-          }}
-          className="absolute w-[1px] h-[50px] bg-gradient-to-b from-white/10 to-transparent"
-        />
+          className="absolute"
+        >
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ 
+              opacity: [0.05, 0.1, 0.05],
+              rotate: [0, 90, 180, 270, 360]
+            }}
+            transition={{ 
+              duration: 20 + i * 10, 
+              repeat: Infinity, 
+              ease: "linear" 
+            }}
+            style={{
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              width: `${20 + i * 10}px`,
+              height: `${20 + i * 10}px`,
+            }}
+            className="border border-white/20 rounded-sm"
+          />
+        </motion.div>
       ))}
+
+      {/* Subtle Scanning Bar */}
+      <motion.div 
+        animate={{ 
+          y: ["-20%", "120%"],
+          opacity: [0, 0.1, 0]
+        }}
+        transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+        className="absolute inset-x-0 h-[100px] bg-gradient-to-b from-transparent via-white/[0.05] to-transparent pointer-events-none"
+      />
     </div>
   );
 };
@@ -427,8 +451,8 @@ const FAQSection = () => {
     <section id="faq" className="min-h-screen w-full bg-[#020202] flex flex-col items-center justify-center p-6 sm:p-12 lg:p-24 relative overflow-hidden border-t border-white/5">
        <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-white/[0.01] blur-[120px] rounded-full translate-y-1/2 -translate-x-1/2" />
        
-       <div className="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-20 items-start">
-          <div className="sticky top-32 space-y-8">
+       <div className="max-w-7xl w-full flex flex-col lg:grid lg:grid-cols-[1fr_1.5fr] gap-12 sm:gap-20 items-start">
+          <div className="lg:sticky lg:top-32 space-y-6 sm:space-y-8">
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -437,13 +461,13 @@ const FAQSection = () => {
             >
               Support Center
             </motion.div>
-            <h2 className="text-6xl sm:text-8xl font-black tracking-tighter uppercase leading-none italic">Pertanyaan<br/>Populer</h2>
-            <p className="text-[10px] text-zinc-600 uppercase tracking-[0.4em] max-w-sm leading-relaxed">
+            <h2 className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter uppercase leading-none italic">Pertanyaan<br className="hidden sm:block"/>Populer</h2>
+            <p className="text-[10px] sm:text-xs text-zinc-600 uppercase tracking-[0.4em] max-w-sm leading-relaxed">
               Semua jawaban yang anda butuhkan untuk memulai produksi kredit film anda hari ini.
             </p>
           </div>
 
-          <div className="space-y-4">
+          <div className="w-full space-y-4">
             {faqs.map((faq, i) => (
               <FAQItem key={i} faq={faq} index={i} />
             ))}
@@ -1815,6 +1839,20 @@ export default function App() {
                     }}
                     className="group relative px-12 sm:px-20 py-6 sm:py-8 text-[11px] sm:text-[13px] font-black uppercase tracking-[0.5em] transition-all overflow-hidden border border-white rounded-none"
                   >
+                    {/* Idle Scan Animation */}
+                    <motion.div 
+                      animate={{ 
+                        left: ['-100%', '200%']
+                      }}
+                      transition={{ 
+                        duration: 4, 
+                        repeat: Infinity, 
+                        ease: "easeInOut",
+                        repeatDelay: 1
+                      }}
+                      className="absolute top-0 bottom-0 w-[40%] bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-[-20deg] z-0"
+                    />
+
                     <div className="absolute inset-0 bg-white translate-x-[-101%] group-hover:translate-x-0 transition-transform duration-700 ease-[0.16, 1, 0.3, 1] z-0" />
                     <span className="relative z-10 text-white group-hover:text-black transition-colors duration-500 flex items-center gap-6">
                       Mulai Produksi
