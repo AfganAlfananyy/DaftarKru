@@ -18,7 +18,14 @@ import {
   Check,
   Maximize,
   Minimize,
-  Play
+  Play,
+  Pause,
+  FastForward,
+  RotateCcw,
+  Info,
+  Upload,
+  Columns,
+  Trash
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder, useDragControls, useSpring, useTransform, useScroll, useMotionValueEvent } from 'motion/react';
 import Lenis from 'lenis';
@@ -30,6 +37,7 @@ interface CreditEntry {
   id: string;
   role: string;
   names: string[];
+  isPairs?: boolean;
 }
 
 interface ProjectSettings {
@@ -55,13 +63,139 @@ interface ProjectSettings {
   namesItalic: boolean;
   animationDuration: number;
   showNoise: boolean;
+  noiseOpacity: number;
   showScanlines: boolean;
   vignette: number;
+  pairsGap: number;
+  activePreset: string;
+  textShadowBlur: number;
+  textShadowColor: string;
+  textShadowOpacity: number;
+  textOutline: boolean;
+  textOutlineWidth: number;
+  textOutlineColor: string;
+  letterSpacing: number;
+  lut: string;
 }
 
 type Direction = 'bottomToTop' | 'topToBottom' | 'leftToRight' | 'rightToLeft';
 type AnimationType = 'scroll' | 'fade' | 'zoom' | 'blur' | 'slide' | 'glitch';
 type View = 'hero' | 'editor';
+
+const PRESETS = {
+  default: {
+    fontFamily: 'Kanit',
+    fontSize: 36,
+    roleFontSize: 14,
+    roleOpacity: 0.2,
+    namesOpacity: 1,
+    roleBold: false,
+    namesBold: false,
+    animationType: 'scroll' as AnimationType,
+    animationDuration: 4,
+    marginBlock: 120,
+    pairsGap: 80,
+    activePreset: 'default'
+  },
+  cinematic: {
+    fontFamily: 'Inter',
+    fontSize: 40,
+    roleFontSize: 16,
+    roleOpacity: 0.4,
+    namesOpacity: 1,
+    roleBold: true,
+    namesBold: true,
+    animationType: 'scroll' as AnimationType,
+    animationDuration: 5,
+    marginBlock: 150,
+    pairsGap: 100,
+    activePreset: 'cinematic'
+  },
+  indie: {
+    fontFamily: 'JetBrains Mono',
+    fontSize: 32,
+    roleFontSize: 14,
+    roleOpacity: 0.6,
+    namesOpacity: 0.9,
+    roleBold: false,
+    namesBold: false,
+    animationType: 'fade' as AnimationType,
+    animationDuration: 3,
+    marginBlock: 100,
+    pairsGap: 60,
+    activePreset: 'indie'
+  },
+  minimal: {
+    fontFamily: 'Inter',
+    fontSize: 28,
+    roleFontSize: 12,
+    roleOpacity: 0.3,
+    namesOpacity: 0.8,
+    roleBold: false,
+    namesBold: true,
+    animationType: 'slide' as AnimationType,
+    animationDuration: 4,
+    marginBlock: 80,
+    pairsGap: 40,
+    activePreset: 'minimal'
+  },
+  classic: {
+    fontFamily: 'Crimson Text',
+    fontSize: 42,
+    roleFontSize: 18,
+    roleOpacity: 0.5,
+    namesOpacity: 1,
+    roleBold: false,
+    namesBold: false,
+    animationType: 'scroll' as AnimationType,
+    animationDuration: 6,
+    marginBlock: 180,
+    pairsGap: 120,
+    activePreset: 'classic'
+  },
+  impact: {
+    fontFamily: 'Archivo Black',
+    fontSize: 50,
+    roleFontSize: 20,
+    roleOpacity: 0.3,
+    namesOpacity: 1,
+    roleBold: true,
+    namesBold: true,
+    animationType: 'zoom' as AnimationType,
+    animationDuration: 3,
+    marginBlock: 100,
+    pairsGap: 80,
+    activePreset: 'impact'
+  },
+  modernist: {
+    fontFamily: 'Syne',
+    fontSize: 44,
+    roleFontSize: 16,
+    roleOpacity: 0.5,
+    namesOpacity: 1,
+    roleBold: true,
+    namesBold: true,
+    animationType: 'fade' as AnimationType,
+    animationDuration: 4,
+    marginBlock: 140,
+    pairsGap: 90,
+    activePreset: 'modernist'
+  },
+  industrial: {
+    fontFamily: 'Bebas Neue',
+    fontSize: 52,
+    roleFontSize: 22,
+    roleOpacity: 0.6,
+    namesOpacity: 1,
+    roleBold: false,
+    namesBold: false,
+    animationType: 'scroll' as AnimationType,
+    animationDuration: 3,
+    marginBlock: 110,
+    pairsGap: 70,
+    activePreset: 'industrial'
+  }
+};
 
 const translations = {
   id: {
@@ -139,6 +273,14 @@ const translations = {
       fimmGrain: "FILM GRAIN",
       scanlines: "SCANLINES",
       vignette: "Vignette",
+      textShadow: "Shadow & Glow",
+      textShadowBlur: "Radius Blur",
+      textShadowOpacity: "Opasitas Shadow",
+      textOutline: "Outline Teks",
+      textOutlineWidth: "Ketebalan Outline",
+      letterSpacing: "Jarak Antar Huruf",
+      colorLut: "Color Mood / LUT",
+      filmGrainIntensity: "Intensitas Grain",
       transparent: "Transparan",
       sceneSpeed: "KECEPATAN SCENE",
       scrollModes: "Hanya berpengaruh pada mode non-scroll",
@@ -153,7 +295,17 @@ const translations = {
       nameGap: "Jarak Nama",
       lineHeight: "Tinggi Baris",
       previewMode: "Mode Pratinjau: High Fidelity",
-      exportWarning: "Pastikan anda sedikit menambahkan ukuran nama dari yang seharusnya anda inginkan. Teks yang terpotong di layar preview tidak akan memengaruhi hasil ekspor."
+      exportWarning: "Pastikan anda sedikit menambahkan ukuran nama dari yang seharusnya anda inginkan. Teks yang terpotong di layar preview tidak akan memengaruhi hasil ekspor.",
+      pairsMode: "Mode Pairs",
+      pairsGap: "Jarak Pairs",
+      presets: "5. PRESET",
+      uploadFont: "Upload Font",
+      uploadLogo: "Logo",
+      logoGrid: "Kolom",
+      logoSpacing: "Spasi",
+      roleColor: "Warna Posisi",
+      namesColor: "Warna Nama",
+      backgroundColor: "Warna Latar",
     },
     langToggles: {
       switch: "Ganti Bahasa"
@@ -234,6 +386,14 @@ const translations = {
       fimmGrain: "FILM GRAIN",
       scanlines: "SCANLINES",
       vignette: "Vignette",
+      textShadow: "Shadow & Glow",
+      textShadowBlur: "Blur Radius",
+      textShadowOpacity: "Shadow Opacity",
+      textOutline: "Text Outline",
+      textOutlineWidth: "Outline Width",
+      letterSpacing: "Letter Spacing",
+      colorLut: "Color Mood / LUT",
+      filmGrainIntensity: "Grain Intensity",
       transparent: "Transparent",
       sceneSpeed: "SCENE SPEED",
       scrollModes: "Only affects non-scroll modes",
@@ -248,7 +408,14 @@ const translations = {
       nameGap: "Name Gap",
       lineHeight: "Line Height",
       previewMode: "Preview Mode: High Fidelity",
-      exportWarning: "Please be sure to increase the name size slightly more than you intended. Text that appears cut off in the preview screen will not affect the exported result."
+      exportWarning: "Please be sure to increase the name size slightly more than you intended. Text that appears cut off in the preview screen will not affect the exported result.",
+      pairsMode: "Pairs Mode",
+      pairsGap: "Pairs Gap",
+      presets: "5. PRESETS",
+      uploadFont: "Upload Font",
+      roleColor: "Role Color",
+      namesColor: "Names Color",
+      backgroundColor: "Background Color",
     },
     langToggles: {
       switch: "Switch Language"
@@ -372,7 +539,7 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen }: { lang
         }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         className={cn(
-          "fixed top-6 sm:top-8 left-1/2 -translate-x-1/2 z-[999] p-1 rounded-full border transition-all duration-500 flex items-center gap-1",
+          "fixed top-6 sm:top-8 left-1/2 -translate-x-1/2 z-[999] p-1 rounded-none border transition-all duration-500 flex items-center gap-1",
           isScrolled 
             ? "bg-black/40 backdrop-blur-2xl border-white/20 f1-shadow" 
             : "bg-black/10 backdrop-blur-md border-white/10"
@@ -404,7 +571,7 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen }: { lang
                 {activeSection === item && (
                   <motion.div 
                     layoutId="active-pill"
-                    className="absolute inset-0 bg-white rounded-full -z-10"
+                    className="absolute inset-0 bg-white rounded-none -z-10"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
@@ -420,7 +587,7 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen }: { lang
                 key={l}
                 onClick={() => setLang(l)}
                 className={cn(
-                  "w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-[9px] sm:text-[10px] font-bold transition-all rounded-full border",
+                  "w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-[9px] sm:text-[10px] font-bold transition-all rounded-none border",
                   lang === l 
                     ? "bg-white text-black border-white" 
                     : "text-zinc-500 border-transparent hover:text-white"
@@ -465,7 +632,7 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen }: { lang
                   key={l}
                   onClick={() => setLang(l)}
                   className={cn(
-                    "text-xl font-bold p-4 rounded-full border",
+                    "text-xl font-bold p-4 rounded-none border",
                     lang === l ? "bg-white text-black" : "text-zinc-500 border-white/20"
                   )}
                 >
@@ -996,14 +1163,14 @@ const FONT_OPTIONS = [
   { name: 'SYSTEM MONO', value: 'JetBrains Mono' },
 ];
 
-const TuningControls = ({ settings, setSettings, lang }: any) => {
+const TuningControls = React.memo(({ settings, setSettings, lang }: any) => {
   const pxToPercent = (px: number) => ((px / 1920) * 100).toFixed(1);
   const percentToPx = (pct: number) => Number(((pct / 100) * 1920).toFixed(1));
 
   return (
     <div className="space-y-10">
       <div className="flex items-center gap-4 border-b border-white/5 pb-2">
-         <h3 className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-600 whitespace-nowrap">{translations[lang].editor.fineTuning}</h3>
+        <h3 className="text-[9px] font-bold uppercase tracking-[0.4em] text-white whitespace-nowrap">{translations[lang].editor.fineTuning}</h3>
          <div className="h-[1px] w-full bg-white/5" />
       </div>
       <div className="grid grid-cols-1 gap-y-10">
@@ -1067,123 +1234,199 @@ const TuningControls = ({ settings, setSettings, lang }: any) => {
           unit=""
           precision={1}
         />
+        <SliderWithControls 
+          label={translations[lang].editor.pairsGap}
+          value={Number(pxToPercent(settings.pairsGap))}
+          onChange={(val) => setSettings({...settings, pairsGap: percentToPx(val)})}
+          min={1}
+          max={40}
+          step={0.1}
+          unit="%"
+          precision={1}
+        />
+        <SliderWithControls 
+          label={translations[lang].editor.letterSpacing}
+          value={settings.letterSpacing}
+          onChange={(val) => setSettings({...settings, letterSpacing: val})}
+          min={-5}
+          max={20}
+          step={1}
+          precision={0}
+        />
       </div>
     </div>
   );
-};
+});
 
-const ConsoleContent = ({ settings, setSettings, activeConsole, setActiveConsole, lang }: any) => {
+const CategoryPopover = ({ id, title, children, activeConsole, closeConsole }: { id: string, title: string, children: React.ReactNode, activeConsole: string, closeConsole: () => void }) => (
+  <AnimatePresence>
+    {activeConsole === id && (
+      <div className="fixed sm:absolute inset-x-0 bottom-0 sm:bottom-full sm:left-1/2 sm:-translate-x-1/2 mb-0 sm:mb-2 w-full sm:w-[450px] lg:w-[600px] border-t sm:border border-white/20 bg-zinc-950 z-[10000] shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-3xl flex flex-col max-h-[85vh] sm:max-h-[min(600px,80vh)] overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-white/5 flex items-center justify-between sticky top-0 bg-zinc-950 z-20 shrink-0">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{title}</span>
+          <button 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              closeConsole();
+            }}
+            className="group relative flex items-center justify-center w-10 h-10 rounded-none bg-zinc-900 hover:bg-white border border-white/10 hover:border-white transition-all duration-300 shadow-[2px_2px_0px_rgba(255,255,255,0.05)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+          >
+            <X className="w-4 h-4 text-white group-hover:text-black transition-transform duration-500 group-hover:rotate-180" />
+            <div className="absolute inset-0 rounded-none bg-white/5 opacity-0 group-hover:opacity-100 blur-md transition-opacity pointer-events-none" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-8 space-y-8 overscroll-contain">
+          {children}
+        </div>
+      </div>
+    )}
+  </AnimatePresence>
+);
+
+const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setActiveConsole, setFadeIndex, customFonts, setCustomFonts, lang, onFontUpload, onDeleteFont }: any) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      
-      // Specifically allow clicks on these elements to NOT close the console
-      const isInteractionElement = 
-        target.closest('.chrome-picker') || 
-        target.closest('.color-picker-popover') ||
-        target.tagName === 'INPUT' || 
-        target.tagName === 'SELECT' || 
-        target.tagName === 'BUTTON' ||
-        target.closest('button') ||
-        target.closest('input');
-      
-      if (activeConsole !== 'none' && containerRef.current && !containerRef.current.contains(target) && !isInteractionElement) {
-        setActiveConsole('none');
+      if (activeConsole !== 'none' && containerRef.current && !containerRef.current.contains(target) && !target.closest('.fixed') && !target.closest('button') && !target.closest('input')) {
+        closeConsole();
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [activeConsole, setActiveConsole]);
 
+  const closeConsole = () => setActiveConsole('none');
+
+  const getDisplayFontName = () => {
+    const custom = customFonts.find((f: any) => f.value === settings.fontFamily);
+    if (custom) return custom.name.toUpperCase();
+    const standard = FONT_OPTIONS.find(f => f.value === settings.fontFamily);
+    if (standard) return standard.name.toUpperCase();
+    return "INTER";
+  };
+
   return (
     <div ref={containerRef} className="space-y-6 sm:space-y-8">
-      {/* Categories Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        {/* Typography Category */}
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="space-y-2 sm:space-y-3"
-        >
-          <label className="text-[8px] sm:text-[9px] uppercase font-bold tracking-[0.2em] text-zinc-600 block">{translations[lang].editor.fontStyle}</label>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6">
+        
+        {/* Typography */}
+        <div className="space-y-2 sm:space-y-3">
+          <label className="text-[8px] sm:text-[9px] uppercase font-semibold tracking-[0.2em] text-zinc-600 block">{translations[lang].editor.fontStyle}</label>
           <div className="relative">
-            <motion.button 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setActiveConsole(activeConsole === 'font' ? 'none' : 'font')}
+            <button 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setActiveConsole(activeConsole === 'font' ? 'none' : 'font');
+              }}
               className={cn(
-                "w-full border p-2 sm:p-2.5 flex items-center justify-between text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all",
-                activeConsole === 'font' ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]" : "border-white/10 hover:bg-white/5"
+                "w-full border p-2 sm:p-2.5 flex items-center justify-between text-[9px] sm:text-[10px] font-medium uppercase tracking-widest transition-all",
+                activeConsole === 'font' ? "bg-white text-black border-white" : "border-white/10 hover:bg-white/5"
               )}
             >
-              <span className="truncate">{settings.fontFamily.toUpperCase()}</span>
+              <span className="truncate">{getDisplayFontName()}</span>
               <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", activeConsole === 'font' && "rotate-90")} />
-            </motion.button>
-            <AnimatePresence>
-              {activeConsole === 'font' && (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                  className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-[calc(100vw-48px)] sm:w-[350px] lg:w-[450px] border border-white/20 bg-zinc-950 z-[250] shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl"
+            </button>
+            <CategoryPopover id="font" title={translations[lang].editor.fontStyle} activeConsole={activeConsole} closeConsole={closeConsole}>
+              <div className="space-y-4">
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={(e) => onFontUpload(e, fileInputRef)} 
+                  accept=".ttf,.otf,.woff,.woff2" 
+                  className="hidden" 
+                />
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full p-10 border-2 border-dashed border-white/10 hover:border-white/20 hover:bg-white/[0.02] transition-all flex flex-col items-center gap-4 group bg-black/40 rounded-none relative overflow-hidden"
                 >
-                  <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
-                      {FONT_OPTIONS.map((font) => (
-                      <button
-                        key={font.value}
-                        onClick={() => {
-                          setSettings({...settings, fontFamily: font.value});
-                          setActiveConsole('none');
-                        }}
-                        className={cn(
-                          "w-full text-left px-5 py-4 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all border-b border-white/5 last:border-0",
-                          settings.fontFamily === font.value ? "bg-white/10 text-white" : "text-zinc-500"
-                        )}
-                        style={{ fontFamily: `'${font.value}', sans-serif` }}
-                      >
-                        {font.name}
-                      </button>
-                    ))}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <Upload className="w-8 h-8 text-zinc-600 group-hover:text-white transition-all duration-500 group-hover:-translate-y-1" />
+                  <div className="text-center relative z-10">
+                    <span className="text-[11px] font-black uppercase tracking-[0.3em] text-zinc-400 group-hover:text-white transition-colors">{translations[lang].editor.uploadFont}</span>
+                    <p className="text-[9px] text-zinc-600 uppercase tracking-widest mt-2 font-medium">TTF, OTF, WOFF Supported</p>
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </motion.div>
+                </button>
 
-        {/* Behavior Category */}
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="space-y-2 sm:space-y-3"
-        >
-          <label className="text-[8px] sm:text-[9px] uppercase font-bold tracking-[0.2em] text-zinc-600 block">{translations[lang].editor.motionType}</label>
+                <div className="grid grid-cols-1 gap-1">
+                  {/* Custom Fonts */}
+                  {customFonts.length > 0 && (
+                    <div className="pb-2 border-b border-white/5 mb-2">
+                       <span className="text-[8px] font-bold uppercase tracking-widest text-zinc-600 px-5 mb-2 block">Your Uploads</span>
+                       {customFonts.map((font: any) => (
+                           <div key={font.value} className="flex items-center border-b border-white/5">
+                             <button
+                               onClick={() => {
+                                 setSettings((prev: any) => ({...prev, fontFamily: font.value}));
+                                 closeConsole();
+                               }}
+                               className={cn(
+                                 "flex-1 text-left px-5 py-4 text-[10px] font-medium uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all",
+                                 settings.fontFamily === font.value ? "bg-white/10 text-white" : "text-zinc-500"
+                               )}
+                               style={{ fontFamily: `'${font.value}', sans-serif` }}
+                             >
+                               {font.name}
+                             </button>
+                             <button
+                               onClick={(e) => onDeleteFont(e, font.value)}
+                               className="px-4 bg-transparent text-zinc-600 hover:text-red-500 transition-colors h-full"
+                               title="Hapus Font"
+                             >
+                               <Trash className="w-3 h-3" />
+                             </button>
+                           </div>
+                       ))}
+                    </div>
+                  )}
+
+                  {FONT_OPTIONS.map((font) => (
+                  <button
+                    key={font.value}
+                    onClick={() => {
+                      setSettings({...settings, fontFamily: font.value});
+                      closeConsole();
+                    }}
+                    className={cn(
+                      "w-full text-left px-5 py-4 text-[10px] font-medium uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all border-b border-white/5 last:border-0",
+                      settings.fontFamily === font.value ? "bg-white/10 text-white" : "text-zinc-500"
+                    )}
+                    style={{ fontFamily: `'${font.value}', sans-serif` }}
+                  >
+                    {font.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            </CategoryPopover>
+        </div>
+      </div>
+
+        {/* Behavior */}
+        <div className="space-y-2 sm:space-y-3">
+          <label className="text-[8px] sm:text-[9px] uppercase font-semibold tracking-[0.2em] text-zinc-600 block">{translations[lang].editor.motionType}</label>
           <div className="relative">
-            <motion.button 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setActiveConsole(activeConsole === 'anim' ? 'none' : 'anim')}
+            <button 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setActiveConsole(activeConsole === 'anim' ? 'none' : 'anim');
+              }}
               className={cn(
-                "w-full border p-2 sm:p-2.5 flex items-center justify-between text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all",
-                activeConsole === 'anim' ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]" : "border-white/10 hover:bg-white/5"
+                "w-full border p-2 sm:p-2.5 flex items-center justify-between text-[9px] sm:text-[10px] font-medium uppercase tracking-widest transition-all",
+                activeConsole === 'anim' ? "bg-white text-black border-white" : "border-white/10 hover:bg-white/5"
               )}
             >
-              {settings.animationType.toUpperCase()}
+              <span className="truncate">{settings.animationType.toUpperCase()}</span>
               <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", activeConsole === 'anim' && "rotate-90")} />
-            </motion.button>
-            <AnimatePresence>
-              {activeConsole === 'anim' && (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                  className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-[calc(100vw-48px)] sm:w-[350px] lg:w-[450px] border border-white/20 bg-zinc-950 z-[250] shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl"
-                >
+            </button>
+            <CategoryPopover id="anim" title={translations[lang].editor.motionType} activeConsole={activeConsole} closeConsole={closeConsole}>
+              <div className="space-y-8">
+                <div className="grid grid-cols-1 gap-1">
                   {[
                     { name: 'SMOOTH SCROLL', value: 'scroll' },
                     { name: 'SCENE FADES', value: 'fade' },
@@ -1196,229 +1439,422 @@ const ConsoleContent = ({ settings, setSettings, activeConsole, setActiveConsole
                       key={anim.value}
                       onClick={() => {
                         setSettings({...settings, animationType: anim.value as AnimationType});
-                        setActiveConsole('none');
+                        setFadeIndex(0);
+                        closeConsole();
                       }}
                       className={cn(
-                        "w-full text-left px-5 py-4 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all border-b border-white/5 last:border-0",
+                        "w-full text-left px-5 py-4 text-[10px] font-medium uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all border-b border-white/5 last:border-0",
                         settings.animationType === anim.value ? "bg-white/10 text-white" : "text-zinc-500"
                       )}
                     >
                       {anim.name}
                     </button>
                   ))}
-                  <div className="p-4 border-t border-white/5">
-                    <SliderWithControls 
-                      label={translations[lang].editor.sceneSpeed}
-                      value={settings.animationDuration}
-                      onChange={(val) => setSettings({...settings, animationDuration: val})}
-                      min={1}
-                      max={10}
-                      step={0.5}
-                      precision={1}
-                    />
-                    <div className="text-[8px] text-zinc-600 mt-2 text-center uppercase tracking-widest italic">
-                      {translations[lang].editor.scrollModes}
-                    </div>
+                </div>
+                <div className="p-6 bg-white/5 space-y-4">
+                  <SliderWithControls 
+                    label={translations[lang].editor.sceneSpeed}
+                    value={settings.animationDuration}
+                    onChange={(val) => setSettings({...settings, animationDuration: val})}
+                    min={1}
+                    max={10}
+                    step={0.5}
+                    precision={1}
+                  />
+                  <div className="text-[8px] text-zinc-600 text-center uppercase tracking-widest italic">
+                    {translations[lang].editor.scrollModes}
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                </div>
+              </div>
+            </CategoryPopover>
           </div>
-        </motion.div>
+        </div>
 
-        {/* Style Category */}
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="space-y-2 sm:space-y-3"
-        >
-          <label className="text-[8px] sm:text-[9px] uppercase font-bold tracking-[0.2em] text-zinc-600 block">{translations[lang].editor.appearance}</label>
+        {/* Visuals */}
+        <div className="space-y-2 sm:space-y-3">
+          <label className="text-[8px] sm:text-[9px] uppercase font-semibold tracking-[0.2em] text-zinc-600 block">{translations[lang].editor.appearance}</label>
           <div className="relative">
-            <motion.button 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setActiveConsole(activeConsole === 'color' ? 'none' : 'color')}
+            <button 
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveConsole(activeConsole === 'color' ? 'none' : 'color');
+              }}
               className={cn(
-                "w-full border p-2 sm:p-2.5 flex items-center justify-between text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all",
-                activeConsole === 'color' ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]" : "border-white/10 hover:bg-white/5"
+                "w-full border p-2 sm:p-2.5 flex items-center justify-between text-[9px] sm:text-[10px] font-medium uppercase tracking-widest transition-all",
+                activeConsole === 'color' ? "bg-white text-black border-white" : "border-white/10 hover:bg-white/5"
               )}
             >
               {translations[lang].editor.visuals}
               <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", activeConsole === 'color' && "rotate-90")} />
-            </motion.button>
-            <AnimatePresence>
-              {activeConsole === 'color' && (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                  className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-[calc(100vw-48px)] sm:w-[380px] lg:w-[480px] border border-white/20 bg-zinc-950 z-[250] shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl p-6 sm:p-8 space-y-8"
-                >
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-zinc-500">
-                      <span>{translations[lang].editor.identityLabel}</span>
-                      <div className="flex gap-1 items-center">
-                        <button 
-                          onClick={() => setSettings({...settings, roleBold: !settings.roleBold})}
-                          className={cn("w-6 h-6 border flex items-center justify-center transition-all", settings.roleBold ? "bg-white text-black border-white" : "border-white/10 text-zinc-500")}
-                        >
-                          B
-                        </button>
-                        <button 
-                          onClick={() => setSettings({...settings, roleItalic: !settings.roleItalic})}
-                          className={cn("w-6 h-6 border flex items-center justify-center transition-all", settings.roleItalic ? "bg-white text-black border-white" : "border-white/10 text-zinc-500")}
-                        >
-                          I
-                        </button>
-                      </div>
-                    </div>
-                    <div className="bg-white/5 p-4 space-y-4">
-                       <SliderWithControls 
-                        label={translations[lang].editor.opacity}
-                        value={settings.roleOpacity}
-                        onChange={(val) => setSettings({...settings, roleOpacity: val})}
-                        min={0}
-                        max={1}
-                        step={0.1}
-                        precision={1}
-                      />
+            </button>
+            <CategoryPopover id="color" title={translations[lang].editor.visuals} activeConsole={activeConsole} closeConsole={closeConsole}>
+                {/* Role / Identity */}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center text-[8px] font-bold uppercase tracking-widest text-zinc-500">
+                    <span>{translations[lang].editor.identityLabel}</span>
+                    <div className="flex gap-1 items-center">
+                      <button 
+                        onClick={() => setSettings({...settings, roleBold: !settings.roleBold})}
+                        className={cn("w-8 h-8 sm:w-6 sm:h-6 border flex items-center justify-center transition-all", settings.roleBold ? "bg-white text-black border-white" : "border-white/10 text-zinc-500")}
+                      >
+                        B
+                      </button>
+                      <button 
+                        onClick={() => setSettings({...settings, roleItalic: !settings.roleItalic})}
+                        className={cn("w-8 h-8 sm:w-6 sm:h-6 border flex items-center justify-center transition-all", settings.roleItalic ? "bg-white text-black border-white" : "border-white/10 text-zinc-500")}
+                      >
+                        I
+                      </button>
                     </div>
                   </div>
+                  <div className="bg-white/5 p-4 sm:p-6 space-y-6 text-left">
+                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-6">
+                       <div className="flex-1">
+                         <SliderWithControls 
+                          label="OPACTY ROLE NAME"
+                          value={settings.roleOpacity}
+                          onChange={(val) => setSettings({...settings, roleOpacity: val})}
+                          min={0}
+                          max={2}
+                          step={0.1}
+                          precision={1}
+                        />
+                       </div>
+                       <div className="flex items-center justify-between sm:justify-start gap-3 bg-black border border-white/10 p-2 sm:p-3">
+                         <div className="flex items-center gap-2">
+                           <div className="w-8 h-8 sm:w-6 sm:h-6 rounded-none relative overflow-hidden flex-shrink-0 border border-white/20" style={{ backgroundColor: settings.roleColor }}>
+                             <input 
+                               type="color" 
+                               value={settings.roleColor}
+                               onChange={(e) => setSettings({...settings, roleColor: e.target.value})}
+                               className="absolute inset-0 opacity-0 cursor-pointer scale-150"
+                             />
+                           </div>
+                           <span className="text-[10px] font-mono opacity-40 uppercase tabular-nums">{settings.roleColor}</span>
+                         </div>
+                       </div>
+                     </div>
+                  </div>
+                </div>
 
-                  <div className="space-y-4 pt-4 border-t border-white/5">
-                    <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-zinc-500">
-                      <span>{translations[lang].editor.professionalNames}</span>
-                      <div className="flex gap-1 items-center">
-                        <button 
-                          onClick={() => setSettings({...settings, namesBold: !settings.namesBold})}
-                          className={cn("w-6 h-6 border flex items-center justify-center transition-all", settings.namesBold ? "bg-white text-black border-white" : "border-white/10 text-zinc-500")}
-                        >
-                          B
-                        </button>
-                        <button 
-                          onClick={() => setSettings({...settings, namesItalic: !settings.namesItalic})}
-                          className={cn("w-6 h-6 border flex items-center justify-center transition-all", settings.namesItalic ? "bg-white text-black border-white" : "border-white/10 text-zinc-500")}
-                        >
-                          I
-                        </button>
-                      </div>
-                    </div>
-                    <div className="bg-white/5 p-4 space-y-4">
-                       <SliderWithControls 
-                        label={translations[lang].editor.opacity}
-                        value={settings.namesOpacity}
-                        onChange={(val) => setSettings({...settings, namesOpacity: val})}
-                        min={0}
-                        max={1}
-                        step={0.1}
-                        precision={1}
-                      />
+                {/* Names */}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center text-[8px] font-bold uppercase tracking-widest text-zinc-500">
+                    <span>{translations[lang].editor.namesLabel}</span>
+                    <div className="flex gap-1 items-center">
+                      <button 
+                        onClick={() => setSettings({...settings, namesBold: !settings.namesBold})}
+                        className={cn("w-8 h-8 sm:w-6 sm:h-6 border flex items-center justify-center transition-all", settings.namesBold ? "bg-white text-black border-white" : "border-white/10 text-zinc-500")}
+                      >
+                        B
+                      </button>
+                      <button 
+                        onClick={() => setSettings({...settings, namesItalic: !settings.namesItalic})}
+                        className={cn("w-8 h-8 sm:w-6 sm:h-6 border flex items-center justify-center transition-all", settings.namesItalic ? "bg-white text-black border-white" : "border-white/10 text-zinc-500")}
+                      >
+                        I
+                      </button>
                     </div>
                   </div>
+                  <div className="bg-white/5 p-4 sm:p-6 space-y-6 text-left">
+                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-6">
+                       <div className="flex-1">
+                         <SliderWithControls 
+                          label="OPACITY PERSON NAMES"
+                          value={settings.namesOpacity}
+                          onChange={(val) => setSettings({...settings, namesOpacity: val})}
+                          min={0}
+                          max={2}
+                          step={0.1}
+                          precision={1}
+                        />
+                       </div>
+                       <div className="flex items-center justify-between sm:justify-start gap-3 bg-black border border-white/10 p-2 sm:p-3">
+                         <div className="flex items-center gap-2">
+                           <div className="w-8 h-8 sm:w-6 sm:h-6 rounded-none relative overflow-hidden flex-shrink-0 border border-white/20" style={{ backgroundColor: settings.namesColor }}>
+                             <input 
+                               type="color" 
+                               value={settings.namesColor}
+                               onChange={(e) => setSettings({...settings, namesColor: e.target.value})}
+                               className="absolute inset-0 opacity-0 cursor-pointer scale-150"
+                             />
+                           </div>
+                           <span className="text-[10px] font-mono opacity-40 uppercase tabular-nums">{settings.namesColor}</span>
+                         </div>
+                       </div>
+                     </div>
+                  </div>
+                </div>
 
-                  <div className="pt-4 border-t border-white/5">
-                    <label className="text-[8px] font-black uppercase tracking-widest text-zinc-600 mb-2 block">{translations[lang].editor.overlayEffects}</label>
-                    <div className="grid grid-cols-2 gap-2">
-                       <button 
-                         onClick={() => setSettings({...settings, showNoise: !settings.showNoise})}
-                         className={cn(
-                           "h-10 border text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all",
-                           settings.showNoise ? "bg-white text-black border-white" : "border-white/10 text-zinc-500 hover:bg-white/5"
-                         )}
-                       >
-                         {settings.showNoise ? <CheckSquare className="w-3 h-3" /> : <Square className="w-3 h-3" />}
-                         {translations[lang].editor.fimmGrain}
-                       </button>
-                       <button 
-                         onClick={() => setSettings({...settings, showScanlines: !settings.showScanlines})}
-                         className={cn(
-                           "h-10 border text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all",
-                           settings.showScanlines ? "bg-white text-black border-white" : "border-white/10 text-zinc-500 hover:bg-white/5"
-                         )}
-                       >
-                         {settings.showScanlines ? <CheckSquare className="w-3 h-3" /> : <Square className="w-3 h-3" />}
-                         {translations[lang].editor.scanlines}
-                       </button>
+                {/* Text Shadow */}
+                <div className="space-y-4 pt-4 border-t border-white/5">
+                  <div className="flex justify-between items-center text-[8px] font-bold uppercase tracking-widest text-zinc-500">
+                    <span>{translations[lang].editor.textShadow}</span>
+                    <span className="text-zinc-400 tabular-nums">{Math.round(settings.textShadowOpacity * 100)}%</span>
+                  </div>
+                  <div className="bg-white/5 p-6 space-y-6">
+                    <SliderWithControls 
+                      label={translations[lang].editor.textShadowBlur}
+                      value={settings.textShadowBlur}
+                      onChange={(val) => setSettings({...settings, textShadowBlur: val})}
+                      min={0}
+                      max={50}
+                      step={1}
+                      precision={0}
+                    />
+                    <div className="flex items-center justify-between gap-6">
+                      <div className="flex-1">
+                        <SliderWithControls 
+                          label={translations[lang].editor.textShadowOpacity}
+                          value={settings.textShadowOpacity}
+                          onChange={(val) => setSettings({...settings, textShadowOpacity: val})}
+                          min={0}
+                          max={1}
+                          step={0.1}
+                          precision={1}
+                        />
+                      </div>
+                      <div className="flex items-center gap-3 bg-black border border-white/10 p-3">
+                        <div className="w-6 h-6 rounded-none relative overflow-hidden flex-shrink-0 border border-white/20" style={{ backgroundColor: settings.textShadowColor }}>
+                          <input 
+                            type="color" 
+                            value={settings.textShadowColor}
+                            onChange={(e) => setSettings({...settings, textShadowColor: e.target.value})}
+                            className="absolute inset-0 opacity-0 cursor-pointer scale-150"
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className="mt-4">
+                  </div>
+                </div>
+
+                {/* Text Outline */}
+                <div className="space-y-4 pt-4 border-t border-white/5">
+                  <div className="flex justify-between items-center text-[8px] font-bold uppercase tracking-widest text-zinc-500">
+                    <span>{translations[lang].editor.textOutline}</span>
+                    <button 
+                      onClick={() => setSettings({...settings, textOutline: !settings.textOutline})}
+                      className={cn(
+                        "px-3 py-1 text-[8px] border transition-all rounded-none",
+                        settings.textOutline ? "bg-white text-black border-white" : "text-zinc-500 border-zinc-800 hover:border-zinc-700"
+                      )}
+                    >
+                      {settings.textOutline ? 'ENABLED' : 'DISABLED'}
+                    </button>
+                  </div>
+                  {settings.textOutline && (
+                    <div className="bg-white/5 p-6 space-y-6">
                       <SliderWithControls 
-                        label={translations[lang].editor.vignette}
-                        value={settings.vignette}
-                        onChange={(val) => setSettings({...settings, vignette: val})}
-                        min={0}
-                        max={1}
+                        label={translations[lang].editor.textOutlineWidth}
+                        value={settings.textOutlineWidth}
+                        onChange={(val) => setSettings({...settings, textOutlineWidth: val})}
+                        min={0.1}
+                        max={10}
                         step={0.1}
                         precision={1}
                       />
+                      <div className="flex items-center justify-between gap-3 bg-black border border-white/10 p-3">
+                        <span className="text-[8px] uppercase tracking-widest text-zinc-500">Color</span>
+                        <div className="w-6 h-6 rounded-none relative overflow-hidden flex-shrink-0 border border-white/20" style={{ backgroundColor: settings.textOutlineColor }}>
+                          <input 
+                            type="color" 
+                            value={settings.textOutlineColor}
+                            onChange={(e) => setSettings({...settings, textOutlineColor: e.target.value})}
+                            className="absolute inset-0 opacity-0 cursor-pointer scale-150"
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </motion.div>
+                  )}
+                </div>
 
-        {/* Canvas Category */}
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="space-y-2 sm:space-y-3"
-        >
-          <label className="text-[8px] sm:text-[9px] uppercase font-bold tracking-[0.2em] text-zinc-600 block">{translations[lang].editor.backdrop}</label>
+                {/* FX Effects */}
+                <div className="space-y-4 pt-4 border-t border-white/5">
+                  <span className="text-[8px] font-bold uppercase tracking-widest text-zinc-500">{translations[lang].editor.overlayEffects}</span>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button 
+                      onClick={() => setSettings({...settings, showNoise: !settings.showNoise})}
+                      className={cn(
+                        "p-4 sm:p-6 flex flex-col gap-2 items-center transition-all border",
+                        settings.showNoise ? "bg-white text-black border-white" : "bg-white/5 text-white border-white/10 hover:border-white/30"
+                      )}
+                    >
+                      <span className="text-[9px] font-bold uppercase tracking-widest">Film Grain</span>
+                      <span className="text-[7px] opacity-40 uppercase tracking-tighter">{settings.showNoise ? 'Active' : 'Off'}</span>
+                    </button>
+                    {settings.showNoise && (
+                      <div className="col-span-2 bg-black/40 p-4 border border-white/5">
+                        <SliderWithControls 
+                          label={translations[lang].editor.filmGrainIntensity}
+                          value={settings.noiseOpacity}
+                          onChange={(val) => setSettings({...settings, noiseOpacity: val})}
+                          min={0}
+                          max={1}
+                          step={0.05}
+                          precision={2}
+                        />
+                      </div>
+                    )}
+                    <button 
+                      onClick={() => setSettings({...settings, showScanlines: !settings.showScanlines})}
+                      className={cn(
+                        "p-4 sm:p-6 flex flex-col gap-2 items-center transition-all border",
+                        settings.showScanlines ? "bg-white text-black border-white" : "bg-white/5 text-white border-white/10 hover:border-white/30"
+                      )}
+                    >
+                      <span className="text-[9px] font-bold uppercase tracking-widest">Scanlines</span>
+                      <span className="text-[7px] opacity-40 uppercase tracking-tighter">{settings.showScanlines ? 'Active' : 'Off'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Color Mood / LUT */}
+                <div className="space-y-4 pt-4 border-t border-white/5">
+                  <span className="text-[8px] font-bold uppercase tracking-widest text-zinc-500">{translations[lang].editor.colorLut}</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { name: 'NONE', value: 'none' },
+                      { name: 'NOIR', value: 'noir' },
+                      { name: 'SEPIA', value: 'sepia' },
+                      { name: 'COLD', value: 'cold' },
+                      { name: 'WARM', value: 'warm' },
+                      { name: 'MUTE', value: 'mute' },
+                    ].map((l) => (
+                      <button
+                        key={l.value}
+                        onClick={() => setSettings({...settings, lut: l.value})}
+                        className={cn(
+                          "py-3 text-[8px] font-bold uppercase tracking-widest border transition-all",
+                          settings.lut === l.value ? "bg-white text-black border-white" : "bg-white/5 text-zinc-500 border-white/5 hover:border-white/20"
+                        )}
+                      >
+                        {l.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-4 border-t border-white/5">
+                  <div className="flex justify-between items-center text-[8px] font-bold uppercase tracking-widest text-zinc-500">
+                    <span>{translations[lang].editor.vignette}</span>
+                    <span className="text-zinc-400 tabular-nums">{Math.round(settings.vignette * 100)}%</span>
+                  </div>
+                  <div className="bg-white/5 p-6">
+                    <SliderWithControls 
+                      label="Shadow Depth"
+                      value={settings.vignette}
+                      onChange={(val) => setSettings({...settings, vignette: val})}
+                      min={0}
+                      max={1}
+                      step={0.1}
+                      precision={1}
+                    />
+                  </div>
+                </div>
+            </CategoryPopover>
+          </div>
+        </div>
+
+        {/* Backdrop (Canvas) */}
+        <div className="space-y-2 sm:space-y-3">
+          <label className="text-[8px] sm:text-[9px] uppercase font-semibold tracking-[0.2em] text-zinc-600 block">{translations[lang].editor.backdrop}</label>
           <div className="relative">
-            <motion.button 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setActiveConsole(activeConsole === 'bg' ? 'none' : 'bg')}
+            <button 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setActiveConsole(activeConsole === 'bg' ? 'none' : 'bg');
+              }}
               className={cn(
-                "w-full border p-2 sm:p-2.5 flex items-center justify-between text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all",
-                activeConsole === 'bg' ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]" : "border-white/10 hover:bg-white/5"
+                "w-full border p-2 sm:p-2.5 flex items-center justify-between text-[9px] sm:text-[10px] font-medium uppercase tracking-widest transition-all",
+                activeConsole === 'bg' ? "bg-white text-black border-white" : "border-white/10 hover:bg-white/5"
               )}
             >
               {translations[lang].editor.canvas}
               <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", activeConsole === 'bg' && "rotate-90")} />
-            </motion.button>
-            <AnimatePresence>
-              {activeConsole === 'bg' && (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                  className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-[calc(100vw-48px)] sm:w-[350px] lg:w-[450px] border border-white/20 bg-zinc-950 z-[250] shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl p-6 sm:p-8 space-y-6"
+            </button>
+            <CategoryPopover id="bg" title={translations[lang].editor.canvas} activeConsole={activeConsole} closeConsole={closeConsole}>
+              <div className="space-y-8">
+                <button 
+                  onClick={() => setSettings({...settings, transparentBg: !settings.transparentBg})}
+                  className={cn(
+                    "w-full p-6 flex items-center justify-between transition-all border",
+                    settings.transparentBg ? "bg-white text-black border-white" : "bg-white/5 text-white border-white/10"
+                  )}
                 >
-                  <button 
-                    onClick={() => setSettings({...settings, transparentBg: !settings.transparentBg})}
-                    className="w-full h-10 px-3 flex items-center justify-between text-[9px] font-black uppercase tracking-[0.3em] group border border-white/10 hover:border-white/30 transition-all"
-                  >
-                    <span className={settings.transparentBg ? "text-white" : "text-zinc-600"}>{translations[lang].editor.transparent}</span>
-                    {settings.transparentBg ? <CheckSquare className="w-4 h-4 text-white" /> : <Square className="w-4 h-4 text-zinc-700" />}
-                  </button>
-                  
-                  <div className={cn("space-y-4 transition-all duration-300", settings.transparentBg ? "opacity-20 pointer-events-none grayscale" : "opacity-100")}>
-                    <div className="flex items-center gap-3 bg-black border border-white/10 p-2.5">
-                      <div className="w-6 h-6 rounded-none relative overflow-hidden flex-shrink-0" style={{ backgroundColor: settings.bgColor }}>
+                  <div className="text-left">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.3em]">{translations[lang].editor.transparent}</div>
+                    <p className="text-[8px] opacity-60 uppercase mt-1">Alpha Channel Background</p>
+                  </div>
+                  {settings.transparentBg ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5 opacity-20" />}
+                </button>
+                
+                <div className={cn("space-y-4 transition-all duration-300", settings.transparentBg ? "opacity-30 grayscale pointer-events-none" : "opacity-100")}>
+                  <label className="text-[8px] font-bold uppercase tracking-widest text-zinc-500">Background Color</label>
+                  <div className="bg-black border border-white/10 p-4 sm:p-6 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none relative overflow-hidden border border-white/20" style={{ backgroundColor: settings.bgColor }}>
                         <input 
                           type="color" 
                           value={settings.bgColor}
                           onChange={(e) => setSettings({...settings, bgColor: e.target.value})}
                           className="absolute inset-0 opacity-0 cursor-pointer scale-150"
-                          disabled={settings.transparentBg}
                         />
                       </div>
-                      <span className="text-[10px] font-mono opacity-40 select-none">{settings.bgColor.toUpperCase()}</span>
+                      <span className="text-[12px] font-mono uppercase tracking-widest tabular-nums">{settings.bgColor}</span>
                     </div>
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                </div>
+              </div>
+            </CategoryPopover>
           </div>
-        </motion.div>
+        </div>
+
+        {/* Presets */}
+        <div className="space-y-2 sm:space-y-3">
+          <label className="text-[8px] sm:text-[9px] uppercase font-semibold tracking-[0.2em] text-zinc-600 block">{translations[lang].editor.presets}</label>
+          <div className="relative">
+            <button 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setActiveConsole(activeConsole === 'preset' ? 'none' : 'preset');
+              }}
+              className={cn(
+                "w-full border p-2 sm:p-2.5 flex items-center justify-between text-[9px] sm:text-[10px] font-medium uppercase tracking-widest transition-all",
+                activeConsole === 'preset' ? "bg-white text-black border-white" : "border-white/10 hover:bg-white/5"
+              )}
+            >
+              <span className="truncate">
+                {settings.activePreset ? (translations[lang].editor[`preset${settings.activePreset.charAt(0).toUpperCase() + settings.activePreset.slice(1)}` as keyof typeof translations.id.editor] || settings.activePreset.toUpperCase()) : "PRESET"}
+              </span>
+              <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", activeConsole === 'preset' && "rotate-90")} />
+            </button>
+            <CategoryPopover id="preset" title={translations[lang].editor.presets} activeConsole={activeConsole} closeConsole={closeConsole}>
+              <div className="grid grid-cols-1 gap-1">
+                {Object.keys(PRESETS).map((presetKey) => (
+                  <button 
+                    key={presetKey}
+                    onClick={() => {
+                      setSettings({...settings, ...PRESETS[presetKey as keyof typeof PRESETS]});
+                      closeConsole();
+                    }}
+                    className={cn(
+                      "w-full text-left px-5 py-4 text-[10px] font-bold uppercase tracking-[0.3em] transition-all border-b border-white/5 last:border-0",
+                      settings.activePreset === presetKey ? "bg-white text-black" : "hover:bg-white hover:text-black opacity-60 hover:opacity-100"
+                    )}
+                  >
+                    {translations[lang].editor[`preset${presetKey.charAt(0).toUpperCase() + presetKey.slice(1)}` as keyof typeof translations.id.editor] || presetKey.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </CategoryPopover>
+          </div>
+        </div>
       </div>
     </div>
   );
-};
+});
 
 const CreditItem = ({ 
   item, 
@@ -1428,6 +1864,7 @@ const CreditItem = ({
   setOpenSettingsId, 
   startEditing, 
   removeRole,
+  togglePairs,
   lang
 }: any) => {
   const controls = useDragControls();
@@ -1461,8 +1898,11 @@ const CreditItem = ({
             <GripVertical className="w-4 h-4" />
           </div>
           <div className="flex-1 min-w-0 pointer-events-none">
-            <div className={cn("text-[9px] font-black uppercase tracking-widest mb-1", selectedIds.has(item.id) ? "text-black" : "text-white/40")}>{item.role}</div>
-            <div className="text-[11px] font-bold uppercase truncate">{item.names.join(' / ')}</div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className={cn("text-[9px] font-bold tracking-widest", selectedIds.has(item.id) ? "text-black" : "text-white/40")}>{item.role}</div>
+              {item.isPairs && <Columns className={cn("w-3 h-3", selectedIds.has(item.id) ? "text-black/40" : "text-white/20")} />}
+            </div>
+            <div className="text-[11px] font-medium truncate">{(item.names || []).join(' / ')}</div>
           </div>
         </div>
 
@@ -1471,7 +1911,7 @@ const CreditItem = ({
             <button 
               onClick={() => setOpenSettingsId(openSettingsId === item.id ? null : item.id)}
               className={cn(
-                "p-2 border transition-all relative z-[110]",
+                "p-2 border transition-all relative z-[110] rounded-none",
                 openSettingsId === item.id 
                   ? "bg-white text-black border-white" 
                   : (selectedIds.has(item.id) ? "border-black/10 hover:bg-black/5 text-black" : "border-white/10 hover:bg-white/10")
@@ -1502,16 +1942,30 @@ const CreditItem = ({
                         startEditing(item.id);
                         setOpenSettingsId(null);
                       }}
-                      className="w-full text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-colors flex items-center justify-between text-white border-b border-white/10"
+                      className="w-full text-left px-4 py-3 text-[10px] font-semibold uppercase tracking-widest hover:bg-white hover:text-black transition-colors flex items-center justify-between text-white border-b border-white/10"
                     >
                       {translations[lang].editor.editTape}
                     </button>
+
+                    <button 
+                      onClick={() => {
+                        togglePairs(item.id);
+                      }}
+                      className={cn(
+                        "w-full text-left px-4 py-3 text-[10px] font-semibold uppercase tracking-widest transition-colors flex items-center justify-between border-b border-white/10",
+                        item.isPairs ? "bg-white text-black" : "text-white hover:bg-white hover:text-black"
+                      )}
+                    >
+                      {translations[lang].editor.pairsMode}
+                      {item.isPairs && <Check className="w-3.5 h-3.5" />}
+                    </button>
+
                     <button 
                       onClick={() => {
                         removeRole(item.id);
                         setOpenSettingsId(null);
                       }}
-                      className="w-full text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+                      className="w-full text-left px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-red-500 hover:bg-red-500 hover:text-white transition-colors"
                     >
                       {translations[lang].editor.deleteTape}
                     </button>
@@ -1526,13 +1980,15 @@ const CreditItem = ({
   );
 };
 
+
 export default function App() {
   const [view, setView] = useState<View>('hero');
 
   const [lang, setLang] = useState<Lang>(() => {
     try {
       const saved = localStorage.getItem('daftarkru_lang');
-      return (saved && saved !== 'undefined' ? saved : 'id') as Lang;
+      const langVal = (saved && saved.trim().toLowerCase() !== 'undefined' ? saved.trim() : 'id') as Lang;
+      return (langVal === 'en' || langVal === 'id') ? langVal : 'id';
     } catch (e) {
       return 'id';
     }
@@ -1579,7 +2035,7 @@ export default function App() {
   const [projectName, setProjectName] = useState(() => {
     try {
       const saved = localStorage.getItem('daftarkru_projectName');
-      return (saved && saved !== 'undefined') ? saved : 'UNTITLED_PROJECT';
+      return (saved && saved.trim().toLowerCase() !== 'undefined' && saved.trim() !== '') ? saved : 'UNTITLED_PROJECT';
     } catch (e) {
       return 'UNTITLED_PROJECT';
     }
@@ -1587,17 +2043,28 @@ export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [credits, setCredits] = useState<CreditEntry[]>(() => {
+    const defaultCredits = [
+      { id: '1', role: 'DIRECTOR', names: ['Afgan Al-fanany'] },
+      { id: '2', role: 'PRODUCED BY', names: ['Al-fanany', 'Afgan'] },
+    ];
     try {
-      const saved = localStorage.getItem('daftarkru_credits');
-      return (saved && saved !== 'undefined') ? JSON.parse(saved) : [
-        { id: '1', role: 'DIRECTOR', names: ['AFGAN AL-FANANY'] },
-        { id: '2', role: 'PRODUCED BY', names: ['AFGAN', 'AL-FANANY'] },
-      ];
+      const saved = localStorage.getItem('daftarkru_credits_v2');
+      if (saved && typeof saved === 'string' && 
+          saved.trim().toLowerCase() !== 'undefined' && 
+          saved.trim().toLowerCase() !== 'null' && 
+          saved.trim() !== '') {
+        try {
+          const parsed = JSON.parse(saved);
+          return Array.isArray(parsed) ? parsed : defaultCredits;
+        } catch (e) {
+          console.error("JSON parse error for credits:", e);
+          return defaultCredits;
+        }
+      }
+      return defaultCredits;
     } catch (e) {
-      return [
-        { id: '1', role: 'DIRECTOR', names: ['AFGAN AL-FANANY'] },
-        { id: '2', role: 'PRODUCED BY', names: ['AFGAN', 'AL-FANANY'] },
-      ];
+      console.error("Failed to parse credits from localStorage:", e);
+      return defaultCredits;
     }
   });
 
@@ -1625,13 +2092,37 @@ export default function App() {
       namesItalic: false,
       animationDuration: 4,
       showNoise: false,
+      noiseOpacity: 0.1,
       showScanlines: false,
       vignette: 0,
+      pairsGap: 80,
+      activePreset: 'default',
+      textShadowBlur: 0,
+      textShadowColor: '#000000',
+      textShadowOpacity: 0.5,
+      textOutline: false,
+      textOutlineWidth: 1,
+      textOutlineColor: '#000000',
+      letterSpacing: 0,
+      lut: 'none',
     };
     try {
       const saved = localStorage.getItem('daftarkru_settings');
-      return (saved && saved !== 'undefined') ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
+      if (saved && typeof saved === 'string' && 
+          saved.trim().toLowerCase() !== 'undefined' && 
+          saved.trim().toLowerCase() !== 'null' && 
+          saved.trim() !== '') {
+        try {
+          const parsed = JSON.parse(saved);
+          return { ...defaultSettings, ...(parsed && typeof parsed === 'object' ? parsed : {}) };
+        } catch (e) {
+          console.error("JSON parse error for settings:", e);
+          return defaultSettings;
+        }
+      }
+      return defaultSettings;
     } catch (e) {
+      console.error("Failed to parse settings from localStorage:", e);
       return defaultSettings;
     }
   });
@@ -1647,11 +2138,17 @@ export default function App() {
 
   // Initialize history after first render to ensure we capture the initial state correctly
   useEffect(() => {
-    if (history.length === 0) {
-      setHistory([{ 
-        credits: JSON.parse(JSON.stringify(credits)), 
-        settings: JSON.parse(JSON.stringify(settings)) 
-      }]);
+    if (history.length === 0 && credits && settings) {
+      try {
+        const creditsClone = JSON.parse(JSON.stringify(credits || []));
+        const settingsClone = JSON.parse(JSON.stringify(settings || {}));
+        setHistory([{ 
+          credits: creditsClone, 
+          settings: settingsClone 
+        }]);
+      } catch (e) {
+        console.error("Failed to initialize history:", e);
+      }
     }
   }, []);
 
@@ -1663,17 +2160,28 @@ export default function App() {
 
     const timer = setTimeout(() => {
       setHistory(prev => {
-        if (prev.length === 0) return prev;
+        if (!prev || prev.length === 0) return prev;
         const last = prev[prev.length - 1];
-        if (JSON.stringify(last.credits) === JSON.stringify(credits) && 
-            JSON.stringify(last.settings) === JSON.stringify(settings)) {
+        if (!last || !credits || !settings) return prev;
+        
+        try {
+          if (JSON.stringify(last.credits) === JSON.stringify(credits) && 
+              JSON.stringify(last.settings) === JSON.stringify(settings)) {
+            return prev;
+          }
+          
+          const creditsClone = JSON.parse(JSON.stringify(credits || []));
+          const settingsClone = JSON.parse(JSON.stringify(settings || {}));
+          
+          const updated = [...prev, { 
+            credits: creditsClone, 
+            settings: settingsClone
+          }];
+          return updated.slice(-50);
+        } catch (e) {
+          console.error("Failed to update history:", e);
           return prev;
         }
-        const updated = [...prev, { 
-          credits: JSON.parse(JSON.stringify(credits)), 
-          settings: JSON.stringify(settings) ? { ...settings } : { ...settings } // Fixed a potential bug here where settings was reassigned
-        }];
-        return updated.slice(-50);
       });
     }, 500);
 
@@ -1699,7 +2207,7 @@ export default function App() {
 
   // Persistence Effects
   useEffect(() => {
-    localStorage.setItem('daftarkru_credits', JSON.stringify(credits));
+    localStorage.setItem('daftarkru_credits_v2', JSON.stringify(credits));
   }, [credits]);
 
   useEffect(() => {
@@ -1715,17 +2223,187 @@ export default function App() {
   const [exportProgress, setExportProgress] = useState(0);
   const [previewScaleValue, setPreviewScale] = useState(1);
   const [fadeIndex, setFadeIndex] = useState(0);
+  const [isAutoPlay, setIsAutoPlay] = useState(true);
+  const [customFonts, setCustomFonts] = useState<{ name: string, url: string, value: string }[]>(() => {
+    try {
+      const saved = localStorage.getItem('daftarkru_customFonts');
+      if (saved && typeof saved === 'string' &&
+          saved.trim().toLowerCase() !== 'undefined' &&
+          saved.trim().toLowerCase() !== 'null' &&
+          saved.trim() !== '') {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.error("JSON parse error for custom fonts:", e);
+          localStorage.removeItem('daftarkru_customFonts');
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load custom fonts:", e);
+      localStorage.removeItem('daftarkru_customFonts');
+    }
+    return [];
+  });
+
+  // Effect to manage custom font styles and persistence
+  useEffect(() => {
+    const styleId = 'custom-fonts-style-container';
+    let style = document.getElementById(styleId) as HTMLStyleElement;
+    if (!style) {
+      style = document.createElement('style');
+      style.id = styleId;
+      document.head.appendChild(style);
+    }
+    
+    if (customFonts.length > 0) {
+      const fontFaces = customFonts.map(font => `
+        @font-face {
+          font-family: '${font.value}';
+          src: url('${font.url}');
+          font-display: swap;
+        }
+      `).join('\n');
+      style.textContent = fontFaces;
+      
+      // Persist to localStorage (limit to 5 fonts to avoid quota exceeded)
+      try {
+        const fontsToSave = customFonts.slice(-5);
+        localStorage.setItem('daftarkru_customFonts', JSON.stringify(fontsToSave));
+      } catch (e) {
+        console.warn("Failed to persist fonts to localStorage (probably quota exceeded):", e);
+      }
+    } else {
+      style.textContent = '';
+    }
+  }, [customFonts]);
+
+  const handleDeleteFont = (e: React.MouseEvent, fontValue: string) => {
+    e.stopPropagation();
+    setCustomFonts((prev) => prev.filter((f) => f.value !== fontValue));
+    if (settings.fontFamily === fontValue) {
+      setSettings((prev: any) => ({ ...prev, fontFamily: 'Inter' }));
+    }
+  };
+
+  const handleFontUpload = (e: React.ChangeEvent<HTMLInputElement>, fileInputRef: React.RefObject<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      console.log("No file selected");
+      return;
+    }
+
+    console.log("Started font upload process for:", file.name, "size:", (file.size / 1024).toFixed(2), "KB");
+
+    // Filter by type
+    if (!file.name.match(/\.(ttf|otf|woff|woff2)$/i)) {
+      alert("Format font tidak didukung. Gunakan .ttf, .otf, atau .woff");
+      return;
+    }
+
+    // Size check (max 2MB for browser stability and localStorage)
+    if (file.size > 2 * 1024 * 1024) {
+      alert("File font terlalu besar (Maksimal 2MB)");
+      return;
+    }
+
+    const reader = new FileReader();
+    
+    reader.onprogress = (data) => {
+      if (data.lengthComputable) {
+        const progress = (data.loaded / data.total) * 100;
+        console.log(`Font upload progress: ${progress.toFixed(2)}%`);
+      }
+    };
+
+    reader.onload = async (event) => {
+      console.log("FileReader finished reading file");
+      const result = event.target?.result as string;
+      if (!result) {
+        console.error("FileReader result is empty");
+        return;
+      }
+
+      const fontId = 'font-' + Date.now();
+      const fontNameRaw = file.name.split('.')[0].replace(/[^a-zA-Z0-9]/g, '');
+      const fontNameValue = `custom-${fontNameRaw || fontId}`;
+      const fontDisplayName = file.name.split('.')[0].toUpperCase();
+      
+      const newFont = {
+        name: fontDisplayName,
+        value: fontNameValue,
+        url: result
+      };
+
+      try {
+        console.log("Attempting to register font:", fontNameValue);
+        
+        // Use FontFace API for immediate browser recognition if available
+        if (typeof FontFace !== 'undefined') {
+          try {
+            const fontFace = new FontFace(fontNameValue, `url(${result})`);
+            await fontFace.load();
+            document.fonts.add(fontFace);
+            console.log("FontFace API: Font loaded and added successfully");
+          } catch (ffErr) {
+            console.warn("FontFace API failed, falling back to CSS injection:", ffErr);
+          }
+        }
+
+        // Update state and immediately apply
+        setCustomFonts((prev) => {
+          const exists = prev.some(f => f.value === fontNameValue);
+          let next;
+          if (exists) {
+            next = prev.map(f => f.value === fontNameValue ? newFont : f);
+          } else {
+            next = [...prev, newFont].slice(-5); // Keep only last 5
+          }
+          console.log("State setCustomFonts updated, new count:", next.length);
+          return next;
+        });
+        
+        setSettings((prev: any) => ({ ...prev, fontFamily: fontNameValue }));
+        
+        alert(`Berhasil! Font "${fontDisplayName}" telah ditambahkan dan diaplikasikan.`);
+        console.log("Font successfully added and applied:", fontDisplayName);
+      } catch (err) {
+        console.error("Critical error during font processing:", err);
+        alert("Gagal memproses font. Silakan coba file lain.");
+      }
+      
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    reader.onerror = (err) => {
+      console.error("FileReader error:", err);
+      alert("Gagal membaca file font.");
+    };
+
+    reader.readAsDataURL(file);
+  };
 
   // Timer for fade/zoom/blur/slide/glitch in preview
   useEffect(() => {
-    if (settings.animationType === 'scroll' || credits.length === 0) return;
+    if (settings.animationType === 'scroll' || credits.length === 0 || !isAutoPlay) return;
 
     const interval = setInterval(() => {
       setFadeIndex(prev => (prev + 1) % credits.length);
     }, settings.animationDuration * 1000); 
 
     return () => clearInterval(interval);
-  }, [settings.animationType, settings.animationDuration, credits.length]);
+  }, [settings.animationType, settings.animationDuration, credits.length, isAutoPlay]);
+
+  // Real-time slider sync for scroll animation
+  useEffect(() => {
+    if (settings.animationType !== 'scroll' || !isAutoPlay) return;
+
+    const duration = Math.max(5, settings.animationDuration * 4);
+    const interval = setInterval(() => {
+      setFadeIndex(prev => (prev + 2) % 1000);
+    }, (duration * 1000) / 500); // Approximate sync
+
+    return () => clearInterval(interval);
+  }, [settings.animationType, settings.animationDuration, isAutoPlay]);
 
   const isMobileDevice = typeof navigator !== 'undefined' ? /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) : false;
   
@@ -1745,7 +2423,11 @@ export default function App() {
     if (editingId) {
       const updated = credits.map(c => 
         c.id === editingId 
-          ? { ...c, role: newRole.toUpperCase(), names: newNames.split('\n').filter(n => n.trim() !== '').map(n => n.trim().toUpperCase()) } 
+          ? { 
+              ...c, 
+              role: newRole, 
+              names: newNames.split('\n').filter(n => n.trim() !== '').map(n => n.trim())
+            } 
           : c
       );
       setCredits(updated);
@@ -1753,8 +2435,8 @@ export default function App() {
     } else {
       const entry: CreditEntry = {
         id: Date.now().toString(),
-        role: newRole.toUpperCase(),
-        names: newNames.split('\n').filter(n => n.trim() !== '').map(n => n.trim().toUpperCase())
+        role: newRole,
+        names: newNames.split('\n').filter(n => n.trim() !== '').map(n => n.trim())
       };
       const updated = [...credits, entry];
       setCredits(updated);
@@ -1768,7 +2450,7 @@ export default function App() {
     const tape = credits.find(c => c.id === id);
     if (tape) {
       setNewRole(tape.role);
-      setNewNames(tape.names.join('\n'));
+      setNewNames((tape.names || []).join('\n'));
       setEditingId(id);
       setOpenSettingsId(null);
     }
@@ -1828,6 +2510,12 @@ export default function App() {
     }
   };
 
+  const togglePairs = (id: string) => {
+    setCredits(prev => prev.map(item => 
+      item.id === id ? { ...item, isPairs: !item.isPairs } : item
+    ));
+  };
+
 
   useEffect(() => {
     if (!previewRef.current) return;
@@ -1845,17 +2533,6 @@ export default function App() {
     observer.observe(previewRef.current);
     return () => observer.disconnect();
   }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        undo();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [history]);
 
    const recordVideo = async () => {
     if (!previewRef.current || !scrollRef.current) {
@@ -1986,11 +2663,11 @@ export default function App() {
       const { toPng } = await import('html-to-image');
       
       const commonOptions = {
-        backgroundColor: settings.transparentBg ? 'transparent' : settings.bgColor,
+        backgroundColor: settings.transparentBg ? null : settings.bgColor,
         pixelRatio: 1,
         width: canvasWidth,
         height: scrollHeight,
-        cacheBust: true, // Try setting to true to force reload
+        cacheBust: true, 
         skipFonts: false,
         style: {
           transform: 'none',
@@ -2005,19 +2682,40 @@ export default function App() {
           maxWidth: `${canvasWidth}px`,
           minWidth: `${canvasWidth}px`,
           imageRendering: 'auto',
-          fontFamily: `'${settings.fontFamily}', sans-serif` // Force target font
+          background: settings.transparentBg ? 'transparent' : settings.bgColor,
+          fontFamily: `'${settings.fontFamily}', sans-serif`,
+          filter: settings.lut === 'noir' ? 'grayscale(1) contrast(1.2)' :
+                  settings.lut === 'sepia' ? 'sepia(0.8) contrast(1.1)' :
+                  settings.lut === 'cold' ? 'saturate(0.6) hue-rotate(20deg) brightness(0.9) sepia(0.2)' :
+                  settings.lut === 'warm' ? 'saturate(1.4) hue-rotate(-10deg) brightness(1.05)' :
+                  settings.lut === 'mute' ? 'saturate(0.2) contrast(0.9)' : 'none'
         },
         // Filter to avoid crashing on cross-origin stylesheets that don't have CORS headers
         filter: (node: any) => {
           if (node.tagName === 'LINK' || node.tagName === 'STYLE') {
             try {
+              const sheet = (node as any).sheet as CSSStyleSheet;
+              if (!sheet) return false;
+              
+              // If it's a link, check if it's cross-origin and if it has crossorigin attribute
+              if (node.tagName === 'LINK') {
+                const href = node.getAttribute('href');
+                if (href && !href.startsWith(window.location.origin) && !href.startsWith('/')) {
+                   // It's external. If it doesn't have crossorigin, we can't read its rules safely.
+                   if (node.getAttribute('crossorigin') === null) {
+                     return false;
+                   }
+                }
+              }
+
               // Test if we can read the rules
               try {
-                if (node.sheet && node.sheet.cssRules) return true;
+                const rules = sheet.cssRules;
+                return !!rules;
               } catch (e) {
                 // Ignore cross-origin stylesheet errors
+                return false;
               }
-              return false;
             } catch (e) {
               return false;
             }
@@ -2125,24 +2823,24 @@ export default function App() {
 
         // Overlay effects in export
         if (settings.showNoise) {
-          ctx.fillStyle = 'rgba(255,255,255,0.05)';
-          for (let i = 0; i < 1000; i++) {
+          ctx.fillStyle = `rgba(255,255,255,${settings.noiseOpacity * 0.4})`;
+          for (let i = 0; i < 6000; i++) {
             ctx.fillRect(Math.random() * canvasWidth, Math.random() * canvasHeight, 1, 1);
           }
         }
         if (settings.showScanlines) {
           ctx.fillStyle = 'rgba(0,0,0,0.1)';
           for (let i = 0; i < canvasHeight; i += 4) {
-            ctx.fillRect(0, i, canvasWidth, 1);
+             ctx.fillRect(0, i, canvasWidth, 1);
           }
         }
         if (settings.vignette > 0) {
           const gradient = ctx.createRadialGradient(
             canvasWidth / 2, canvasHeight / 2, 0,
-            canvasWidth / 2, canvasHeight / 2, Math.max(canvasWidth, canvasHeight) / 1.2
+            canvasWidth / 2, canvasHeight / 2, Math.max(canvasWidth, canvasHeight) / 1.1
           );
           gradient.addColorStop(0, 'transparent');
-          gradient.addColorStop(1, `rgba(0,0,0,${settings.vignette * 0.8})`);
+          gradient.addColorStop(1, `rgba(0,0,0,${settings.vignette * 0.95})`);
           ctx.fillStyle = gradient;
           ctx.fillRect(0, 0, canvasWidth, canvasHeight);
         }
@@ -2204,6 +2902,34 @@ export default function App() {
       setExportProgress(0);
     }
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        undo();
+      }
+      
+      // Don't trigger shortcuts if user is typing in an input or textarea
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setIsAutoPlay(prev => !prev);
+      } else if (e.code === 'ArrowRight') {
+        setFadeIndex(prev => (prev + 1) % Math.max(1, credits.length));
+        setIsAutoPlay(false);
+      } else if (e.code === 'ArrowLeft') {
+        setFadeIndex(prev => (prev - 1 + Math.max(1, credits.length)) % Math.max(1, credits.length));
+        setIsAutoPlay(false);
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        recordVideo();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [history, isAutoPlay, credits.length, recordVideo]);
 
   const [tagTextIndex, setTagTextIndex] = useState(0);
   const tagTexts = [
@@ -2372,13 +3098,13 @@ export default function App() {
             <FAQSection lang={lang} />
 
             <footer className="py-20 border-t border-white/5 bg-black flex flex-col items-center justify-center space-y-8">
-               <div className="text-xl sm:text-2xl font-black uppercase tracking-tighter">DaftarKru Engine</div>
-               <div className="flex gap-8 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+               <div className="text-xl sm:text-2xl font-bold uppercase tracking-tighter">DaftarKru Engine</div>
+               <div className="flex gap-8 text-[10px] font-semibold text-zinc-500 uppercase tracking-widest">
                   <a href="#" className="hover:text-white">Twitter</a>
                   <a href="#" className="hover:text-white">Instagram</a>
                   <a href="#" className="hover:text-white">GitHub</a>
                </div>
-               <div className="text-[8px] sm:text-[10px] font-bold text-zinc-700 uppercase tracking-[0.5em]">
+               <div className="text-[8px] sm:text-[10px] font-semibold text-zinc-700 uppercase tracking-[0.5em]">
                   COPYRIGHT DAFTARKRU 2026
                </div>
             </footer>
@@ -2396,7 +3122,7 @@ export default function App() {
                 className="flex flex-col cursor-pointer group"
                 onClick={() => setView('hero')}
               >
-                <h1 className="text-xl md:text-2xl font-black tracking-tighter uppercase leading-none group-hover:text-zinc-500 transition-colors">
+                <h1 className="text-xl md:text-2xl font-bold tracking-tighter uppercase leading-none group-hover:text-zinc-500 transition-colors">
                   DaftarKru
                 </h1>
                 <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1 hidden sm:block">
@@ -2412,7 +3138,7 @@ export default function App() {
                   title="Undo (Ctrl+Z)"
                 >
                   <Undo2 className="w-4 h-4 md:w-5 md:h-5" />
-                  <span className="text-[10px] font-black uppercase tracking-widest hidden sm:block">Undo</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:block">Undo</span>
                 </button>
                 <button 
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -2444,9 +3170,13 @@ export default function App() {
                     className="fixed top-0 right-0 h-full w-full sm:w-80 bg-black border-l border-white z-[310] p-6 md:p-8 flex flex-col"
                   >
                     <div className="flex items-center justify-between mb-12">
-                      <h2 className="text-sm font-black uppercase tracking-widest">{translations[lang].editor.projectOptions}</h2>
-                      <button onClick={() => setIsMenuOpen(false)} className="hover:rotate-10 transition-transform">
-                        <X className="w-6 h-6 border border-white p-1" />
+                      <h2 className="text-sm font-bold uppercase tracking-widest">{translations[lang].editor.projectOptions}</h2>
+                      <button 
+                        onClick={() => setIsMenuOpen(false)} 
+                        className="group relative flex items-center justify-center w-10 h-10 rounded-none border border-white/10 bg-white/5 hover:bg-white/10 transition-all duration-300"
+                      >
+                        <X className="w-5 h-5 text-white transition-transform duration-500 group-hover:rotate-180" />
+                        <div className="absolute inset-0 rounded-none bg-white/10 blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
                       </button>
                     </div>
                     
@@ -2470,7 +3200,7 @@ export default function App() {
                                   }, 500);
                                   setIsMenuOpen(false);
                                 }}
-                                className="block w-full text-left py-4 text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-white transition-colors border-b border-white/5"
+                                className="block w-full text-left py-4 text-xs font-semibold uppercase tracking-widest text-zinc-400 hover:text-white transition-colors border-b border-white/5"
                               >
                                 {translations[lang].nav[item as keyof typeof translations.id.nav]}
                               </button>
@@ -2478,13 +3208,13 @@ export default function App() {
                         </div>
 
                         <div className="space-y-3">
-                          <label className="text-[10px] uppercase font-bold tracking-widest text-zinc-500">{translations[lang].editor.projectName}</label>
+                          <label className="text-[10px] uppercase font-semibold tracking-widest text-zinc-500">{translations[lang].editor.projectName}</label>
                           <div className="flex gap-2">
                             <input 
                               type="text" 
                               value={projectName}
-                              onChange={(e) => setProjectName(e.target.value.toUpperCase())}
-                              className="flex-1 bg-black border border-white p-4 text-sm font-mono uppercase focus:outline-none focus:ring-1 focus:ring-white transition-all rounded-none"
+                              onChange={(e) => setProjectName(e.target.value)}
+                              className="flex-1 bg-black border border-white p-4 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-white transition-all rounded-none"
                               placeholder="PROJECT_MASTER"
                             />
                             <button 
@@ -2504,14 +3234,14 @@ export default function App() {
                         </div>
 
                         <div className="pt-6 border-t border-white/10">
-                          <label className="text-[10px] uppercase font-bold tracking-widest text-zinc-500 mb-2 block">{translations[lang].langToggles.switch}</label>
+                          <label className="text-[10px] uppercase font-semibold tracking-widest text-zinc-500 mb-2 block">{translations[lang].langToggles.switch}</label>
                           <div className="flex items-center gap-1 border border-white/10 p-1 rounded-none bg-white/[0.03]">
                             {(['id', 'en'] as Lang[]).map((l) => (
                               <button
                                 key={l}
                                 onClick={() => setLang(l)}
                                 className={cn(
-                                  "flex-1 px-3 py-1.5 text-[9px] font-black transition-all rounded-none",
+                                  "flex-1 px-3 py-1.5 text-[9px] font-bold transition-all rounded-none",
                                   lang === l 
                                     ? "bg-white text-black" 
                                     : "text-zinc-500 hover:text-white"
@@ -2527,7 +3257,7 @@ export default function App() {
                       <div className="mt-auto">
                         <button 
                           onClick={() => { setView('hero'); setIsMenuOpen(false); }}
-                          className="w-full bg-white text-black p-4 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-zinc-200 transition-all rounded-none"
+                          className="w-full bg-white text-black p-4 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-zinc-200 transition-all rounded-none"
                         >
                           <Home className="w-4 h-4" />
                           {translations[lang].editor.backHome}
@@ -2555,26 +3285,26 @@ export default function App() {
                       className="max-w-xl w-full space-y-12 relative z-10"
                     >
                       <div className="space-y-4">
-                        <h2 className="text-4xl sm:text-5xl font-black uppercase tracking-[0.4em] text-white">
+                        <h2 className="text-4xl sm:text-5xl font-bold uppercase tracking-[0.4em] text-white">
                           {translations[lang].editor.rendering}
                         </h2>
-                        <p className="text-[10px] uppercase tracking-[0.5em] text-zinc-500 font-bold max-w-sm mx-auto leading-relaxed">
+                        <p className="text-[10px] uppercase tracking-[0.5em] text-zinc-500 font-medium max-w-sm mx-auto leading-relaxed">
                           {translations[lang].editor.generatingFrames} <span className="text-white">{projectName}</span>
                         </p>
                       </div>
 
                       <div className="relative py-16 flex flex-col items-center">
-                        <div className="text-[8rem] sm:text-[10rem] font-black tabular-nums tracking-tighter text-white opacity-[0.02] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 select-none">
+                        <div className="text-[8rem] sm:text-[10rem] font-bold tabular-nums tracking-tighter text-white opacity-[0.02] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 select-none">
                           {exportProgress}%
                         </div>
                         
                         <div className="w-full space-y-6 relative z-10">
                           <div className="flex justify-between items-end">
-                             <div className="text-[9px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                             <div className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
                                <div className="w-2 h-2 bg-white animate-pulse" />
                                <span>{translations[lang].editor.processing}</span>
                              </div>
-                             <div className="text-2xl font-mono font-black text-white">{exportProgress}%</div>
+                             <div className="text-2xl font-mono font-bold text-white">{exportProgress}%</div>
                           </div>
                           <div className="h-[2px] w-full bg-white/5 relative overflow-hidden">
                              <motion.div 
@@ -2588,16 +3318,16 @@ export default function App() {
 
                       <div className="grid grid-cols-3 gap-8 pt-12 border-t border-white/5">
                         <div className="space-y-2">
-                          <div className="text-[8px] uppercase tracking-widest text-zinc-600 font-black">Resolution</div>
-                          <div className="text-[10px] font-mono font-bold">1920 X 1080</div>
+                          <div className="text-[8px] uppercase tracking-widest text-zinc-600 font-bold">Resolution</div>
+                          <div className="text-[10px] font-mono font-medium">1920 X 1080</div>
                         </div>
                         <div className="space-y-2">
-                          <div className="text-[8px] uppercase tracking-widest text-zinc-600 font-black">Framerate</div>
-                          <div className="text-[10px] font-mono font-bold">60 FPS</div>
+                          <div className="text-[8px] uppercase tracking-widest text-zinc-600 font-bold">Framerate</div>
+                          <div className="text-[10px] font-mono font-medium">60 FPS</div>
                         </div>
                         <div className="space-y-2">
-                          <div className="text-[8px] uppercase tracking-widest text-zinc-600 font-black">Format</div>
-                          <div className="text-[10px] font-mono font-bold">WEBM / VP9</div>
+                          <div className="text-[8px] uppercase tracking-widest text-zinc-600 font-bold">Format</div>
+                          <div className="text-[10px] font-mono font-medium">WEBM / VP9</div>
                         </div>
                       </div>
                     </motion.div>
@@ -2610,7 +3340,7 @@ export default function App() {
                 {/* Management Section */}
                 <div className="space-y-6 credit-input">
                   <div className="flex items-center justify-between border-b border-white pb-3">
-                    <h2 className="text-[11px] font-black uppercase tracking-[0.4em]">{translations[lang].editor.creditInput}</h2>
+                    <h2 className="text-[11px] font-bold uppercase tracking-[0.4em]">{translations[lang].editor.creditInput}</h2>
                   </div>
                   <div className="space-y-3">
                     <input 
@@ -2618,13 +3348,13 @@ export default function App() {
                       value={newRole}
                       onChange={(e) => setNewRole(e.target.value)}
                       placeholder={translations[lang].editor.rolePlaceholder}
-                      className="w-full bg-black border border-white p-4 text-xs font-bold uppercase focus:outline-none focus:ring-1 focus:ring-white rounded-none placeholder:text-zinc-700 font-mono"
+                      className="w-full bg-black border border-white p-4 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-white rounded-none placeholder:text-zinc-700 font-mono"
                     />
                     <textarea 
                       value={newNames}
                       onChange={(e) => setNewNames(e.target.value)}
                       placeholder={translations[lang].editor.namesPlaceholder}
-                      className="w-full h-32 bg-black border border-white p-4 text-xs font-bold uppercase focus:outline-none focus:ring-1 focus:ring-white rounded-none resize-none placeholder:text-zinc-700 font-mono"
+                      className="w-full h-32 bg-black border border-white p-4 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-white rounded-none resize-none placeholder:text-zinc-700 font-mono"
                     />
                     <button 
                       onClick={addRole}
@@ -2644,10 +3374,11 @@ export default function App() {
                   </div>
                 </div>
 
+
                 {/* Tape List Section */}
                 <div className="space-y-6">
                   <div className="flex items-center justify-between border-b border-white pb-3">
-                    <h2 className="text-[11px] font-black uppercase tracking-[0.4em]">{translations[lang].editor.tapeList}</h2>
+                    <h2 className="text-[11px] font-bold uppercase tracking-[0.4em]">{translations[lang].editor.tapeList}</h2>
                     <div className="flex gap-4">
                       {selectedIds.size > 0 && (
                         <button 
@@ -2684,6 +3415,7 @@ export default function App() {
                         setOpenSettingsId={setOpenSettingsId}
                         startEditing={startEditing}
                         removeRole={removeRole}
+                        togglePairs={togglePairs}
                         lang={lang}
                       />
                     ))}
@@ -2697,14 +3429,19 @@ export default function App() {
                 <div className="space-y-12 lg:hidden">
                   <div className="space-y-6">
                     <div className="flex items-center justify-between border-b border-white pb-2">
-                      <h2 className="text-[10px] font-black uppercase tracking-[0.3em]">{translations[lang].editor.visualConsole}</h2>
+                      <h2 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white">{translations[lang].editor.visualConsole}</h2>
                     </div>
                     <ConsoleContent 
                       settings={settings} 
                       setSettings={setSettings} 
                       activeConsole={activeConsole} 
                       setActiveConsole={setActiveConsole}
+                      setFadeIndex={setFadeIndex}
+                      customFonts={customFonts}
+                      setCustomFonts={setCustomFonts}
                       lang={lang}
+                      onFontUpload={handleFontUpload}
+                      onDeleteFont={handleDeleteFont}
                     />
                   </div>
 
@@ -2717,11 +3454,12 @@ export default function App() {
                     <button 
                       onClick={recordVideo}
                       disabled={isExporting}
-                      className="w-full bg-white text-black border border-white py-4 text-[12px] font-black uppercase tracking-[0.3em] hover:bg-black hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-20 rounded-none shadow-[8px_8px_0px_rgba(255,255,255,0.05)] active:scale-[0.98]"
+                      className="w-full bg-white text-black border border-white py-4 text-[12px] font-bold uppercase tracking-[0.3em] hover:bg-black hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-20 rounded-none shadow-[8px_8px_0px_rgba(255,255,255,0.05)] active:scale-[0.98]"
                     >
                       {isExporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Film className="w-5 h-5" />}
                       {isExporting ? `${translations[lang].editor.rendering} ${exportProgress}%` : translations[lang].editor.renderExport}
                     </button>
+                    <div className="mt-2 text-[8px] text-zinc-600 uppercase tracking-widest text-center hidden sm:block">Shortcut: Space (Play/Pause) • Arrows (Skip) • Ctrl+S (Export)</div>
                   </div>
                 </div>
               </aside>
@@ -2750,6 +3488,49 @@ export default function App() {
                       </button>
                     </div>
 
+                    {/* Seeker Slider */}
+                    {credits.length > 0 && (
+                      <div className="absolute bottom-4 left-4 right-4 flex items-center gap-4 z-[70] bg-black/40 backdrop-blur-md border border-white/10 p-3 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+                        <button 
+                          onClick={() => setIsAutoPlay(!isAutoPlay)}
+                          className="w-8 h-8 flex items-center justify-center hover:bg-white hover:text-black transition-all rounded-none bg-black/40 border border-white/10"
+                        >
+                          {isAutoPlay ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
+                        </button>
+                        
+                        <div className="flex-1 flex flex-col gap-1">
+                          <input 
+                            type="range"
+                            min="0"
+                            max={settings.animationType === 'scroll' ? 1000 : Math.max(0, credits.length - 1)}
+                            value={settings.animationType === 'scroll' ? fadeIndex : (fadeIndex % Math.max(1, credits.length))}
+                            onChange={(e) => {
+                              setFadeIndex(parseInt(e.target.value));
+                              setIsAutoPlay(false);
+                            }}
+                            className="w-full h-1 bg-white/20 appearance-none cursor-pointer accent-white hover:accent-zinc-300 transition-all rounded-none"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className="text-[10px] font-mono tabular-nums text-white/60 min-w-[60px] text-center bg-black/40 px-2 py-1 border border-white/5">
+                            {settings.animationType === 'scroll' ? `${Math.round((fadeIndex / 1000) * 100)}%` : `${(fadeIndex % credits.length) + 1} / ${credits.length}`}
+                          </div>
+                          
+                          <button 
+                            onClick={() => {
+                              setFadeIndex(0);
+                              setIsAutoPlay(true);
+                            }}
+                            className="p-1 text-white/40 hover:text-white transition-colors"
+                            title="Reset"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     <div 
                       ref={previewRef}
                       className="absolute inset-0 overflow-hidden flex items-center justify-center"
@@ -2770,6 +3551,21 @@ export default function App() {
                         )}
                       
                         {/* Credits Container */}
+                        {/* LUT / Color Filter */}
+                        {settings.lut !== 'none' && (
+                          <div 
+                            className="absolute inset-0 pointer-events-none z-[60]" 
+                            style={{ 
+                              mixBlendMode: 'overlay',
+                              backdropFilter: settings.lut === 'noir' ? 'grayscale(1) contrast(1.2)' :
+                                              settings.lut === 'sepia' ? 'sepia(0.8) contrast(1.1)' :
+                                              settings.lut === 'cold' ? 'saturate(0.6) hue-rotate(20deg) brightness(0.9) sepia(0.2)' :
+                                              settings.lut === 'warm' ? 'saturate(1.4) hue-rotate(-10deg) brightness(1.05)' :
+                                              settings.lut === 'mute' ? 'saturate(0.2) contrast(0.9)' : 'none'
+                            }} 
+                          />
+                        )}
+
                         <div 
                           ref={scrollRef}
                           className={cn(
@@ -2777,15 +3573,18 @@ export default function App() {
                             settings.animationType !== 'scroll' ? "opacity-0 pointer-events-none" : "",
                             settings.direction
                           )}
+                          key={settings.animationType + (isAutoPlay ? 'play' : `pause-${fadeIndex}`)}
                           style={{
                             fontFamily: `'${settings.fontFamily}', sans-serif`,
                             textAlign: 'center',
                             left: `50%`,
                             top: 0,
                             animationName: settings.animationType === 'scroll' ? `scroll-${settings.direction}` : 'none',
-                            animationDuration: `30s`,
+                            animationDuration: `${Math.max(5, settings.animationDuration * 4)}s`,
                             animationTimingFunction: 'linear',
                             animationIterationCount: 'infinite',
+                            animationPlayState: isAutoPlay ? 'running' : 'paused',
+                            animationDelay: settings.animationType === 'scroll' && !isAutoPlay ? `-${(fadeIndex / 1000) * Math.max(5, settings.animationDuration * 4)}s` : '0s',
                             width: `100%`,
                             maxWidth: `${DESIGN_BASE_WIDTH}px`,
                             transform: `translate(-50%, 1080px)`,
@@ -2796,52 +3595,119 @@ export default function App() {
                               {credits.length === 0 ? (
                                 <div className="text-center text-white/5 uppercase tracking-[1em] text-[20px] py-40 font-black">{translations[lang].editor.designBase}</div>
                               ) : (
-                                credits.map((item) => (
-                                  <div 
-                                    key={item.id} 
-                                    className="credit-block w-full flex flex-col items-center"
-                                  >
+                                <>
+                                  {credits.map((item) => (
                                     <div 
-                                      className="w-full flex flex-col items-center"
-                                      style={{ 
-                                        textAlign: 'center',
-                                        maxWidth: `80%`,
-                                      }}
+                                      key={item.id} 
+                                      className="credit-block w-full"
                                     >
-                                      <div 
-                                        className="role-text uppercase tracking-[0.8em] w-full break-words"
-                                        style={{ 
-                                          fontSize: `${settings.roleFontSize}px`,
-                                          marginBottom: `${settings.roleNameGap}px`,
-                                          color: settings.roleColor,
-                                          opacity: settings.roleOpacity,
-                                          fontWeight: settings.roleBold ? 900 : 500,
-                                          fontStyle: settings.roleItalic ? 'italic' : 'normal',
-                                          textAlign: 'center',
-                                        }}
-                                      >
-                                        {item.role}
-                                      </div>
-                                      <div 
-                                        className="names-text leading-tight tracking-[0.5em] uppercase w-full flex flex-col items-center"
-                                        style={{ 
-                                          fontSize: `${settings.fontSize}px`,
-                                          lineHeight: settings.lineHeight,
-                                          gap: `${settings.namesGap}px`,
-                                          color: settings.namesColor,
-                                          opacity: settings.namesOpacity,
-                                          fontWeight: settings.namesBold ? 700 : 500,
-                                          fontStyle: settings.namesItalic ? 'italic' : 'normal',
-                                          textAlign: 'center',
-                                        }}
-                                      >
-                                        {item.names.map((name, i) => (
-                                          <div key={i} className="break-words w-full" style={{ textAlign: 'center' }}>{name}</div>
-                                        ))}
-                                      </div>
+                                      {item.isPairs ? (
+                                        <div className="flex justify-center items-start">
+                                          <div className="flex justify-center items-start" style={{ gap: `${settings.pairsGap}px` }}>
+                                            <div className="text-right">
+                                              <div 
+                                                className="role-text tracking-[0.8em] break-words"
+                                                style={{ 
+                                                  fontSize: `${settings.roleFontSize}px`,
+                                                  color: settings.roleColor,
+                                                  opacity: settings.roleOpacity,
+                                                  fontWeight: settings.roleBold ? 900 : 500,
+                                                  fontStyle: settings.roleItalic ? 'italic' : 'normal',
+                                                  letterSpacing: `${settings.letterSpacing}px`,
+                                                  textShadow: settings.textShadowBlur > 0 ? `0 0 ${settings.textShadowBlur}px ${settings.textShadowColor}${Math.round(settings.textShadowOpacity * 255).toString(16).padStart(2, '0')}` : 'none',
+                                                  WebkitTextStroke: settings.textOutline ? `${settings.textOutlineWidth}px ${settings.textOutlineColor}` : 'none',
+                                                  textAlign: 'right',
+                                                  paddingTop: `${(settings.lineHeight * settings.fontSize - settings.roleFontSize) / 2}px`
+                                                }}
+                                              >
+                                                {item.role}
+                                              </div>
+                                            </div>
+                                            <div className="text-left">
+                                              <div 
+                                                className="names-text leading-tight tracking-[0.5em] flex flex-col items-start"
+                                                style={{ 
+                                                  fontSize: `${settings.fontSize}px`,
+                                                  lineHeight: settings.lineHeight,
+                                                  gap: `${settings.namesGap}px`,
+                                                  color: settings.namesColor,
+                                                  opacity: settings.namesOpacity,
+                                                  fontWeight: settings.namesBold ? 700 : 500,
+                                                  fontStyle: settings.namesItalic ? 'italic' : 'normal',
+                                                  letterSpacing: `${settings.letterSpacing}px`,
+                                                  textShadow: settings.textShadowBlur > 0 ? `0 0 ${settings.textShadowBlur}px ${settings.textShadowColor}${Math.round(settings.textShadowOpacity * 255).toString(16).padStart(2, '0')}` : 'none',
+                                                  WebkitTextStroke: settings.textOutline ? `${settings.textOutlineWidth}px ${settings.textOutlineColor}` : 'none',
+                                                  textAlign: 'left',
+                                                }}
+                                              >
+                                                {(item.names || []).map((name, i) => (
+                                                  <div 
+                                                    key={i} 
+                                                    className="break-words text-left" 
+                                                  >
+                                                    {name}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div 
+                                          className="w-full flex flex-col items-center"
+                                          style={{ 
+                                            textAlign: 'center',
+                                            maxWidth: `80%`,
+                                            margin: '0 auto'
+                                          }}
+                                        >
+                                          <div 
+                                            className="role-text tracking-[0.8em] w-full break-words"
+                                            style={{ 
+                                              fontSize: `${settings.roleFontSize}px`,
+                                              marginBottom: `${settings.roleNameGap}px`,
+                                              color: settings.roleColor,
+                                              opacity: settings.roleOpacity,
+                                              fontWeight: settings.roleBold ? 900 : 500,
+                                              fontStyle: settings.roleItalic ? 'italic' : 'normal',
+                                              letterSpacing: `${settings.letterSpacing}px`,
+                                              textShadow: settings.textShadowBlur > 0 ? `0 0 ${settings.textShadowBlur}px ${settings.textShadowColor}${Math.round(settings.textShadowOpacity * 255).toString(16).padStart(2, '0')}` : 'none',
+                                              WebkitTextStroke: settings.textOutline ? `${settings.textOutlineWidth}px ${settings.textOutlineColor}` : 'none',
+                                              textAlign: 'center',
+                                            }}
+                                          >
+                                            {item.role}
+                                          </div>
+                                          <div 
+                                            className="names-text leading-tight tracking-[0.5em] w-full flex flex-col items-center"
+                                            style={{ 
+                                              fontSize: `${settings.fontSize}px`,
+                                              lineHeight: settings.lineHeight,
+                                              gap: `${settings.namesGap}px`,
+                                              color: settings.namesColor,
+                                              opacity: settings.namesOpacity,
+                                              fontWeight: settings.namesBold ? 700 : 500,
+                                              fontStyle: settings.namesItalic ? 'italic' : 'normal',
+                                              letterSpacing: `${settings.letterSpacing}px`,
+                                              textShadow: settings.textShadowBlur > 0 ? `0 0 ${settings.textShadowBlur}px ${settings.textShadowColor}${Math.round(settings.textShadowOpacity * 255).toString(16).padStart(2, '0')}` : 'none',
+                                              WebkitTextStroke: settings.textOutline ? `${settings.textOutlineWidth}px ${settings.textOutlineColor}` : 'none',
+                                              textAlign: 'center',
+                                            }}
+                                          >
+                                            {(item.names || []).map((name, i) => (
+                                              <div 
+                                                key={i} 
+                                                className="break-words w-full text-center" 
+                                              >
+                                                {name}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
-                                  </div>
-                                ))
+                                  ))}
+                                </>
                               )}
                             </div>
                         </div>
@@ -2884,45 +3750,109 @@ export default function App() {
                                     width: `100%`,
                                   }}
                                 >
-                                  <div 
-                                    className="flex flex-col items-center"
-                                    style={{
-                                      width: `100%`,
-                                      maxWidth: `80%`,
-                                    }}
-                                  >
+                                  {credits[fadeIndex % credits.length].isPairs ? (
+                                    <div className="flex justify-center items-start">
+                                      <div className="flex justify-center items-start" style={{ gap: `${settings.pairsGap}px` }}>
+                                        <div className="text-right">
+                                          <div 
+                                            className="role-text tracking-[0.8em] break-words"
+                                            style={{ 
+                                              fontSize: `${settings.roleFontSize}px`,
+                                              color: settings.roleColor,
+                                              opacity: settings.roleOpacity,
+                                              fontWeight: settings.roleBold ? 900 : 500,
+                                              fontStyle: settings.roleItalic ? 'italic' : 'normal',
+                                              letterSpacing: `${settings.letterSpacing}px`,
+                                              textShadow: settings.textShadowBlur > 0 ? `0 0 ${settings.textShadowBlur}px ${settings.textShadowColor}${Math.round(settings.textShadowOpacity * 255).toString(16).padStart(2, '0')}` : 'none',
+                                              WebkitTextStroke: settings.textOutline ? `${settings.textOutlineWidth}px ${settings.textOutlineColor}` : 'none',
+                                              textAlign: 'right',
+                                              paddingTop: `${(settings.lineHeight * settings.fontSize - settings.roleFontSize) / 2}px`
+                                            }}
+                                          >
+                                            {credits[fadeIndex % credits.length].role}
+                                          </div>
+                                        </div>
+                                        <div className="text-left">
+                                          <div 
+                                            className="names-text leading-tight tracking-[0.5em] flex flex-col items-start"
+                                            style={{ 
+                                              fontSize: `${settings.fontSize}px`,
+                                              lineHeight: settings.lineHeight,
+                                              gap: `${settings.namesGap}px`,
+                                              color: settings.namesColor,
+                                              opacity: settings.namesOpacity,
+                                              fontWeight: settings.namesBold ? 700 : 500,
+                                              fontStyle: settings.namesItalic ? 'italic' : 'normal',
+                                              letterSpacing: `${settings.letterSpacing}px`,
+                                              textShadow: settings.textShadowBlur > 0 ? `0 0 ${settings.textShadowBlur}px ${settings.textShadowColor}${Math.round(settings.textShadowOpacity * 255).toString(16).padStart(2, '0')}` : 'none',
+                                              WebkitTextStroke: settings.textOutline ? `${settings.textOutlineWidth}px ${settings.textOutlineColor}` : 'none',
+                                              textAlign: 'left',
+                                            }}
+                                          >
+                                            {(credits[fadeIndex % credits.length].names || []).map((name, i) => (
+                                              <div 
+                                                key={i} 
+                                                className="break-words text-left" 
+                                              >
+                                                {name}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ) : (
                                     <div 
-                                      className="uppercase tracking-[0.8em] w-full break-words"
-                                      style={{ 
-                                        fontSize: `${settings.roleFontSize}px`,
-                                        marginBottom: `${settings.roleNameGap}px`,
-                                        color: settings.roleColor,
-                                        opacity: settings.roleOpacity,
-                                        fontWeight: settings.roleBold ? 900 : 500,
-                                        fontStyle: settings.roleItalic ? 'italic' : 'normal',
-                                        textAlign: 'center',
+                                      className="flex flex-col items-center"
+                                      style={{
+                                        width: `100%`,
+                                        maxWidth: `80%`,
                                       }}
                                     >
-                                      {credits[fadeIndex % credits.length].role}
+                                      <div 
+                                        className="tracking-[0.8em] w-full break-words"
+                                        style={{ 
+                                          fontSize: `${settings.roleFontSize}px`,
+                                          marginBottom: `${settings.roleNameGap}px`,
+                                          color: settings.roleColor,
+                                          opacity: settings.roleOpacity,
+                                          fontWeight: settings.roleBold ? 900 : 500,
+                                          fontStyle: settings.roleItalic ? 'italic' : 'normal',
+                                          letterSpacing: `${settings.letterSpacing}px`,
+                                          textShadow: settings.textShadowBlur > 0 ? `0 0 ${settings.textShadowBlur}px ${settings.textShadowColor}${Math.round(settings.textShadowOpacity * 255).toString(16).padStart(2, '0')}` : 'none',
+                                          WebkitTextStroke: settings.textOutline ? `${settings.textOutlineWidth}px ${settings.textOutlineColor}` : 'none',
+                                          textAlign: 'center',
+                                        }}
+                                      >
+                                        {credits[fadeIndex % credits.length].role}
+                                      </div>
+                                      <div 
+                                        className="leading-tight tracking-[0.5em] w-full flex flex-col items-center"
+                                        style={{ 
+                                          fontSize: `${settings.fontSize}px`,
+                                          lineHeight: settings.lineHeight,
+                                          gap: `${settings.namesGap}px`,
+                                          color: settings.namesColor,
+                                          opacity: settings.namesOpacity,
+                                          fontWeight: settings.namesBold ? 700 : 500,
+                                          fontStyle: settings.namesItalic ? 'italic' : 'normal',
+                                          letterSpacing: `${settings.letterSpacing}px`,
+                                          textShadow: settings.textShadowBlur > 0 ? `0 0 ${settings.textShadowBlur}px ${settings.textShadowColor}${Math.round(settings.textShadowOpacity * 255).toString(16).padStart(2, '0')}` : 'none',
+                                          WebkitTextStroke: settings.textOutline ? `${settings.textOutlineWidth}px ${settings.textOutlineColor}` : 'none',
+                                          textAlign: 'center',
+                                        }}
+                                      >
+                                        {(credits[fadeIndex % credits.length].names || []).map((name, i) => (
+                                          <div 
+                                            key={i} 
+                                            className="break-words w-full text-center" 
+                                          >
+                                            {name}
+                                          </div>
+                                        ))}
+                                      </div>
                                     </div>
-                                    <div 
-                                      className="leading-tight tracking-[0.5em] uppercase w-full flex flex-col items-center"
-                                      style={{ 
-                                        fontSize: `${settings.fontSize}px`,
-                                        lineHeight: settings.lineHeight,
-                                        gap: `${settings.namesGap}px`,
-                                        color: settings.namesColor,
-                                        opacity: settings.namesOpacity,
-                                        fontWeight: settings.namesBold ? 700 : 500,
-                                        fontStyle: settings.namesItalic ? 'italic' : 'normal',
-                                        textAlign: 'center',
-                                      }}
-                                    >
-                                      {credits[fadeIndex % credits.length].names.map((name, i) => (
-                                        <div key={i} className="break-words w-full" style={{ textAlign: 'center' }}>{name}</div>
-                                      ))}
-                                    </div>
-                                  </div>
+                                  )}
                                 </motion.div>
                               )}
                             </AnimatePresence>
@@ -2932,16 +3862,24 @@ export default function App() {
                         {/* Effects Layer - ensuring they are over everything */}
                         <div className="absolute inset-0 z-[100] pointer-events-none">
                           {settings.showNoise && (
-                            <div className="absolute inset-0 opacity-20 noise-overlay" />
+                            <div className="absolute inset-0 overflow-hidden mix-blend-screen">
+                               <div 
+                                 className="absolute inset-[-100%] animate-grain"
+                                 style={{ 
+                                   opacity: settings.noiseOpacity,
+                                   backgroundImage: `url("https://www.transparenttextures.com/patterns/p6.png")` 
+                                 }} 
+                               />
+                            </div>
                           )}
                           {settings.showScanlines && (
-                            <div className="absolute inset-0 opacity-30 scanline-effect z-50 pointer-events-none" />
+                             <div className="absolute inset-0 opacity-20 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%]" />
                           )}
                           {settings.vignette > 0 && (
                             <div 
                               className="absolute inset-0" 
                               style={{ 
-                                background: `radial-gradient(circle, transparent ${100 - settings.vignette * 100}%, rgba(0,0,0,${settings.vignette * 0.8}) 100%)` 
+                                background: `radial-gradient(circle, transparent ${100 - settings.vignette * 100}%, rgba(0,0,0,${settings.vignette * 0.95}) 100%)` 
                               }} 
                             />
                           )}
@@ -2955,28 +3893,12 @@ export default function App() {
                     <div className="absolute -bottom-1 -left-1 w-3 h-3 md:w-4 md:h-4 border-b-2 border-l-2 border-white z-30" />
                     <div className="absolute -bottom-1 -right-1 w-3 h-3 md:w-4 md:h-4 border-b-2 border-r-2 border-white z-30" />
                   </div>
-                  
-                  {/* Warning Text */}
-                  <div className="w-full max-w-[1400px] mt-6 bg-zinc-950 text-zinc-500 text-[8px] sm:text-[9px] font-bold p-4 text-center uppercase tracking-widest border border-zinc-800 rounded">
-                    {translations[lang].editor.exportWarning}
-                  </div>
                 </main>
 
                     {/* Visual Console for Desktop */}
                     <div className="hidden lg:block border-t border-white bg-black flex-shrink-0 relative z-[200] visual-console">
                       <div className="px-8 py-3 border-b border-white/10 flex items-center justify-between">
-                         <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">{translations[lang].editor.visualConsole}</h2>
-                         <div className="flex gap-4">
-                            <button 
-                              onClick={() => {
-                                undo();
-                              }}
-                              disabled={history.length <= 1}
-                              className="text-[8px] font-black uppercase tracking-widest text-zinc-600 hover:text-white disabled:opacity-20"
-                            >
-                              Undo
-                            </button>
-                         </div>
+                         <h2 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white">{translations[lang].editor.visualConsole}</h2>
                       </div>
                       <div className="px-8 py-6">
                         <ConsoleContent 
@@ -2984,7 +3906,12 @@ export default function App() {
                           setSettings={setSettings} 
                           activeConsole={activeConsole} 
                           setActiveConsole={setActiveConsole}
+                          setFadeIndex={setFadeIndex}
+                          customFonts={customFonts}
+                          setCustomFonts={setCustomFonts}
                           lang={lang}
+                          onFontUpload={handleFontUpload}
+                          onDeleteFont={handleDeleteFont}
                         />
 
                         {/* Export Button for Desktop */}
@@ -2992,7 +3919,7 @@ export default function App() {
                           <button 
                             onClick={recordVideo}
                             title={translations[lang].editor.renderExport}
-                            className="min-w-[200px] bg-white text-black py-4 text-[11px] font-black uppercase tracking-[0.3em] hover:bg-zinc-200 transition-all rounded-none shadow-[8px_8px_0px_rgba(255,255,255,0.05)] render-button"
+                            className="min-w-[200px] bg-white text-black py-4 text-[11px] font-bold uppercase tracking-[0.3em] hover:bg-zinc-200 transition-all rounded-none shadow-[8px_8px_0px_rgba(255,255,255,0.05)] render-button"
                           >
                             {translations[lang].editor.renderExport}
                           </button>
@@ -3008,7 +3935,7 @@ export default function App() {
                 </div>
 
             {/* Micro Footer */}
-            <footer className="h-10 border-t border-white px-4 md:px-8 flex items-center justify-between text-[7px] md:text-[8px] font-bold uppercase tracking-[0.3em] md:tracking-[0.5em] text-zinc-600 flex-shrink-0">
+            <footer className="h-10 border-t border-white px-4 md:px-8 flex items-center justify-between text-[7px] md:text-[8px] font-semibold uppercase tracking-[0.3em] md:tracking-[0.5em] text-zinc-600 flex-shrink-0">
               <div className="flex gap-4 md:gap-8">
                 <span className="flex items-center gap-2">{translations[lang].editor.version}</span>
               </div>
@@ -3031,14 +3958,17 @@ export default function App() {
           >
             <div className="h-16 flex items-center justify-between px-8 border-b border-white/10 z-[1010]">
               <div className="flex items-center gap-4">
-                <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-zinc-500">{translations[lang].editor.previewMode}</span>
+                <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-zinc-500">{translations[lang].editor.previewMode}</span>
               </div>
               <button 
                 onClick={() => setIsFullscreen(false)}
-                className="flex items-center gap-2 px-4 py-2 border border-white/20 hover:bg-white hover:text-black transition-all text-[10px] font-bold uppercase tracking-widest"
+                className="group relative flex items-center gap-3 px-6 py-3 rounded-none bg-black border border-white/20 hover:border-white transition-all duration-500 overflow-hidden"
               >
-                <Minimize className="w-4 h-4" />
-                {translations[lang].editor.exitFullscreen}
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                <X className="w-3.5 h-3.5 text-zinc-400 group-hover:text-white group-hover:rotate-90 transition-all duration-500" />
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 group-hover:text-white transition-colors">
+                  {translations[lang].editor.exitFullscreen}
+                </span>
               </button>
             </div>
             
@@ -3065,6 +3995,21 @@ export default function App() {
                     {settings.transparentBg && (
                       <div className="absolute inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
                     )}
+
+                    {/* LUT / Color Filter */}
+                    {settings.lut !== 'none' && (
+                      <div 
+                        className="absolute inset-0 pointer-events-none z-[60]" 
+                        style={{ 
+                          mixBlendMode: 'overlay',
+                          backdropFilter: settings.lut === 'noir' ? 'grayscale(1) contrast(1.2)' :
+                                          settings.lut === 'sepia' ? 'sepia(0.8) contrast(1.1)' :
+                                          settings.lut === 'cold' ? 'saturate(0.6) hue-rotate(20deg) brightness(0.9) sepia(0.2)' :
+                                          settings.lut === 'warm' ? 'saturate(1.4) hue-rotate(-10deg) brightness(1.05)' :
+                                          settings.lut === 'mute' ? 'saturate(0.2) contrast(0.9)' : 'none'
+                        }} 
+                      />
+                    )}
                     
                     <div 
                       className={cn(
@@ -3072,15 +4017,18 @@ export default function App() {
                         settings.animationType !== 'scroll' ? "opacity-0 pointer-events-none" : "",
                         settings.direction
                       )}
+                      key={settings.animationType + (isAutoPlay ? 'play' : `pause-${fadeIndex}`)}
                       style={{
                         fontFamily: `'${settings.fontFamily}', sans-serif`,
                         textAlign: 'center',
                         left: `50%`,
                         top: 0,
                         animationName: settings.animationType === 'scroll' ? `scroll-${settings.direction}` : 'none',
-                        animationDuration: `30s`,
+                        animationDuration: `${Math.max(5, settings.animationDuration * 4)}s`,
                         animationTimingFunction: 'linear',
                         animationIterationCount: 'infinite',
+                        animationPlayState: isAutoPlay ? 'running' : 'paused',
+                        animationDelay: settings.animationType === 'scroll' && !isAutoPlay ? `-${(fadeIndex / 1000) * Math.max(5, settings.animationDuration * 4)}s` : '0s',
                         width: `100%`,
                         maxWidth: `${DESIGN_BASE_WIDTH}px`,
                         transform: `translate(-50%, 1080px)`,
@@ -3089,13 +4037,101 @@ export default function App() {
                     >
                       <div className="flex flex-col pt-0 pb-0" style={{ gap: `${settings.marginBlock}px` }}>
                         {credits.map((item) => (
-                           <div key={item.id} className="credit-block w-full flex flex-col items-center">
-                             <div className="w-full flex flex-col items-center" style={{ textAlign: 'center', maxWidth: `80%` }}>
-                               <div className="role-text uppercase tracking-[0.8em] w-full" style={{ fontSize: `${settings.roleFontSize}px`, marginBottom: `${settings.roleNameGap}px`, color: settings.roleColor, opacity: settings.roleOpacity, fontWeight: settings.roleBold ? 900 : 500, fontStyle: settings.roleItalic ? 'italic' : 'normal', textAlign: 'center' }}>{item.role}</div>
-                               <div className="names-text leading-tight tracking-[0.5em] uppercase w-full flex flex-col items-center" style={{ fontSize: `${settings.fontSize}px`, lineHeight: settings.lineHeight, gap: `${settings.namesGap}px`, color: settings.namesColor, opacity: settings.namesOpacity, fontWeight: settings.namesBold ? 700 : 500, fontStyle: settings.namesItalic ? 'italic' : 'normal', textAlign: 'center' }}>
-                                 {item.names.map((name, i) => (<div key={i} className="break-words w-full" style={{ textAlign: 'center' }}>{name}</div>))}
+                           <div key={item.id} className="credit-block w-full">
+                             {item.isPairs ? (
+                               <div className="flex justify-center items-start" style={{ gap: `${settings.pairsGap}px` }}>
+                                 <div className="text-right">
+                                   <div 
+                                     className="role-text tracking-[0.8em] w-full break-words"
+                                     style={{ 
+                                       fontSize: `${settings.roleFontSize}px`,
+                                       color: settings.roleColor,
+                                       opacity: settings.roleOpacity,
+                                       fontWeight: settings.roleBold ? 900 : 500,
+                                       fontStyle: settings.roleItalic ? 'italic' : 'normal',
+                                       letterSpacing: `${settings.letterSpacing}px`,
+                                       textShadow: settings.textShadowBlur > 0 ? `0 0 ${settings.textShadowBlur}px ${settings.textShadowColor}${Math.round(settings.textShadowOpacity * 255).toString(16).padStart(2, '0')}` : 'none',
+                                       WebkitTextStroke: settings.textOutline ? `${settings.textOutlineWidth}px ${settings.textOutlineColor}` : 'none',
+                                       textAlign: 'right',
+                                       paddingTop: `${(settings.lineHeight * settings.fontSize - settings.roleFontSize) / 2}px`
+                                     }}
+                                   >
+                                     {item.role}
+                                   </div>
+                                 </div>
+                                 <div className="text-left">
+                                   <div 
+                                     className="names-text leading-tight tracking-[0.5em] w-full flex flex-col items-start"
+                                     style={{ 
+                                       fontSize: `${settings.fontSize}px`,
+                                       lineHeight: settings.lineHeight,
+                                       gap: `${settings.namesGap}px`,
+                                       color: settings.namesColor,
+                                       opacity: settings.namesOpacity,
+                                       fontWeight: settings.namesBold ? 700 : 500,
+                                       fontStyle: settings.namesItalic ? 'italic' : 'normal',
+                                       letterSpacing: `${settings.letterSpacing}px`,
+                                       textShadow: settings.textShadowBlur > 0 ? `0 0 ${settings.textShadowBlur}px ${settings.textShadowColor}${Math.round(settings.textShadowOpacity * 255).toString(16).padStart(2, '0')}` : 'none',
+                                       WebkitTextStroke: settings.textOutline ? `${settings.textOutlineWidth}px ${settings.textOutlineColor}` : 'none',
+                                       textAlign: 'left',
+                                     }}
+                                   >
+                                     {(item.names || []).map((name, i) => (
+                                       <div 
+                                         key={i} 
+                                         className="break-words w-full text-left" 
+                                       >
+                                         {name}
+                                       </div>
+                                     ))}
+                                   </div>
+                                 </div>
                                </div>
-                             </div>
+                             ) : (
+                               <div className="w-full flex flex-col items-center" style={{ textAlign: 'center', maxWidth: `80%`, margin: '0 auto' }}>
+                                 <div 
+                                   className="role-text tracking-[0.8em] w-full" 
+                                   style={{ 
+                                     fontSize: `${settings.roleFontSize}px`, 
+                                     marginBottom: `${settings.roleNameGap}px`, 
+                                     color: settings.roleColor, 
+                                     opacity: settings.roleOpacity, 
+                                     fontWeight: settings.roleBold ? 900 : 500, 
+                                     fontStyle: settings.roleItalic ? 'italic' : 'normal',
+                                     letterSpacing: `${settings.letterSpacing}px`,
+                                     textShadow: settings.textShadowBlur > 0 ? `0 0 ${settings.textShadowBlur}px ${settings.textShadowColor}${Math.round(settings.textShadowOpacity * 255).toString(16).padStart(2, '0')}` : 'none',
+                                     WebkitTextStroke: settings.textOutline ? `${settings.textOutlineWidth}px ${settings.textOutlineColor}` : 'none',
+                                     textAlign: 'center' 
+                                   }}
+                                 >
+                                   {item.role}
+                                 </div>
+                                 <div 
+                                     className="names-text leading-tight tracking-[0.5em] w-full flex flex-col items-center"
+                                     style={{ 
+                                       fontSize: `${settings.fontSize}px`, 
+                                       lineHeight: settings.lineHeight, 
+                                       gap: `${settings.namesGap}px`, 
+                                       color: settings.namesColor, 
+                                       opacity: settings.namesOpacity, 
+                                       fontWeight: settings.namesBold ? 700 : 500, 
+                                       fontStyle: settings.namesItalic ? 'italic' : 'normal', 
+                                       letterSpacing: `${settings.letterSpacing}px`,
+                                       textShadow: settings.textShadowBlur > 0 ? `0 0 ${settings.textShadowBlur}px ${settings.textShadowColor}${Math.round(settings.textShadowOpacity * 255).toString(16).padStart(2, '0')}` : 'none',
+                                       WebkitTextStroke: settings.textOutline ? `${settings.textOutlineWidth}px ${settings.textOutlineColor}` : 'none',
+                                       textAlign: 'center' 
+                                     }}>
+                                   {(item.names || []).map((name, i) => (
+                                     <div 
+                                       key={i} 
+                                       className="break-words w-full text-center" 
+                                     >
+                                       {name}
+                                     </div>
+                                   ))}
+                                 </div>
+                               </div>
+                             )}
                            </div>
                         ))}
                       </div>
@@ -3114,12 +4150,102 @@ export default function App() {
                               className="flex flex-col items-center w-full"
                               style={{ fontFamily: `'${settings.fontFamily}', sans-serif`, textAlign: 'center', width: `100%` }}
                             >
-                              <div className="flex flex-col items-center" style={{ width: `100%`, maxWidth: `80%` }}>
-                                <div className="uppercase tracking-[0.8em] w-full" style={{ fontSize: `${settings.roleFontSize}px`, marginBottom: `${settings.roleNameGap}px`, color: settings.roleColor, opacity: settings.roleOpacity, fontWeight: settings.roleBold ? 900 : 500, fontStyle: settings.roleItalic ? 'italic' : 'normal', textAlign: 'center' }}>{credits[fadeIndex % credits.length].role}</div>
-                                <div className="leading-tight tracking-[0.5em] uppercase w-full flex flex-col items-center" style={{ fontSize: `${settings.fontSize}px`, lineHeight: settings.lineHeight, gap: `${settings.namesGap}px`, color: settings.namesColor, opacity: settings.namesOpacity, fontWeight: settings.namesBold ? 700 : 500, fontStyle: settings.namesItalic ? 'italic' : 'normal', textAlign: 'center' }}>
-                                  {credits[fadeIndex % credits.length].names.map((name, i) => (<div key={i} className="break-words w-full" style={{ textAlign: 'center' }}>{name}</div>))}
+                              {credits[fadeIndex % credits.length].isPairs ? (
+                                <>
+                                  <div className="flex justify-center items-start" style={{ gap: `${settings.pairsGap}px` }}>
+                                    <div className="text-right">
+                                      <div 
+                                        className="role-text tracking-[0.8em] w-full break-words"
+                                        style={{ 
+                                          fontSize: `${settings.roleFontSize}px`,
+                                          color: settings.roleColor,
+                                          opacity: settings.roleOpacity,
+                                          fontWeight: settings.roleBold ? 900 : 500,
+                                          fontStyle: settings.roleItalic ? 'italic' : 'normal',
+                                          letterSpacing: `${settings.letterSpacing}px`,
+                                          textShadow: settings.textShadowBlur > 0 ? `0 0 ${settings.textShadowBlur}px ${settings.textShadowColor}${Math.round(settings.textShadowOpacity * 255).toString(16).padStart(2, '0')}` : 'none',
+                                          WebkitTextStroke: settings.textOutline ? `${settings.textOutlineWidth}px ${settings.textOutlineColor}` : 'none',
+                                          textAlign: 'right',
+                                          paddingTop: `${(settings.lineHeight * settings.fontSize - settings.roleFontSize) / 2}px`
+                                        }}
+                                      >
+                                        {credits[fadeIndex % credits.length].role}
+                                      </div>
+                                    </div>
+                                    <div className="text-left">
+                                      <div 
+                                        className="names-text leading-tight tracking-[0.5em] w-full flex flex-col items-start"
+                                        style={{ 
+                                          fontSize: `${settings.fontSize}px`,
+                                          lineHeight: settings.lineHeight,
+                                          gap: `${settings.namesGap}px`,
+                                          color: settings.namesColor,
+                                          opacity: settings.namesOpacity,
+                                          fontWeight: settings.namesBold ? 700 : 500,
+                                          fontStyle: settings.namesItalic ? 'italic' : 'normal',
+                                          letterSpacing: `${settings.letterSpacing}px`,
+                                          textShadow: settings.textShadowBlur > 0 ? `0 0 ${settings.textShadowBlur}px ${settings.textShadowColor}${Math.round(settings.textShadowOpacity * 255).toString(16).padStart(2, '0')}` : 'none',
+                                          WebkitTextStroke: settings.textOutline ? `${settings.textOutlineWidth}px ${settings.textOutlineColor}` : 'none',
+                                          textAlign: 'left',
+                                        }}
+                                      >
+                                        {(credits[fadeIndex % credits.length].names || []).map((name, i) => (
+                                          <div 
+                                            key={i} 
+                                            className="break-words w-full text-left" 
+                                          >
+                                            {name}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="flex flex-col items-center" style={{ width: `100%`, maxWidth: `80%` }}>
+                                  <div 
+                                    className="tracking-[0.8em] w-full" 
+                                    style={{ 
+                                      fontSize: `${settings.roleFontSize}px`, 
+                                      marginBottom: `${settings.roleNameGap}px`, 
+                                      color: settings.roleColor, 
+                                      opacity: settings.roleOpacity, 
+                                      fontWeight: settings.roleBold ? 900 : 500, 
+                                      fontStyle: settings.roleItalic ? 'italic' : 'normal',
+                                      letterSpacing: `${settings.letterSpacing}px`,
+                                      textShadow: settings.textShadowBlur > 0 ? `0 0 ${settings.textShadowBlur}px ${settings.textShadowColor}${Math.round(settings.textShadowOpacity * 255).toString(16).padStart(2, '0')}` : 'none',
+                                      WebkitTextStroke: settings.textOutline ? `${settings.textOutlineWidth}px ${settings.textOutlineColor}` : 'none',
+                                      textAlign: 'center' 
+                                    }}
+                                  >
+                                    {credits[fadeIndex % credits.length].role}
+                                  </div>
+                                  <div 
+                                      className="leading-tight tracking-[0.5em] w-full flex flex-col items-center"
+                                      style={{ 
+                                        fontSize: `${settings.fontSize}px`, 
+                                        lineHeight: settings.lineHeight, 
+                                        gap: `${settings.namesGap}px`, 
+                                        color: settings.namesColor, 
+                                        opacity: settings.namesOpacity, 
+                                        fontWeight: settings.namesBold ? 700 : 500, 
+                                        fontStyle: settings.namesItalic ? 'italic' : 'normal', 
+                                        letterSpacing: `${settings.letterSpacing}px`,
+                                        textShadow: settings.textShadowBlur > 0 ? `0 0 ${settings.textShadowBlur}px ${settings.textShadowColor}${Math.round(settings.textShadowOpacity * 255).toString(16).padStart(2, '0')}` : 'none',
+                                        WebkitTextStroke: settings.textOutline ? `${settings.textOutlineWidth}px ${settings.textOutlineColor}` : 'none',
+                                        textAlign: 'center' 
+                                      }}>
+                                      {(credits[fadeIndex % credits.length].names || []).map((name, i) => (
+                                        <div 
+                                          key={i} 
+                                          className="break-words w-full text-center" 
+                                        >
+                                        {name}
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
+                              )}
                             </motion.div>
                           )}
                         </AnimatePresence>
@@ -3129,16 +4255,24 @@ export default function App() {
                     {/* Effects Layer */}
                     <div className="absolute inset-0 z-[100] pointer-events-none">
                       {settings.showNoise && (
-                        <div className="absolute inset-0 opacity-20 noise-overlay" />
+                        <div className="absolute inset-0 overflow-hidden mix-blend-screen">
+                           <div 
+                             className="absolute inset-[-100%] animate-grain"
+                             style={{ 
+                               opacity: settings.noiseOpacity,
+                               backgroundImage: `url("https://www.transparenttextures.com/patterns/p6.png")` 
+                             }} 
+                           />
+                        </div>
                       )}
                       {settings.showScanlines && (
-                        <div className="absolute inset-0 opacity-30 scanline-effect z-50 pointer-events-none" />
+                         <div className="absolute inset-0 opacity-20 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%]" />
                       )}
                       {settings.vignette > 0 && (
                         <div 
                           className="absolute inset-0" 
                           style={{ 
-                            background: `radial-gradient(circle, transparent ${100 - settings.vignette * 100}%, rgba(0,0,0,${settings.vignette * 0.8}) 100%)` 
+                            background: `radial-gradient(circle, transparent ${100 - settings.vignette * 100}%, rgba(0,0,0,${settings.vignette * 0.95}) 100%)` 
                           }} 
                         />
                       )}
@@ -3146,6 +4280,73 @@ export default function App() {
                   </div>
                </div>
             </div>
+
+            {/* Fullscreen Seeker Slider */}
+            {credits.length > 0 && (
+              <div className="bg-black/80 backdrop-blur-2xl border-t border-white/10 p-4 sm:p-8 flex flex-shrink-0 z-[1010]">
+                 <div className="max-w-[1200px] mx-auto w-full flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
+                   <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
+                     <button 
+                       onClick={() => setIsAutoPlay(!isAutoPlay)}
+                       className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center hover:bg-white hover:text-black transition-all rounded-none bg-white/5 border border-white/20 active:scale-95"
+                     >
+                       {isAutoPlay ? <Pause className="w-6 h-6 sm:w-8 sm:h-8 fill-current" /> : <Play className="w-6 h-6 sm:w-8 sm:h-8 fill-current ml-1" />}
+                     </button>
+                     
+                     <div className="flex flex-col sm:hidden">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Seek</span>
+                        <span className="text-[14px] font-mono tabular-nums text-white">
+                            {settings.animationType === 'scroll' ? `${Math.round((fadeIndex / 1000) * 100)}%` : `${(fadeIndex % credits.length) + 1} / ${credits.length}`}
+                        </span>
+                     </div>
+
+                     <button 
+                       onClick={() => {
+                         setFadeIndex(0);
+                         setIsAutoPlay(true);
+                       }}
+                       className="p-3 bg-white/5 border border-white/10 rounded-none sm:hidden flex items-center gap-2"
+                     >
+                       <RotateCcw className="w-4 h-4 text-white/60" />
+                       <span className="text-[10px] font-bold uppercase text-zinc-400">Reset</span>
+                     </button>
+                   </div>
+                   
+                   <div className="flex-1 flex flex-col gap-3 w-full">
+                      <div className="hidden sm:flex justify-between items-center px-1">
+                         <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Timeline Architecture</span>
+                         <span className="text-[12px] font-mono tabular-nums text-white/50 bg-black/40 px-3 py-1 border border-white/5">
+                            {settings.animationType === 'scroll' ? `${Math.round((fadeIndex / 1000) * 100)}%` : `${(fadeIndex % credits.length) + 1} / ${credits.length}`}
+                         </span>
+                      </div>
+                      <input 
+                        type="range"
+                        min="0"
+                        max={settings.animationType === 'scroll' ? 1000 : Math.max(0, credits.length - 1)}
+                        value={settings.animationType === 'scroll' ? fadeIndex : (fadeIndex % Math.max(1, credits.length))}
+                        onChange={(e) => {
+                          setFadeIndex(parseInt(e.target.value));
+                          setIsAutoPlay(false);
+                        }}
+                        className="w-full h-2 sm:h-3 bg-white/10 appearance-none cursor-pointer accent-white hover:accent-zinc-300 transition-all rounded-none"
+                      />
+                   </div>
+
+                   <button 
+                     onClick={() => {
+                       setFadeIndex(0);
+                       setIsAutoPlay(true);
+                     }}
+                     className="hidden sm:flex flex-col items-center gap-1 group transition-all hover:scale-110"
+                   >
+                     <div className="p-3 bg-white/5 border border-white/10 rounded-none group-hover:bg-white group-hover:text-black transition-all">
+                       <RotateCcw className="w-5 h-5" />
+                     </div>
+                     <span className="text-[8px] font-bold uppercase tracking-tighter text-zinc-600 mt-1">Replay</span>
+                   </button>
+                 </div>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -3211,6 +4412,7 @@ export default function App() {
           height: 16px;
           background: white;
           cursor: pointer;
+          border-radius: 0;
         }
       `}</style>
     </div>
