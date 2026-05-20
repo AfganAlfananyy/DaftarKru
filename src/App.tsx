@@ -25,9 +25,12 @@ import {
   Info,
   Upload,
   Columns,
-  Trash
+  Trash,
+  Globe,
+  Instagram,
+  Github
 } from 'lucide-react';
-import { motion, AnimatePresence, Reorder, useDragControls, useSpring, useTransform, useScroll, useMotionValueEvent } from 'motion/react';
+import { motion, AnimatePresence, Reorder, useDragControls } from 'motion/react';
 import Lenis from 'lenis';
 import { cn } from './lib/utils';
 // @ts-ignore - webm-muxer types might be missing in some environments
@@ -199,7 +202,7 @@ const PRESETS = {
 
 const translations = {
   id: {
-    nav: { home: 'BERANDA', documentation: 'TENTANG', faq: 'FAQ' },
+    nav: { home: 'BERANDA', documentation: 'TENTANG', faq: 'FAQ', getStarted: 'MULAI' },
     hero: {
       tag1: "Next Generation Credits Engine",
       tag2: "Sangat mudah digunakan",
@@ -228,9 +231,14 @@ const translations = {
       q2: "Apakah hasil ekspor bisa transparan?",
       a2: "Ya, kami mendukung ekspor format WEBM dengan channel Alpha (transparan). Anda bisa mengaktifkan mode 'Transparent' pada menu Backdrop sebelum melakukan render.",
       q3: "Berapa resolusi maksimal ekspor?",
-      a3: "Standar ekspor kami adalah Full HD (1920x1080) dengan framerate hingga 60 FPS untuk kualitas video yang sangat halus dan tajam.",
+      a3: "Standar ekspor kami adalah Full HD (1920x1080) with framerate hingga 60 FPS untuk kualitas video yang sangat halus dan tajam.",
       q4: "Bagaimana cara memasukkan banyak nama sekaligus?",
       a4: "Sangat mudah. Anda cukup menyalin (copy) daftar nama dari file dokumen anda, lalu tempel (paste) ke kolom 'Names'. Engine kami akan otomatis memproses setiap baris sebagai satu nama."
+    },
+    getStarted: {
+      title: "Siap Untuk Memulai?",
+      subtitle: "Bergabunglah dengan ribuan pembuat film yang telah menghemat waktu mereka dengan otomasi kami.",
+      button: "Mulai Sekarang"
     },
     editor: {
       undo: "Batal",
@@ -312,7 +320,7 @@ const translations = {
     }
   },
   en: {
-    nav: { home: 'HOME', documentation: 'ABOUT', faq: 'FAQ' },
+    nav: { home: 'HOME', documentation: 'ABOUT', faq: 'FAQ', getStarted: 'START' },
     hero: {
       tag1: "Next Generation Credits Engine",
       tag2: "Extremely easy to use",
@@ -344,6 +352,11 @@ const translations = {
       a3: "Our export standard is Full HD (1920x1080) with a framerate of up to 60 FPS for smooth and sharp video quality.",
       q4: "How to input many names at once?",
       a4: "It's very easy. Just copy the list of names from your document, then paste it into the 'Names' column. Our engine will automatically process each line as one name."
+    },
+    getStarted: {
+      title: "Ready to Start?",
+      subtitle: "Join thousands of filmmakers who have saved their time with our automation.",
+      button: "Start Now"
     },
     editor: {
       undo: "Undo",
@@ -469,63 +482,19 @@ const TypingDescription = ({ lang }: { lang: Lang }) => {
   return <span className="inline-block">{displayedText}<span className="inline-block w-1 h-4 bg-white ml-1 animate-pulse" /></span>;
 };
 
-const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen }: { lang: Lang, setLang: (l: Lang) => void, isMobileMenuOpen: boolean, setIsMobileMenuOpen: (v: boolean) => void }) => {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isHidden, setIsHidden] = useState(false);
-  const [activeSection, setActiveSection] = useState('home');
-  const { scrollY } = useScroll();
-
-  useMotionValueEvent(scrollY, "change", (latest) => {
-    const previous = scrollY.getPrevious() || 0;
-    const diff = latest - previous;
-    
-    if (latest > 100) {
-      if (diff > 10) { // Scrolling down
-        setIsHidden(true);
-      } else if (diff < -10) { // Scrolling up
-        setIsHidden(false);
-      }
-    } else {
-      setIsHidden(false);
-    }
-    setIsScrolled(latest > 50);
-  });
-
-  useEffect(() => {
-    const handleSection = () => {
-      const documentation = document.getElementById('documentation');
-      const faq = document.getElementById('faq');
-      const scrollPos = window.scrollY;
-      
-      // If we are at the very top, it's definitely home
-      if (scrollPos < 50) {
-        setActiveSection('home');
-        return;
-      }
-
-      // Check sections from bottom up to avoid early activation
-      if (faq && scrollPos >= faq.offsetTop - 300) {
-        setActiveSection('faq');
-      } else if (documentation && scrollPos >= documentation.offsetTop - 300) {
-        setActiveSection('documentation');
-      } else {
-        setActiveSection('home');
-      }
-    };
-    window.addEventListener('scroll', handleSection);
-    // Call once to set initial state
-    handleSection();
-    return () => window.removeEventListener('scroll', handleSection);
-  }, []);
-
+const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSection, isHidden, isScrolled }: { 
+  lang: Lang, 
+  setLang: (l: Lang) => void, 
+  isMobileMenuOpen: boolean, 
+  setIsMobileMenuOpen: (v: boolean) => void,
+  activeSection: string,
+  isHidden: boolean,
+  isScrolled: boolean
+}) => {
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
-    console.log(`Scrolling to ${id}:`, el);
     if (el) {
-      console.log(`el.getBoundingClientRect().top: ${el.getBoundingClientRect().top}, window.scrollY: ${window.scrollY}`);
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else {
-      console.log(`Could not find element with id: ${id}`);
     }
   };
 
@@ -537,30 +506,31 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen }: { lang
           y: isHidden ? -120 : 0, 
           opacity: isHidden ? 0 : 1 
         }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
         className={cn(
-          "fixed top-6 sm:top-8 left-1/2 -translate-x-1/2 z-[999] p-1 rounded-none border transition-all duration-500 flex items-center gap-1",
+          "fixed top-6 sm:top-8 left-1/2 -translate-x-1/2 z-[999] p-1 rounded-none border transition-all duration-200 flex items-center gap-1",
           isScrolled 
-            ? "bg-black/40 backdrop-blur-2xl border-white/20 f1-shadow" 
-            : "bg-black/10 backdrop-blur-md border-white/10"
+            ? "bg-black/80 backdrop-blur-2xl border-white/20 f1-shadow" 
+            : "bg-black/60 backdrop-blur-md border-white/10"
         )}
       >
         <div className="flex items-center">
           <div className="flex items-center relative px-1 sm:px-2 gap-1 sm:gap-2">
-            {['home', 'documentation', 'faq'].map((item) => (
+            {['home', 'documentation', 'faq', 'getStarted'].map((item) => (
               <a
                 key={item}
-                href={`#${item}`}
+                href={`#${item === 'getStarted' ? 'get-started' : item}`}
                 className={cn(
                   "relative px-3 sm:px-5 py-2 sm:py-2.5 text-[8px] sm:text-[10px] font-bold uppercase tracking-widest sm:tracking-[0.3em] transition-all duration-500 z-10 text-center block nav-" + item,
-                  activeSection === item ? "text-black" : "text-zinc-500 hover:text-white"
+                  activeSection === (item === 'getStarted' ? 'get-started' : item) ? "text-black" : "text-zinc-500 hover:text-white"
                 )}
                 onClick={(e) => {
                   e.preventDefault();
+                  const targetId = item === 'getStarted' ? 'get-started' : item;
                   if (item === 'home') {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   } else {
-                    const el = document.getElementById(item);
+                    const el = document.getElementById(targetId);
                     if (el) {
                       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
@@ -568,11 +538,9 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen }: { lang
                 }}
               >
                 {translations[lang].nav[item as keyof typeof translations.id.nav]}
-                {activeSection === item && (
-                  <motion.div 
-                    layoutId="active-pill"
+                {activeSection === (item === 'getStarted' ? 'get-started' : item) && (
+                  <div 
                     className="absolute inset-0 bg-white rounded-none -z-10"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
               </a>
@@ -647,40 +615,102 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen }: { lang
   );
 };
 
+const FilmStrip = ({ speed = 40, reverse = false, rotate = -4, yOffset = "25%", opacity = 0.12 }: { speed?: number, reverse?: boolean, rotate?: number, yOffset?: string, opacity?: number }) => {
+  return (
+    <div 
+      className="absolute inset-x-0 overflow-hidden pointer-events-none z-0 select-none flex items-center"
+      style={{ 
+        transform: `rotate(${rotate}deg) translateZ(0)`,
+        willChange: 'transform',
+        top: yOffset,
+        height: '110px',
+        opacity: opacity,
+      }}
+    >
+      <motion.div
+        animate={{ x: reverse ? [0, -912] : [-912, 0] }}
+        transition={{ duration: speed, repeat: Infinity, ease: "linear" }}
+        className="flex whitespace-nowrap gap-6"
+        style={{ 
+          width: 'max-content',
+          willChange: 'transform',
+        }}
+      >
+        {[...Array(9)].map((_, i) => (
+          <div key={i} className="flex gap-6">
+            {/* Film frame */}
+            <div className="w-[280px] h-[90px] bg-zinc-950 border-y border-zinc-800 flex flex-col justify-between p-1.5 relative">
+              {/* Sprocket Holes / Perforations at Top */}
+              <div className="flex justify-between w-full px-1">
+                {[...Array(8)].map((_, p) => (
+                  <div key={p} className="w-3 h-1.5 bg-black border border-zinc-900 rounded-[1px]" />
+                ))}
+              </div>
+
+              {/* Film Frame Content Panel */}
+              <div className="flex-1 my-1 mx-0.5 bg-black border border-zinc-900/60 flex flex-col justify-between py-1 px-3 relative overflow-hidden">
+                <div className="flex justify-between items-center w-full">
+                  <span className="text-[7px] font-mono tracking-[0.2em] text-zinc-650 font-bold uppercase">
+                    KODAK 400TX
+                  </span>
+                  <span className="text-[7px] font-mono text-zinc-650">
+                    24fps
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-extrabold tracking-[0.25em] text-zinc-500 uppercase leading-none italic select-none">
+                    {i % 2 === 0 ? "DAFTARKRU" : "CINE LABS"}
+                  </span>
+                  <div className="flex gap-1 items-end">
+                    <span className="text-[8px] font-mono text-zinc-600 bg-zinc-955 px-1 py-0.5 leading-none">
+                      {100 + i * 3}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center w-full text-[6px] font-mono text-zinc-600">
+                  <span>SEC {i + 1}</span>
+                  <span>00:03:{10 + i}</span>
+                </div>
+              </div>
+
+              {/* Sprocket Holes / Perforations at Bottom */}
+              <div className="flex justify-between w-full px-1">
+                {[...Array(8)].map((_, p) => (
+                  <div key={p} className="w-3 h-1.5 bg-black border border-zinc-900 rounded-[1px]" />
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+      </motion.div>
+    </div>
+  );
+};
+
 const BackgroundElements = () => {
-  const mouseX = useSpring(0, { stiffness: 40, damping: 25 });
-  const mouseY = useSpring(0, { stiffness: 40, damping: 25 });
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseX.set((e.clientX / window.innerWidth) - 0.5);
-      mouseY.set((e.clientY / window.innerHeight) - 0.5);
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [mouseX, mouseY]);
-
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-[#020202]">
+      {/* Film Strips Scrolling endlessly diagonally */}
+      <FilmStrip speed={45} reverse={false} rotate={-3} yOffset="15%" opacity={0.12} />
+      <FilmStrip speed={55} reverse={true} rotate={4} yOffset="65%" opacity={0.10} />
+
       {/* Static Tech Grid - Reduced opacity and simplified */}
       <div 
         className="absolute inset-0 opacity-[0.05]" 
         style={{ 
           backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)',
-          backgroundSize: 'clamp(40px, 10vw, 80px) clamp(40px, 10vw, 80px)',
+          backgroundSize: '80px 80px',
         }} 
       />
 
-      {/* Primary Pulsing Glow */}
-      <motion.div 
-        animate={{ 
-          opacity: [0.02, 0.05, 0.02],
-        }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute inset-0 bg-radial-gradient from-white/5 via-transparent to-transparent pointer-events-none"
-      />
+      {/* Fluid Animated Blobs */}
+      <div className="absolute top-[20%] right-[10%] w-[400px] h-[400px] rounded-full bg-white/[0.03] blur-[100px]" />
+      <div className="absolute bottom-[20%] left-[10%] w-[400px] h-[400px] rounded-full bg-white/[0.02] blur-[100px]" />
 
       {/* Optimized Floating 3D Cubes - Reduced count from 12 to 6 */}
+      {/* 
       {[...Array(6)].map((_, i) => (
         <motion.div
           key={`cube-${i}`}
@@ -712,6 +742,7 @@ const BackgroundElements = () => {
           />
         </motion.div>
       ))}
+      */}
 
       {/* Simplified Scanning Bar */}
       <motion.div 
@@ -722,6 +753,377 @@ const BackgroundElements = () => {
         transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
         className="absolute inset-x-0 h-[100px] bg-gradient-to-b from-transparent via-white/[0.05] to-transparent pointer-events-none"
       />
+    </div>
+  );
+};
+
+const ClapperboardTransition = ({ isOpen, lang }: { isOpen: boolean; lang: Lang }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div 
+      className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-auto select-none overflow-hidden"
+      style={{ perspective: "800px" }}
+    >
+      {/* Background Dimmer and Blur Overlay */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 0.95, 0.95, 0] }}
+        transition={{ times: [0, 0.15, 0.85, 1], duration: 2.2, ease: "easeInOut" }}
+        className="absolute inset-0 bg-black/95 backdrop-blur-md"
+      />
+
+      {/* Snap Flash Effect */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 0, 1, 0] }}
+        transition={{ 
+          times: [0, 0.418, 0.42, 0.55], 
+          duration: 2.2, 
+          ease: "linear" 
+        }}
+        className="absolute inset-0 bg-white pointer-events-none z-[100] mix-blend-plus-lighter"
+      />
+
+      {/* Center 3D container */}
+      <motion.div
+        initial={{ scale: 0.35, rotateY: 65, rotateX: 45, rotate: -35, y: 250, opacity: 0 }}
+        animate={{ 
+          scale: [0.35, 1.1, 1, 0.7],
+          rotateY: [65, 20, 12, -85],
+          rotateX: [45, 25, 15, -45],
+          rotate: [-35, -8, 8, 35],
+          y: [250, 0, 0, -250],
+          opacity: [0, 1, 1, 0]
+        }}
+        transition={{ 
+          times: [0, 0.35, 0.75, 1], 
+          duration: 2.2, 
+          ease: [0.16, 1, 0.3, 1] 
+        }}
+        className="relative flex flex-col items-center justify-center pt-12 pb-6 px-10 w-[280px] sm:w-[420px] aspect-[4/3]"
+        style={{ transformStyle: "preserve-3d" }}
+      >
+        <div className="relative flex flex-col w-full bg-zinc-950 border-2 border-zinc-700 shadow-[0_30px_60px_rgba(0,0,0,0.8)] rounded-lg overflow-hidden flex-1 p-3 sm:p-4 font-mono select-none">
+          {/* Top hinge block fixed */}
+          <div className="w-full h-6 sm:h-8 bg-[repeating-linear-gradient(-45deg,#000,#000_15px,#fff_15px,#fff_30px)] border-b border-zinc-800" />
+
+          {/* Hinged Clapper arm */}
+          <motion.div
+            initial={{ rotate: -38 }}
+            animate={{ rotate: [-38, -38, 0, 0, -20] }}
+            transition={{
+              times: [0, 0.25, 0.42, 0.8, 1],
+              duration: 2.2,
+              ease: "easeInOut"
+            }}
+            className="absolute h-6 sm:h-8 bg-[repeating-linear-gradient(-45deg,#000,#000_15px,#fff_15px,#fff_30px)] border-b-2 border-zinc-800 origin-left-bottom z-20"
+            style={{ 
+              transformOrigin: "0% 100%",
+              top: "12px",
+              left: "12px",
+              width: "calc(100% - 24px)"
+            }}
+          />
+
+          {/* Chalk Writing Section */}
+          <div className="flex-1 mt-2 sm:mt-3 border border-zinc-800 p-2 sm:p-3 flex flex-col justify-between text-[8px] sm:text-xs text-zinc-400 uppercase font-bold tracking-wider space-y-1 sm:space-y-2">
+            
+            {/* Spec lines */}
+            <div className="flex justify-between border-b border-zinc-900 w-full pb-1 items-center">
+              <span className="text-[6px] sm:text-[9px] text-zinc-500">PROD.</span>
+              <span className="text-white text-[7px] sm:text-[11px] font-black tracking-widest text-right">DAFTARKRU ENGINE</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 border-b border-zinc-900 pb-1">
+              <div className="flex flex-col">
+                <span className="text-[6px] sm:text-[9px] text-zinc-500 leading-none mb-0.5 sm:mb-1">SCENE</span>
+                <span className="text-white text-[10px] sm:text-sm font-black italic">A-01</span>
+              </div>
+              <div className="flex flex-col border-l border-zinc-900 pl-2">
+                <span className="text-[6px] sm:text-[9px] text-zinc-500 leading-none mb-0.5 sm:mb-1">TAKE</span>
+                <span className="text-white text-[10px] sm:text-sm font-black italic">01</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 border-b border-zinc-900 pb-1">
+              <div className="flex flex-col">
+                <span className="text-[6px] sm:text-[9px] text-zinc-500 leading-none mb-0.5 sm:mb-1">DIRECTOR</span>
+                <span className="text-white font-extrabold text-[7px] sm:text-[10px] leading-tight">AFGAN AL-FANANY</span>
+              </div>
+              <div className="flex flex-col border-l border-zinc-900 pl-2">
+                <span className="text-[6px] sm:text-[9px] text-zinc-500 leading-none mb-0.5 sm:mb-1">CAMERA</span>
+                <span className="text-white font-extrabold text-[7px] sm:text-[10px] leading-tight text-right sm:text-left">CINE ULTRA</span>
+              </div>
+            </div>
+
+            <div className="flex justify-between pt-1 text-[6px] sm:text-[8px] text-zinc-500 font-medium">
+              <span>MAY 20, 2026</span>
+              <span className="text-zinc-600">24 FPS</span>
+              <span>MOS</span>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Visual CLIP tag */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.5, rotate: -15, filter: "blur(15px)" }}
+          animate={{ 
+            opacity: [0, 0, 1, 1, 0],
+            scale: [0.5, 0.5, 1.4, 1.2, 0.5],
+            rotate: [-15, -15, 10, 5, -15],
+            filter: ["blur(15px)", "blur(15px)", "blur(0px)", "blur(0px)", "blur(15px)"]
+          }}
+          transition={{ 
+            times: [0, 0.42, 0.45, 0.75, 1],
+            duration: 2.2, 
+            ease: "easeOut" 
+          }}
+          className="absolute text-5xl sm:text-7xl font-black italic text-white tracking-widest uppercase z-[120] pointer-events-none"
+          style={{ textShadow: "0 0 30px rgba(255,255,255,0.8)" }}
+        >
+          CLIP
+        </motion.div>
+      </motion.div>
+    </div>
+  );
+};
+
+const FilmReelToFolderAnimation = ({ progress, lang }: { progress: number; lang: Lang }) => {
+  const isFinished = progress === 100;
+
+  return (
+    <div className="relative w-64 h-64 flex flex-col items-center justify-center scale-50 sm:scale-75 lg:scale-100 origin-center -my-16 sm:-my-12 lg:my-0">
+      {/* Container for the reel and the folder */}
+      <div className="relative w-full h-40 flex items-center justify-center translate-y-[-20px] sm:translate-y-0">
+        {/* Film Reel */}
+        <motion.div
+          animate={
+            isFinished
+              ? {
+                  rotate: [0, 1080, 2160, 2520, 2520],
+                  y: [0, 0, 0, 85, 85],
+                  scale: [1, 1, 0.7, 0, 0],
+                  opacity: [1, 1, 1, 0, 0],
+                }
+              : {
+                  rotate: [0, 360],
+                }
+          }
+          style={{ originX: 0.5, originY: 0.5 }}
+          transition={
+            isFinished
+              ? {
+                  duration: 2.2,
+                  times: [0, 0.3, 0.6, 0.9, 1],
+                  ease: "easeInOut",
+                }
+              : {
+                  repeat: Infinity,
+                  duration: 1.2,
+                  ease: "linear",
+                }
+          }
+          className="absolute z-20 flex items-center justify-center w-28 h-28 cursor-default"
+        >
+          {/* Film Reel Detailed SVG representation with high fidelity styling */}
+          <svg
+            viewBox="0 0 100 100"
+            className="w-full h-full text-zinc-100 filter drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]"
+          >
+            {/* Outer reel ring */}
+            <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="5" />
+            <circle cx="50" cy="50" r="41" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="2 3" opacity="0.4" />
+            
+            {/* Reel spokes/cells */}
+            <circle cx="50" cy="50" r="16" fill="currentColor" opacity="0.1" />
+            <circle cx="50" cy="50" r="12" fill="none" stroke="currentColor" strokeWidth="4" />
+            
+            {/* Sprocket holes around the reel rim */}
+            <g opacity="0.8">
+              {[...Array(12)].map((_, i) => (
+                <circle
+                  key={i}
+                  cx={50 + 36 * Math.cos((i * 2 * Math.PI) / 12)}
+                  cy={50 + 36 * Math.sin((i * 2 * Math.PI) / 12)}
+                  r="3.5"
+                  fill="currentColor"
+                />
+              ))}
+            </g>
+
+            {/* Empty interior spokes for high value 3D reel look */}
+            <g opacity="0.9">
+              {[...Array(5)].map((_, i) => (
+                <circle
+                  key={i}
+                  cx={50 + 23 * Math.cos((i * 2 * Math.PI) / 5)}
+                  cy={50 + 23 * Math.sin((i * 2 * Math.PI) / 5)}
+                  r="6.5"
+                  fill="black"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                />
+              ))}
+            </g>
+
+            {/* Center core spindle */}
+            <circle cx="50" cy="50" r="4" fill="currentColor" />
+            <polygon points="48,46 52,46 50,54" fill="black" />
+          </svg>
+        </motion.div>
+
+        {/* Target Folder / Tray at the bottom - ONLY SHOW WHEN FINISHED to prevent flashing */}
+        {isFinished && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.6, y: 120 }}
+            animate={{
+              opacity: 1,
+              scale: [0.6, 1, 0.9, 1.25, 0.95, 1.05, 1],
+              y: [120, 60, 60, 63, 52, 61, 60],
+              borderColor: "#ffffff",
+              color: "#ffffff"
+            }}
+            transition={{
+              duration: 1.8,
+              times: [0, 0.2, 0.4, 0.5, 0.65, 0.82, 1],
+              ease: "easeOut",
+              delay: 0.2 // Small delay for the reel to start its final rotation
+            }}
+            className="absolute z-10 w-32 h-20 border-2 border-white bg-zinc-950/90 rounded-xl flex flex-col items-center justify-center text-white shadow-[0_10px_40px_rgba(255,255,255,0.15)]"
+          >
+            {/* Folder tabs or Tray indicators */}
+            <div className="absolute -top-3 left-4 w-10 h-3 bg-zinc-900 border-t-2 border-x-2 border-inherit rounded-t-md" />
+            
+            <div className="flex flex-col items-center justify-center space-y-1 relative">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.8, type: "spring" }}
+              >
+                <svg viewBox="0 0 24 24" className="w-8 h-8 text-white fill-none stroke-current stroke-[2.5]" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </motion.div>
+              <span className="text-[8px] font-extrabold uppercase tracking-widest text-white/60">
+                {lang === 'id' ? "TERSIMPAN!" : "SAVED!"}
+              </span>
+            </div>
+
+            {/* Film ribbon emerging back left/right */}
+            <div className="absolute -bottom-2 w-28 h-1 bg-white/20 rounded-full" />
+          </motion.div>
+        )}
+
+        {/* Dynamic Glow Particles on Snap/Save - ONLY SHOW WHEN FINISHED */}
+        {isFinished && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: [0, 1, 1, 0], scale: [0.5, 2, 2, 2.2] }}
+            transition={{ delay: 0.6, duration: 1.4 }}
+            className="absolute bottom-[-15px] w-24 h-24 bg-white/10 blur-2xl rounded-full pointer-events-none"
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+const FilmStripProgressBar = ({ progress, lang }: { progress: number; lang: Lang }) => {
+  const sprocketCount = 14;
+
+  return (
+    <div className="w-full space-y-4 font-mono select-none">
+      <div className="flex justify-between items-end text-xs">
+        <div className="flex items-center gap-2">
+          {/* Pulsing indicator */}
+          <div className={cn("w-2.5 h-2.5 rounded-full transition-colors", progress >= 100 ? "bg-white shadow-[0_0_8px_#ffffff]" : "bg-zinc-700 animate-pulse")} />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+            {progress >= 100 
+              ? (lang === 'id' ? "PENCETAKAN SELESAI" : "PRINT COMPLETED") 
+              : (lang === 'id' ? "SEDANG MENCETAK EMULSI..." : "PRINTING EMULSION...")}
+          </span>
+        </div>
+        <div className="text-2xl font-black font-mono tracking-tight text-white flex items-baseline gap-1">
+          <span className="text-xs text-zinc-600 font-extrabold">EMULS.</span>
+          <span className="text-white">{progress}%</span>
+        </div>
+      </div>
+
+      {/* The Celluloid film strip container */}
+      <div className="relative w-full h-[52px] bg-zinc-950 border border-zinc-800/80 rounded-sm overflow-hidden flex flex-col justify-between py-1.5 px-2 shadow-[inset_0_4px_8px_rgba(0,0,0,0.9)]">
+        
+        {/* Top Sprocket Perforations */}
+        <div className="flex justify-between w-full h-2">
+          {[...Array(sprocketCount)].map((_, i) => {
+            const stepThreshold = (i / sprocketCount) * 100;
+            const isFilled = progress >= stepThreshold;
+            return (
+              <motion.div
+                key={`top-${i}`}
+                animate={{
+                  backgroundColor: isFilled ? "#ffffff" : "#18181b",
+                  boxShadow: isFilled ? "0 0 6px #ffffff, 0 0 10px #ffffff" : "none",
+                }}
+                transition={{ duration: 0.15 }}
+                className="w-3 h-2 rounded-[2px] transition-all duration-300"
+              />
+            );
+          })}
+        </div>
+
+        {/* Central Film Negative Core (the frames showing light or progress bar) */}
+        <div className="relative flex-1 my-1.5 bg-zinc-900 overflow-hidden rounded-sm flex items-center">
+          {/* Real progress bar inside film track */}
+          <motion.div
+            className="absolute inset-y-0 left-0 bg-gradient-to-r from-zinc-800 via-zinc-400 to-white"
+            style={{ 
+              boxShadow: "0 0 20px rgba(255, 255, 255, 0.4)",
+              borderRight: "2px solid #fff"
+            }}
+            animate={{ width: `${progress}%` }}
+            transition={{ type: "spring", stiffness: 80, damping: 25 }}
+          />
+
+          {/* Thin vertical frame separators to divide film into frames */}
+          <div className="absolute inset-x-0 inset-y-0 flex justify-between pointer-events-none opacity-45">
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="w-[1.5px] h-full bg-zinc-950" />
+            ))}
+          </div>
+
+          {/* Glare/Grain overlay inside film track */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/35 pointer-events-none" />
+          
+          {/* Mini timecodes overlay */}
+          <div className="absolute inset-0 flex justify-between px-4 items-center pointer-events-none text-[8px] text-zinc-500 font-extrabold select-none tracking-widest">
+            <span className="opacity-75">TC 00:00:{Math.floor(progress * 0.24).toString().padStart(2, '0')}</span>
+            <span className="opacity-95 text-white/40 font-black">EMULSION Kodak Tri-X</span>
+            <span className="opacity-75">FRAME {Math.floor(progress * 1.2).toString().padStart(3, '0')}</span>
+          </div>
+        </div>
+
+        {/* Bottom Sprocket Perforations */}
+        <div className="flex justify-between w-full h-2">
+          {[...Array(sprocketCount)].map((_, i) => {
+            const stepThreshold = (i / sprocketCount) * 100;
+            const isFilled = progress >= stepThreshold;
+            return (
+              <motion.div
+                key={`bottom-${i}`}
+                animate={{
+                  backgroundColor: isFilled ? "#ffffff" : "#18181b",
+                  boxShadow: isFilled ? "0 0 6px #ffffff, 0 0 10px #ffffff" : "none",
+                }}
+                transition={{ duration: 0.15 }}
+                className="w-3 h-2 rounded-[2px] transition-all duration-300"
+              />
+            );
+          })}
+        </div>
+
+      </div>
     </div>
   );
 };
@@ -765,10 +1167,10 @@ const GsapAnimatedConsole = ({ lang, onPlay }: { lang: Lang, onPlay: () => void 
       gsap.to(playheadRef.current, {
         x: "0%",
         scrollTrigger: {
-          trigger: containerRef.current,
-          start: "top center",
-          end: "bottom center",
-          scrub: 1.5, // Smooth scrubbing
+          trigger: containerRef.current.closest('section'),
+          start: "top top",
+          end: "+=700%",
+          scrub: 1.2, // Match text scroll velocity scrub
         }
       });
 
@@ -953,12 +1355,6 @@ const AboutSection = ({ lang, onStart }: { lang: Lang, onStart: () => void }) =>
         className="w-full lg:flex-1 space-y-6 lg:space-y-12 z-10"
       >
         <div className="space-y-4">
-          <motion.div 
-            initial={{ scaleX: 0 }}
-            whileInView={{ scaleX: 1 }}
-            viewport={{ once: false }}
-            className="h-[1px] w-24 bg-white/40 origin-left"
-          />
           <h2 className="text-4xl sm:text-6xl lg:text-8xl font-bold tracking-tighter uppercase leading-[0.85] break-words">
             {displayedTitle}
             <span className="inline-block w-1.5 h-8 sm:h-12 lg:h-20 bg-white ml-2 animate-pulse align-middle" />
@@ -966,20 +1362,16 @@ const AboutSection = ({ lang, onStart }: { lang: Lang, onStart: () => void }) =>
         </div>
         
         <div className="space-y-4 lg:space-y-6 max-w-xl">
-          <p className="text-[10px] sm:text-xs text-zinc-400 uppercase tracking-[0.3em] leading-relaxed">
+          <p className="text-xs sm:text-sm text-zinc-300 tracking-normal leading-relaxed text-justify">
             {translations[lang].about.description}
           </p>
-          <div className="grid grid-cols-2 gap-3 lg:gap-8 pt-4 lg:pt-8 mb-[50px] lg:mb-0">
-            <div className="space-y-3 lg:space-y-4 p-4 lg:p-8 border border-white/10 bg-white/[0.03] backdrop-blur-2xl shadow-[4px_4px_0px_rgba(255,255,255,0.02)] relative overflow-hidden group hover:bg-white/[0.05] hover:border-white/20 hover:shadow-[8px_8px_0px_rgba(255,255,255,0.05)] transition-all duration-500">
-               <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 -rotate-45 translate-x-10 -translate-y-10" />
-               <div className="text-xl sm:text-4xl lg:text-5xl font-bold italic tracking-tighter text-white break-words">{translations[lang].about.card1Title}</div>
-               <div className="text-[8px] sm:text-[11px] font-bold text-zinc-500 uppercase tracking-[0.4em]">{translations[lang].about.card1Desc}</div>
-            </div>
-            <div className="space-y-3 lg:space-y-4 p-4 lg:p-8 border border-white/10 bg-white/[0.03] backdrop-blur-2xl shadow-[4px_4px_0px_rgba(255,255,255,0.02)] relative overflow-hidden group hover:bg-white/[0.05] hover:border-white/20 hover:shadow-[8px_8px_0px_rgba(255,255,255,0.05)] transition-all duration-500">
-               <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 -rotate-45 translate-x-10 -translate-y-10" />
-               <div className="text-xl sm:text-4xl lg:text-5xl font-bold italic tracking-tighter text-white break-words">{translations[lang].about.card2Title}</div>
-               <div className="text-[8px] sm:text-[11px] font-bold text-zinc-500 uppercase tracking-[0.4em]">{translations[lang].about.card2Desc}</div>
-            </div>
+          <div className="flex items-center gap-6 mt-0 pt-4">
+             <div className="group w-auto h-8 md:h-10 border-none overflow-hidden transition-all duration-500 flex items-center justify-center">
+                <img src="/daftarkru.png" alt="Card 1" className="h-full w-auto object-contain opacity-40 group-hover:opacity-80 transition-opacity duration-300" />
+             </div>
+             <div className="group w-auto h-8 md:h-10 border-none overflow-hidden transition-all duration-500 flex items-center justify-center">
+                <img src="/afganvisualworklogo.png" alt="Card 2" className="h-full w-auto object-contain opacity-40 group-hover:opacity-80 transition-opacity duration-300" />
+             </div>
           </div>
         </div>
       </motion.div>
@@ -1015,7 +1407,7 @@ const FAQItem: React.FC<FAQProps & { lang: Lang }> = ({ faq, index, lang }) => {
         >
           <div className="flex items-center gap-6 sm:gap-10">
             <span className="text-[10px] font-mono opacity-20">0{index + 1}</span>
-            <span className="text-[11px] sm:text-[13px] font-black uppercase tracking-[0.3em] text-zinc-400 group-hover:text-white transition-colors">{faq.q}</span>
+            <span className="text-xs sm:text-sm md:text-base font-semibold tracking-wide text-zinc-300 group-hover:text-white transition-colors">{faq.q}</span>
           </div>
           <motion.div
             animate={{ rotate: isOpen ? 180 : 0 }}
@@ -1034,7 +1426,7 @@ const FAQItem: React.FC<FAQProps & { lang: Lang }> = ({ faq, index, lang }) => {
             >
               <div className="px-6 sm:px-10 pb-10 pt-4">
                 <div className="h-[1px] w-full bg-white/10 mb-8" />
-                <p className="text-[10px] sm:text-xs text-zinc-500 uppercase tracking-[0.2em] leading-relaxed max-w-3xl">
+                <p className="text-xs sm:text-sm text-zinc-400 tracking-normal leading-relaxed max-w-3xl">
                   {faq.a}
                 </p>
               </div>
@@ -1068,8 +1460,23 @@ const FAQSection = ({ lang }: { lang: Lang }) => {
             >
               {translations[lang].faq.title}
             </motion.div>
-            <h2 className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter uppercase leading-none italic whitespace-pre-line">{translations[lang].faq.heading}</h2>
-            <p className="text-[10px] sm:text-xs text-zinc-600 uppercase tracking-[0.4em] max-w-sm leading-relaxed">
+            <motion.h2 
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="relative text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter uppercase leading-none italic whitespace-pre-line inline-block"
+            >
+              <span className="relative z-10">
+                {translations[lang].faq.heading}
+              </span>
+              <motion.div
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                transition={{ duration: 0.8, ease: "easeInOut", delay: 0.5 }}
+                className="absolute bottom-0 left-0 h-2 md:h-3 w-full bg-white/20 origin-left"
+              />
+            </motion.h2>
+            <p className="text-xs sm:text-sm text-zinc-400 tracking-normal max-w-sm leading-relaxed">
               {translations[lang].faq.subheading}
             </p>
           </div>
@@ -1083,6 +1490,187 @@ const FAQSection = ({ lang }: { lang: Lang }) => {
     </section>
   );
 };
+
+const CardMarquee = ({ items, reverse = false }: { items: string[], reverse?: boolean }) => {
+  return (
+    <div className="w-full overflow-hidden py-4">
+      <div className={cn("flex gap-8 whitespace-nowrap", reverse ? "animate-infinite-scroll-reverse" : "animate-infinite-scroll")}>
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="flex gap-8 items-center">
+            {items.map((item, idx) => (
+              <div key={idx} className="bg-[#0a0a0a] border border-white/5 px-10 py-5 flex items-center gap-5 shadow-2xl">
+                <div className="w-2.5 h-2.5 bg-white rounded-full" />
+                <span className="text-[12px] font-black uppercase tracking-[0.5em] text-white font-sans">{item}</span>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const BackgroundCreditsAnimation = () => {
+  const tracks = [
+    {
+      items: [
+        'DIRECTOR', 'AFGAN AL-FANANY',
+        'SCREENPLAY', 'AL-FANANY STUDIO',
+        'EXECUTIVE PRODUCER', 'DAFTARKRU NETWORK',
+        'CHIEF EDITOR', 'MOTION LABS'
+      ],
+      speed: 35,
+      reverse: false
+    },
+    {
+      items: [
+        'DIRECTOR OF PHOTOGRAPHY', 'CINEMA LABS',
+        'MUSIC COMPOSER', 'AUDIO SYSTEM',
+        'SOUND DESIGNER', 'STUDIO MASTER',
+        'LIGHTING DIRECTOR', 'STUDIO BEAMS'
+      ],
+      speed: 50,
+      reverse: true
+    },
+    {
+      items: [
+        'CREATIVE WRITER', 'AFGAN CO.',
+        'ART DIRECTOR', 'PIXEL TEAM',
+        'VISUAL EFFECTS', 'RENDER ENGINE',
+        'COSTUME DESIGN', 'THREAD LABS'
+      ],
+      speed: 40,
+      reverse: false
+    },
+    {
+      items: [
+        'COLOR GRADING', 'LUT PRESETS',
+        'PRODUCTION DESIGN', 'DAFTARKRU',
+        'MOTION GRAPHICS', 'EXPORTS',
+        'POST PRODUCTION', 'FINISHING DEPOT'
+      ],
+      speed: 60,
+      reverse: true
+    }
+  ];
+
+  return (
+    <div className="absolute inset-0 z-0 opacity-[0.06] flex justify-around select-none pointer-events-none overflow-hidden max-w-7xl mx-auto px-4 md:px-12">
+      {tracks.map((track, i) => (
+        <div key={i} className="w-[18%] sm:w-[22%] h-full relative overflow-hidden flex flex-col items-center">
+          <div 
+            className={track.reverse ? "animate-vertical-infinite-scroll-reverse" : "animate-vertical-infinite-scroll"} 
+            style={{ '--duration': `${track.speed}s` } as React.CSSProperties}
+          >
+            {[...Array(4)].map((_, groupIdx) => (
+              <div key={groupIdx} className="flex flex-col gap-12 py-12 items-center">
+                {track.items.map((item, idx) => {
+                  const isRole = idx % 2 === 0;
+                  return (
+                    <div key={idx} className="flex flex-col items-center text-center">
+                      <span className={cn(
+                        "uppercase tracking-[0.2em] font-sans text-center",
+                        isRole ? "text-[10px] font-black text-white/40" : "text-[12px] font-medium text-white/90 font-mono mt-1"
+                      )}>
+                        {item}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+      {/* Top and Bottom cinematic vignettes */}
+      <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-[#000000] to-transparent pointer-events-none" />
+      <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#000000] to-transparent pointer-events-none" />
+    </div>
+  );
+};
+
+const GetStartedSection = ({ lang, onStart }: { lang: Lang, onStart: () => void }) => {
+  return (
+    <section id="get-started" className="min-h-screen w-full bg-[#000000] flex flex-col items-center justify-between p-6 py-12 sm:p-24 relative overflow-hidden border-t border-white/5">
+      {/* Background Animated Credits Column Rolling */}
+      <BackgroundCreditsAnimation />
+      
+      {/* Mobile/Tablet Socials (at the top, side-by-side) */}
+      <div className="lg:hidden flex gap-8 items-center z-10">
+         <a href="https://daftarkru.netlify.app" target="_blank" rel="noopener noreferrer" className="group p-2" title="Website">
+            <Globe className="w-4 h-4 text-zinc-500 group-hover:text-white transition-colors" />
+         </a>
+         <a href="https://instagram.com/afganalfananyy" target="_blank" rel="noopener noreferrer" className="group p-2">
+            <Instagram className="w-4 h-4 text-zinc-500 group-hover:text-white transition-colors" />
+         </a>
+         <a href="https://github.com/afganalfananyy" target="_blank" rel="noopener noreferrer" className="group p-2">
+            <Github className="w-4 h-4 text-zinc-500 group-hover:text-white transition-colors" />
+         </a>
+      </div>
+
+      {/* Spacer to push content down on desktop */}
+      <div className="hidden lg:block h-0" />
+
+      <div className="max-w-4xl w-full text-center space-y-12 relative z-10 my-auto">
+        <motion.div
+           initial={{ opacity: 0, y: 30 }}
+           whileInView={{ opacity: 1, y: 0 }}
+           viewport={{ once: true }}
+           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+           className="space-y-6"
+        >
+          <div className="text-[10px] sm:text-xs font-black tracking-[0.8em] text-white/40 uppercase mb-4 flex items-center justify-center gap-4">
+             <div className="h-[1px] w-8 bg-white/20" />
+             DAFTARKRU_ENGINE
+             <div className="h-[1px] w-8 bg-white/20" />
+          </div>
+          <h2 className="text-5xl sm:text-7xl md:text-9xl font-black tracking-tighter uppercase leading-none italic">
+            {translations[lang].getStarted.title}
+          </h2>
+          <p className="text-xs sm:text-sm text-zinc-400 tracking-normal max-w-xl mx-auto leading-normal">
+            {translations[lang].getStarted.subtitle}
+          </p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.2, duration: 0.8 }}
+          className="flex flex-col items-center gap-8"
+        >
+          <button 
+            onClick={onStart}
+            className="group relative px-12 py-6 bg-white text-black font-black uppercase tracking-[0.4em] text-[10px] sm:text-[12px] overflow-hidden transition-all hover:scale-105 active:scale-95 hero-button shadow-[4px_4px_0px_rgba(255,255,255,0.15)] hover:shadow-[8px_8px_0px_rgba(255,255,255,0.25)] border border-white"
+          >
+            <div className="absolute inset-0 bg-black translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[0.16, 1, 0.3, 1]" />
+            <span className="relative z-10 group-hover:text-white transition-colors duration-300">
+              {translations[lang].getStarted.button}
+            </span>
+          </button>
+          
+          <div className="flex gap-4 items-center opacity-20 transition-opacity hover:opacity-40">
+             <div className="h-[1px] w-12 bg-white" />
+             <span className="text-[9px] font-bold tracking-[0.5em] uppercase">Ready to Roll</span>
+             <div className="h-[1px] w-12 bg-white" />
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Mobile/Tablet Copyright (at the bottom) */}
+      <div className="lg:hidden text-[10px] font-black tracking-[0.5em] text-zinc-700 uppercase text-center w-full z-10 mt-8">
+         © 2026 DAFTARKRU. ALL RIGHT RESERVED
+      </div>
+
+      {/* Spacer to push content up on desktop */}
+      <div className="hidden lg:block h-0" />
+
+      {/* Subtle scanline effect - very faint */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[length:100%_4px]" />
+    </section>
+  );
+};
+
 
 const SliderWithControls = ({ 
   label, 
@@ -1113,8 +1701,8 @@ const SliderWithControls = ({
 
   return (
     <div className="space-y-3">
-      <div className="flex justify-between items-center text-[10px] font-bold uppercase">
-        <span className="text-zinc-500 tracking-widest">{label}</span>
+      <div className="flex justify-between items-center text-xs sm:text-[13px] font-medium tracking-normal text-zinc-400">
+        <span className="text-zinc-400">{label}</span>
         <div className="flex items-center gap-3">
           <button 
             onClick={handleDecrement}
@@ -1170,7 +1758,7 @@ const TuningControls = React.memo(({ settings, setSettings, lang }: any) => {
   return (
     <div className="space-y-10">
       <div className="flex items-center gap-4 border-b border-white/5 pb-2">
-        <h3 className="text-[9px] font-bold uppercase tracking-[0.4em] text-white whitespace-nowrap">{translations[lang].editor.fineTuning}</h3>
+        <h3 className="text-xs sm:text-[13px] font-semibold tracking-normal text-zinc-300 whitespace-nowrap">{translations[lang].editor.fineTuning}</h3>
          <div className="h-[1px] w-full bg-white/5" />
       </div>
       <div className="grid grid-cols-1 gap-y-10">
@@ -1261,7 +1849,13 @@ const TuningControls = React.memo(({ settings, setSettings, lang }: any) => {
 const CategoryPopover = ({ id, title, children, activeConsole, closeConsole }: { id: string, title: string, children: React.ReactNode, activeConsole: string, closeConsole: () => void }) => (
   <AnimatePresence>
     {activeConsole === id && (
-      <div className="fixed sm:absolute inset-x-0 bottom-0 sm:bottom-full sm:left-1/2 sm:-translate-x-1/2 mb-0 sm:mb-2 w-full sm:w-[450px] lg:w-[600px] border-t sm:border border-white/20 bg-zinc-950 z-[10000] shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-3xl flex flex-col max-h-[85vh] sm:max-h-[min(600px,80vh)] overflow-hidden">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 15 }}
+        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+        className="fixed sm:absolute inset-x-0 bottom-0 sm:bottom-full sm:left-1/2 sm:-translate-x-1/2 mb-0 sm:mb-2 w-full sm:w-[450px] lg:w-[600px] border-t sm:border border-white/20 bg-zinc-950 z-[10000] shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-3xl flex flex-col max-h-[85vh] sm:max-h-[min(600px,80vh)] overflow-hidden"
+      >
         <div className="p-4 sm:p-5 border-b border-white/5 flex items-center justify-between sticky top-0 bg-zinc-950 z-20 shrink-0">
           <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{title}</span>
           <button 
@@ -1279,7 +1873,7 @@ const CategoryPopover = ({ id, title, children, activeConsole, closeConsole }: {
         <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-8 space-y-8 overscroll-contain">
           {children}
         </div>
-      </div>
+      </motion.div>
     )}
   </AnimatePresence>
 );
@@ -1315,7 +1909,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
         
         {/* Typography */}
         <div className="space-y-2 sm:space-y-3">
-          <label className="text-[8px] sm:text-[9px] uppercase font-semibold tracking-[0.2em] text-zinc-600 block">{translations[lang].editor.fontStyle}</label>
+          <label className="text-[11px] sm:text-[12px] font-semibold tracking-wide text-zinc-400 block">{translations[lang].editor.fontStyle}</label>
           <div className="relative">
             <button 
               onClick={(e) => {
@@ -1324,7 +1918,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
                 setActiveConsole(activeConsole === 'font' ? 'none' : 'font');
               }}
               className={cn(
-                "w-full border p-2 sm:p-2.5 flex items-center justify-between text-[9px] sm:text-[10px] font-medium uppercase tracking-widest transition-all",
+                "w-full border p-2 sm:p-2.5 flex items-center justify-between text-[11px] sm:text-xs font-medium tracking-normal transition-all",
                 activeConsole === 'font' ? "bg-white text-black border-white" : "border-white/10 hover:bg-white/5"
               )}
             >
@@ -1346,9 +1940,9 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   <Upload className="w-8 h-8 text-zinc-600 group-hover:text-white transition-all duration-500 group-hover:-translate-y-1" />
-                  <div className="text-center relative z-10">
-                    <span className="text-[11px] font-black uppercase tracking-[0.3em] text-zinc-400 group-hover:text-white transition-colors">{translations[lang].editor.uploadFont}</span>
-                    <p className="text-[9px] text-zinc-600 uppercase tracking-widest mt-2 font-medium">TTF, OTF, WOFF Supported</p>
+                  <div className="text-center relative z-10 border-none">
+                    <span className="text-xs sm:text-sm font-semibold tracking-normal text-zinc-300 group-hover:text-white transition-colors">{translations[lang].editor.uploadFont}</span>
+                    <p className="text-[11px] text-zinc-500 tracking-normal mt-2 font-medium">TTF, OTF, WOFF Supported</p>
                   </div>
                 </button>
 
@@ -1408,7 +2002,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
 
         {/* Behavior */}
         <div className="space-y-2 sm:space-y-3">
-          <label className="text-[8px] sm:text-[9px] uppercase font-semibold tracking-[0.2em] text-zinc-600 block">{translations[lang].editor.motionType}</label>
+          <label className="text-[11px] sm:text-[12px] font-semibold tracking-wide text-zinc-400 block">{translations[lang].editor.motionType}</label>
           <div className="relative">
             <button 
               onClick={(e) => {
@@ -1417,7 +2011,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
                 setActiveConsole(activeConsole === 'anim' ? 'none' : 'anim');
               }}
               className={cn(
-                "w-full border p-2 sm:p-2.5 flex items-center justify-between text-[9px] sm:text-[10px] font-medium uppercase tracking-widest transition-all",
+                "w-full border p-2 sm:p-2.5 flex items-center justify-between text-[11px] sm:text-xs font-medium tracking-normal transition-all",
                 activeConsole === 'anim' ? "bg-white text-black border-white" : "border-white/10 hover:bg-white/5"
               )}
             >
@@ -1461,7 +2055,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
                     step={0.5}
                     precision={1}
                   />
-                  <div className="text-[8px] text-zinc-600 text-center uppercase tracking-widest italic">
+                  <div className="text-[11px] text-zinc-500 text-center tracking-normal italic">
                     {translations[lang].editor.scrollModes}
                   </div>
                 </div>
@@ -1472,7 +2066,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
 
         {/* Visuals */}
         <div className="space-y-2 sm:space-y-3">
-          <label className="text-[8px] sm:text-[9px] uppercase font-semibold tracking-[0.2em] text-zinc-600 block">{translations[lang].editor.appearance}</label>
+          <label className="text-[11px] sm:text-[12px] font-semibold tracking-wide text-zinc-400 block">{translations[lang].editor.appearance}</label>
           <div className="relative">
             <button 
               onClick={(e) => {
@@ -1480,7 +2074,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
                 setActiveConsole(activeConsole === 'color' ? 'none' : 'color');
               }}
               className={cn(
-                "w-full border p-2 sm:p-2.5 flex items-center justify-between text-[9px] sm:text-[10px] font-medium uppercase tracking-widest transition-all",
+                "w-full border p-2 sm:p-2.5 flex items-center justify-between text-[11px] sm:text-xs font-medium tracking-normal transition-all",
                 activeConsole === 'color' ? "bg-white text-black border-white" : "border-white/10 hover:bg-white/5"
               )}
             >
@@ -1757,7 +2351,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
 
         {/* Backdrop (Canvas) */}
         <div className="space-y-2 sm:space-y-3">
-          <label className="text-[8px] sm:text-[9px] uppercase font-semibold tracking-[0.2em] text-zinc-600 block">{translations[lang].editor.backdrop}</label>
+          <label className="text-[11px] sm:text-[12px] font-semibold tracking-wide text-zinc-400 block">{translations[lang].editor.backdrop}</label>
           <div className="relative">
             <button 
               onClick={(e) => {
@@ -1766,7 +2360,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
                 setActiveConsole(activeConsole === 'bg' ? 'none' : 'bg');
               }}
               className={cn(
-                "w-full border p-2 sm:p-2.5 flex items-center justify-between text-[9px] sm:text-[10px] font-medium uppercase tracking-widest transition-all",
+                "w-full border p-2 sm:p-2.5 flex items-center justify-between text-[11px] sm:text-xs font-medium tracking-normal transition-all",
                 activeConsole === 'bg' ? "bg-white text-black border-white" : "border-white/10 hover:bg-white/5"
               )}
             >
@@ -1783,8 +2377,8 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
                   )}
                 >
                   <div className="text-left">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.3em]">{translations[lang].editor.transparent}</div>
-                    <p className="text-[8px] opacity-60 uppercase mt-1">Alpha Channel Background</p>
+                    <div className="text-xs font-semibold tracking-normal text-zinc-300">{translations[lang].editor.transparent}</div>
+                    <p className="text-[11px] opacity-60 tracking-normal mt-1">Alpha Channel Background</p>
                   </div>
                   {settings.transparentBg ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5 opacity-20" />}
                 </button>
@@ -1812,7 +2406,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
 
         {/* Presets */}
         <div className="space-y-2 sm:space-y-3">
-          <label className="text-[8px] sm:text-[9px] uppercase font-semibold tracking-[0.2em] text-zinc-600 block">{translations[lang].editor.presets}</label>
+          <label className="text-[11px] sm:text-[12px] font-semibold tracking-wide text-zinc-400 block">{translations[lang].editor.presets}</label>
           <div className="relative">
             <button 
               onClick={(e) => {
@@ -1821,7 +2415,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
                 setActiveConsole(activeConsole === 'preset' ? 'none' : 'preset');
               }}
               className={cn(
-                "w-full border p-2 sm:p-2.5 flex items-center justify-between text-[9px] sm:text-[10px] font-medium uppercase tracking-widest transition-all",
+                "w-full border p-2 sm:p-2.5 flex items-center justify-between text-[11px] sm:text-xs font-medium tracking-normal transition-all",
                 activeConsole === 'preset' ? "bg-white text-black border-white" : "border-white/10 hover:bg-white/5"
               )}
             >
@@ -1879,7 +2473,7 @@ const CreditItem = ({
       <div 
         onClick={() => toggleSelect(item.id)}
         className={cn(
-          "group p-4 border transition-all rounded-none flex items-center justify-between relative overflow-visible",
+          "group p-4 lg:p-5 border transition-all rounded-none flex items-center justify-between relative overflow-visible",
           selectedIds.has(item.id) ? "bg-white text-black border-white shadow-[8px_8px_0px_rgba(255,255,255,0.05)]" : "border-white/20 hover:border-white hover:shadow-[5px_5px_0px_rgba(255,255,255,0.02)]"
         )}
       >
@@ -1899,10 +2493,10 @@ const CreditItem = ({
           </div>
           <div className="flex-1 min-w-0 pointer-events-none">
             <div className="flex items-center gap-2 mb-1">
-              <div className={cn("text-[9px] font-bold tracking-widest", selectedIds.has(item.id) ? "text-black" : "text-white/40")}>{item.role}</div>
+              <div className={cn("text-[9px] lg:text-[10px] font-bold tracking-widest uppercase", selectedIds.has(item.id) ? "text-black" : "text-white/40")}>{item.role}</div>
               {item.isPairs && <Columns className={cn("w-3 h-3", selectedIds.has(item.id) ? "text-black/40" : "text-white/20")} />}
             </div>
-            <div className="text-[11px] font-medium truncate">{(item.names || []).join(' / ')}</div>
+            <div className="text-[11px] lg:text-[13px] font-medium truncate">{(item.names || []).join(' / ')}</div>
           </div>
         </div>
 
@@ -1942,7 +2536,7 @@ const CreditItem = ({
                         startEditing(item.id);
                         setOpenSettingsId(null);
                       }}
-                      className="w-full text-left px-4 py-3 text-[10px] font-semibold uppercase tracking-widest hover:bg-white hover:text-black transition-colors flex items-center justify-between text-white border-b border-white/10"
+                      className="w-full text-left px-4 py-3 text-xs font-semibold tracking-normal hover:bg-white hover:text-black transition-colors flex items-center justify-between text-white border-b border-white/10"
                     >
                       {translations[lang].editor.editTape}
                     </button>
@@ -1952,7 +2546,7 @@ const CreditItem = ({
                         togglePairs(item.id);
                       }}
                       className={cn(
-                        "w-full text-left px-4 py-3 text-[10px] font-semibold uppercase tracking-widest transition-colors flex items-center justify-between border-b border-white/10",
+                        "w-full text-left px-4 py-3 text-xs font-semibold tracking-normal transition-colors flex items-center justify-between border-b border-white/10",
                         item.isPairs ? "bg-white text-black" : "text-white hover:bg-white hover:text-black"
                       )}
                     >
@@ -1965,7 +2559,7 @@ const CreditItem = ({
                         removeRole(item.id);
                         setOpenSettingsId(null);
                       }}
-                      className="w-full text-left px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+                      className="w-full text-left px-4 py-3 text-xs font-semibold tracking-normal text-red-500 hover:bg-red-500 hover:text-white transition-colors"
                     >
                       {translations[lang].editor.deleteTape}
                     </button>
@@ -1981,8 +2575,89 @@ const CreditItem = ({
 };
 
 
+const safeParse = (value: string | null, defaultValue: any) => {
+  if (!value || value === 'undefined' || value === 'null' || value === '') return defaultValue;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed !== undefined ? parsed : defaultValue;
+  } catch (e) {
+    console.error("JSON parse error:", e, "Value:", value);
+    return defaultValue;
+  }
+};
+
 export default function App() {
   const [view, setView] = useState<View>('hero');
+  const [isClapping, setIsClapping] = useState(false);
+  const [activeSection, setActiveSection] = useState('home');
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
+
+  const triggerClapperTransition = () => {
+    setIsClapping(true);
+    setTimeout(() => {
+      setView('editor');
+      window.scrollTo({ top: 0 });
+    }, 950); // Slam/clap moment (0.42 * 2200ms)
+    setTimeout(() => {
+      setIsClapping(false);
+    }, 2200); // Animation completion (2.2 seconds)
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const previousScrollY = lastScrollY.current;
+      const diff = currentScrollY - previousScrollY;
+      
+      if (currentScrollY > 100) {
+        if (diff > 10) {
+          setIsHidden(true);
+        } else if (diff < -10) {
+          setIsHidden(false);
+        }
+      } else {
+        setIsHidden(false);
+      }
+      setIsScrolled(currentScrollY > 50);
+      lastScrollY.current = currentScrollY;
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleSection = () => {
+      if (view !== 'hero') return;
+      const documentation = document.getElementById('documentation');
+      const faq = document.getElementById('faq');
+      const getStarted = document.getElementById('get-started');
+      const scrollPos = window.scrollY;
+      
+      // If we are at the very top, it's definitely home
+      if (scrollPos < 50) {
+        setActiveSection('home');
+        return;
+      }
+
+      // Check sections from bottom up to avoid early activation
+      if (getStarted && scrollPos >= getStarted.offsetTop - 500) {
+        setActiveSection('get-started');
+      } else if (faq && scrollPos >= faq.offsetTop - 500) {
+        setActiveSection('faq');
+      } else if (documentation && scrollPos >= documentation.offsetTop - 500) {
+        setActiveSection('documentation');
+      } else {
+        setActiveSection('home');
+      }
+    };
+    window.addEventListener('scroll', handleSection);
+    // Call once to set initial state
+    handleSection();
+    return () => window.removeEventListener('scroll', handleSection);
+  }, [view]);
 
   const [lang, setLang] = useState<Lang>(() => {
     try {
@@ -2003,13 +2678,6 @@ export default function App() {
         gestureOrientation: 'vertical',
         smoothWheel: true,
       });
-
-      function raf(time: number) {
-        lenis.raf(time);
-        requestAnimationFrame(raf);
-      }
-
-      requestAnimationFrame(raf);
 
       lenis.on('scroll', ScrollTrigger.update);
 
@@ -2040,6 +2708,8 @@ export default function App() {
       return 'UNTITLED_PROJECT';
     }
   });
+  const [showInfo, setShowInfo] = useState(true);
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [credits, setCredits] = useState<CreditEntry[]>(() => {
@@ -2047,25 +2717,7 @@ export default function App() {
       { id: '1', role: 'DIRECTOR', names: ['Afgan Al-fanany'] },
       { id: '2', role: 'PRODUCED BY', names: ['Al-fanany', 'Afgan'] },
     ];
-    try {
-      const saved = localStorage.getItem('daftarkru_credits_v2');
-      if (saved && typeof saved === 'string' && 
-          saved.trim().toLowerCase() !== 'undefined' && 
-          saved.trim().toLowerCase() !== 'null' && 
-          saved.trim() !== '') {
-        try {
-          const parsed = JSON.parse(saved);
-          return Array.isArray(parsed) ? parsed : defaultCredits;
-        } catch (e) {
-          console.error("JSON parse error for credits:", e);
-          return defaultCredits;
-        }
-      }
-      return defaultCredits;
-    } catch (e) {
-      console.error("Failed to parse credits from localStorage:", e);
-      return defaultCredits;
-    }
+    return safeParse(localStorage.getItem('daftarkru_credits_v2'), defaultCredits);
   });
 
   const [settings, setSettings] = useState(() => {
@@ -2106,25 +2758,9 @@ export default function App() {
       letterSpacing: 0,
       lut: 'none',
     };
-    try {
-      const saved = localStorage.getItem('daftarkru_settings');
-      if (saved && typeof saved === 'string' && 
-          saved.trim().toLowerCase() !== 'undefined' && 
-          saved.trim().toLowerCase() !== 'null' && 
-          saved.trim() !== '') {
-        try {
-          const parsed = JSON.parse(saved);
-          return { ...defaultSettings, ...(parsed && typeof parsed === 'object' ? parsed : {}) };
-        } catch (e) {
-          console.error("JSON parse error for settings:", e);
-          return defaultSettings;
-        }
-      }
-      return defaultSettings;
-    } catch (e) {
-      console.error("Failed to parse settings from localStorage:", e);
-      return defaultSettings;
-    }
+    const saved = localStorage.getItem('daftarkru_settings');
+    const parsed = safeParse(saved, defaultSettings);
+    return { ...defaultSettings, ...(parsed && typeof parsed === 'object' ? parsed : {}) };
   });
 
   // History for Undo
@@ -2225,24 +2861,7 @@ export default function App() {
   const [fadeIndex, setFadeIndex] = useState(0);
   const [isAutoPlay, setIsAutoPlay] = useState(true);
   const [customFonts, setCustomFonts] = useState<{ name: string, url: string, value: string }[]>(() => {
-    try {
-      const saved = localStorage.getItem('daftarkru_customFonts');
-      if (saved && typeof saved === 'string' &&
-          saved.trim().toLowerCase() !== 'undefined' &&
-          saved.trim().toLowerCase() !== 'null' &&
-          saved.trim() !== '') {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {
-          console.error("JSON parse error for custom fonts:", e);
-          localStorage.removeItem('daftarkru_customFonts');
-        }
-      }
-    } catch (e) {
-      console.error("Failed to load custom fonts:", e);
-      localStorage.removeItem('daftarkru_customFonts');
-    }
-    return [];
+    return safeParse(localStorage.getItem('daftarkru_customFonts'), []);
   });
 
   // Effect to manage custom font styles and persistence
@@ -2288,11 +2907,8 @@ export default function App() {
   const handleFontUpload = (e: React.ChangeEvent<HTMLInputElement>, fileInputRef: React.RefObject<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) {
-      console.log("No file selected");
       return;
     }
-
-    console.log("Started font upload process for:", file.name, "size:", (file.size / 1024).toFixed(2), "KB");
 
     // Filter by type
     if (!file.name.match(/\.(ttf|otf|woff|woff2)$/i)) {
@@ -2310,13 +2926,11 @@ export default function App() {
     
     reader.onprogress = (data) => {
       if (data.lengthComputable) {
-        const progress = (data.loaded / data.total) * 100;
-        console.log(`Font upload progress: ${progress.toFixed(2)}%`);
+        // Progress tracking if needed
       }
     };
 
     reader.onload = async (event) => {
-      console.log("FileReader finished reading file");
       const result = event.target?.result as string;
       if (!result) {
         console.error("FileReader result is empty");
@@ -2335,17 +2949,14 @@ export default function App() {
       };
 
       try {
-        console.log("Attempting to register font:", fontNameValue);
-        
         // Use FontFace API for immediate browser recognition if available
         if (typeof FontFace !== 'undefined') {
           try {
             const fontFace = new FontFace(fontNameValue, `url(${result})`);
             await fontFace.load();
             document.fonts.add(fontFace);
-            console.log("FontFace API: Font loaded and added successfully");
           } catch (ffErr) {
-            console.warn("FontFace API failed, falling back to CSS injection:", ffErr);
+            // Fallback handled
           }
         }
 
@@ -2358,16 +2969,13 @@ export default function App() {
           } else {
             next = [...prev, newFont].slice(-5); // Keep only last 5
           }
-          console.log("State setCustomFonts updated, new count:", next.length);
           return next;
         });
         
         setSettings((prev: any) => ({ ...prev, fontFamily: fontNameValue }));
         
         alert(`Berhasil! Font "${fontDisplayName}" telah ditambahkan dan diaplikasikan.`);
-        console.log("Font successfully added and applied:", fontDisplayName);
       } catch (err) {
-        console.error("Critical error during font processing:", err);
         alert("Gagal memproses font. Silakan coba file lain.");
       }
       
@@ -2545,8 +3153,8 @@ export default function App() {
       return;
     }
 
-    setIsExporting(true);
     setExportProgress(0);
+    setIsExporting(true);
 
     // Initial stabilization wait
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -2728,11 +3336,8 @@ export default function App() {
       try {
         bigImage = await toPng(scroll, commonOptions);
       } catch (err) {
-        console.warn("Capture with fonts failed, falling back to skipFonts: true", err);
         bigImage = await toPng(scroll, { ...commonOptions, skipFonts: true });
       }
-      console.log("DOM capture image data:", bigImage.substring(0, 50));
-      console.log("DOM capture complete");
 
       // Restore original state promptly
       scroll.style.cssText = originalStyle;
@@ -2874,6 +3479,10 @@ export default function App() {
       }
 
       if (active) {
+        setExportProgress(100);
+        // Make sure the 100% state is registered and let the film reel drop-bounce animation complete beautifully
+        await new Promise(resolve => setTimeout(resolve, 2400));
+
         await videoEncoder.flush();
         muxer.finalize();
 
@@ -2951,7 +3560,19 @@ export default function App() {
       "min-h-screen bg-black text-white font-sans selection:bg-white selection:text-black",
       view === 'editor' ? "lg:h-screen lg:overflow-hidden flex flex-col" : "overflow-x-hidden"
     )}>
-      {view !== 'editor' && <Navbar lang={lang} setLang={setLang} isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />}
+      <ClapperboardTransition isOpen={isClapping} lang={lang} />
+      
+      {view !== 'editor' && (
+        <Navbar 
+          lang={lang} 
+          setLang={setLang} 
+          isMobileMenuOpen={isMobileMenuOpen} 
+          setIsMobileMenuOpen={setIsMobileMenuOpen}
+          activeSection={activeSection}
+          isHidden={isHidden}
+          isScrolled={isScrolled}
+        />
+      )}
       
       <AnimatePresence mode="wait">
         {view === 'hero' ? (
@@ -3018,7 +3639,7 @@ export default function App() {
                     whileInView={{ opacity: 1 }}
                     viewport={{ once: false }}
                     transition={{ delay: 0.5 }}
-                    className="text-[11px] sm:text-[13px] md:text-[15px] uppercase tracking-[0.4em] font-medium text-white/40 max-w-2xl mx-auto h-6 flex items-center justify-center py-12"
+                    className="text-[13px] sm:text-[15px] md:text-[17px] font-sans font-medium text-white/60 max-w-2xl mx-auto h-6 flex items-center justify-center py-12 tracking-normal"
                   >
                     <TypingDescription lang={lang} />
                   </motion.div>
@@ -3033,8 +3654,7 @@ export default function App() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => {
-                      setView('editor');
-                      window.scrollTo({ top: 0 });
+                      triggerClapperTransition();
                     }}
                     className="group relative px-6 sm:px-10 py-3 sm:py-4 text-[10px] sm:text-[12px] font-bold uppercase tracking-[0.5em] transition-all overflow-hidden border border-white/40 rounded-none bg-black/50 backdrop-blur-xl shadow-[4px_4px_0px_rgba(255,255,255,0.05)] hover:shadow-[8px_8px_0px_rgba(255,255,255,0.1)] active:scale-[0.98] hero-button"
                   >
@@ -3093,21 +3713,47 @@ export default function App() {
             </motion.section>
 
             
-            <AboutSection lang={lang} onStart={() => setView('editor')} />
+            <AboutSection lang={lang} onStart={triggerClapperTransition} />
             <Marquee text={translations[lang].editor.rendering + " CREDITS ENGINE"} />
             <FAQSection lang={lang} />
+            <GetStartedSection lang={lang} onStart={triggerClapperTransition} />
 
-            <footer className="py-20 border-t border-white/5 bg-black flex flex-col items-center justify-center space-y-8">
-               <div className="text-xl sm:text-2xl font-bold uppercase tracking-tighter">DaftarKru Engine</div>
-               <div className="flex gap-8 text-[10px] font-semibold text-zinc-500 uppercase tracking-widest">
-                  <a href="#" className="hover:text-white">Twitter</a>
-                  <a href="#" className="hover:text-white">Instagram</a>
-                  <a href="#" className="hover:text-white">GitHub</a>
-               </div>
-               <div className="text-[8px] sm:text-[10px] font-semibold text-zinc-700 uppercase tracking-[0.5em]">
-                  COPYRIGHT DAFTARKRU 2026
-               </div>
-            </footer>
+            {/* Persistent Desktop Sidebar Navigation - Only shown on Get Started section */}
+            <AnimatePresence>
+              {activeSection === 'get-started' && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="hidden lg:block"
+                >
+                  {/* Left Sidebar: Copyright */}
+                  <div className="fixed left-0 top-0 bottom-0 w-24 flex items-center justify-center mix-blend-difference z-[100] pointer-events-none">
+                      <div className="-rotate-90 text-[10px] sm:text-[12px] font-medium tracking-[1.2em] text-white/40 whitespace-nowrap uppercase">
+                        © 2026 DAFTARKRU. ALL RIGHT RESERVED
+                      </div>
+                  </div>
+
+                  {/* Right Sidebar: Socials */}
+                  <div className="fixed right-0 top-0 bottom-0 w-24 flex items-center justify-center z-[100]">
+                      <div className="flex flex-col gap-10 items-center">
+                        <div className="h-32 w-[1px] bg-white/10" />
+                        <a href="https://daftarkru.netlify.app" target="_blank" rel="noopener noreferrer" className="group p-2" title="Website">
+                          <Globe className="w-4 h-4 text-white/30 group-hover:text-white group-hover:scale-125 transition-all" />
+                        </a>
+                        <a href="https://instagram.com/afganalfananyy" target="_blank" rel="noopener noreferrer" className="group p-2">
+                          <Instagram className="w-4 h-4 text-white/30 group-hover:text-white group-hover:scale-125 transition-all" />
+                        </a>
+                        <a href="https://github.com/afganalfananyy" target="_blank" rel="noopener noreferrer" className="group p-2">
+                          <Github className="w-4 h-4 text-white/30 group-hover:text-white group-hover:scale-125 transition-all" />
+                        </a>
+                        <div className="h-32 w-[1px] bg-white/10" />
+                      </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
           </div>
         ) : (
           <motion.div 
@@ -3160,6 +3806,7 @@ export default function App() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
+                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                     onClick={() => setIsMenuOpen(false)}
                     className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[300]"
                   />
@@ -3167,7 +3814,8 @@ export default function App() {
                     initial={{ x: '100%' }}
                     animate={{ x: 0 }}
                     exit={{ x: '100%' }}
-                    className="fixed top-0 right-0 h-full w-full sm:w-80 bg-black border-l border-white z-[310] p-6 md:p-8 flex flex-col"
+                    transition={{ type: "tween", ease: [0.16, 1, 0.3, 1], duration: 0.45 }}
+                    className="fixed top-0 right-0 h-full w-full sm:w-96 bg-black border-l border-white z-[310] p-6 md:p-8 flex flex-col"
                   >
                     <div className="flex items-center justify-between mb-12">
                       <h2 className="text-sm font-bold uppercase tracking-widest">{translations[lang].editor.projectOptions}</h2>
@@ -3214,12 +3862,18 @@ export default function App() {
                               type="text" 
                               value={projectName}
                               onChange={(e) => setProjectName(e.target.value)}
-                              className="flex-1 bg-black border border-white p-4 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-white transition-all rounded-none"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  setIsMenuOpen(false);
+                                }
+                              }}
+                              className="flex-1 min-w-0 bg-black border border-white p-4 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-white transition-all rounded-none"
                               placeholder="PROJECT_MASTER"
                             />
                             <button 
+                              type="button"
                               onClick={() => setIsMenuOpen(false)}
-                              className="bg-white text-black px-4 flex items-center justify-center hover:bg-zinc-200 transition-colors"
+                              className="flex-shrink-0 w-14 h-14 bg-white text-black flex items-center justify-center hover:bg-zinc-200 active:scale-95 transition-all cursor-pointer rounded-none"
                               title="Confirm Name"
                             >
                               <Check className="w-5 h-5" />
@@ -3228,13 +3882,13 @@ export default function App() {
                         </div>
 
                         <div className="pt-6 border-t border-white/10">
-                          <p className="text-[10px] text-zinc-500 uppercase tracking-widest leading-relaxed font-medium">
+                          <p className="text-xs text-zinc-400 tracking-normal leading-relaxed font-medium">
                             Developed by Afgan Al-fanany.
                           </p>
                         </div>
 
                         <div className="pt-6 border-t border-white/10">
-                          <label className="text-[10px] uppercase font-semibold tracking-widest text-zinc-500 mb-2 block">{translations[lang].langToggles.switch}</label>
+                          <label className="text-xs font-semibold tracking-normal text-zinc-400 mb-2 block">{translations[lang].langToggles.switch}</label>
                           <div className="flex items-center gap-1 border border-white/10 p-1 rounded-none bg-white/[0.03]">
                             {(['id', 'en'] as Lang[]).map((l) => (
                               <button
@@ -3277,57 +3931,44 @@ export default function App() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[1000] bg-black flex flex-col items-center justify-center p-8 text-center overflow-hidden"
+                    className="fixed inset-0 z-[1000] bg-black flex flex-col items-center justify-center p-4 sm:p-8 text-center overscroll-contain overflow-y-auto"
                   >
                     <motion.div 
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="max-w-xl w-full space-y-12 relative z-10"
+                      className="max-w-xl w-full space-y-6 sm:space-y-10 lg:space-y-12 relative z-10 py-4"
                     >
-                      <div className="space-y-4">
-                        <h2 className="text-4xl sm:text-5xl font-bold uppercase tracking-[0.4em] text-white">
+                      <div className="space-y-1 sm:space-y-4">
+                        <h2 className="text-xl sm:text-4xl lg:text-5xl font-bold uppercase tracking-[0.4em] text-white">
                           {translations[lang].editor.rendering}
                         </h2>
-                        <p className="text-[10px] uppercase tracking-[0.5em] text-zinc-500 font-medium max-w-sm mx-auto leading-relaxed">
+                        <p className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.5em] text-zinc-500 font-medium max-w-[240px] sm:max-w-sm mx-auto leading-relaxed">
                           {translations[lang].editor.generatingFrames} <span className="text-white">{projectName}</span>
                         </p>
                       </div>
 
-                      <div className="relative py-16 flex flex-col items-center">
-                        <div className="text-[8rem] sm:text-[10rem] font-bold tabular-nums tracking-tighter text-white opacity-[0.02] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 select-none">
-                          {exportProgress}%
-                        </div>
+                      <div className="flex flex-col items-center justify-center -my-4 sm:py-6">
+                        {/* Film Reel into Folder Animation */}
+                        <FilmReelToFolderAnimation progress={exportProgress} lang={lang} />
                         
-                        <div className="w-full space-y-6 relative z-10">
-                          <div className="flex justify-between items-end">
-                             <div className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                               <div className="w-2 h-2 bg-white animate-pulse" />
-                               <span>{translations[lang].editor.processing}</span>
-                             </div>
-                             <div className="text-2xl font-mono font-bold text-white">{exportProgress}%</div>
-                          </div>
-                          <div className="h-[2px] w-full bg-white/5 relative overflow-hidden">
-                             <motion.div 
-                               className="absolute inset-y-0 left-0 bg-white" 
-                               animate={{ width: `${exportProgress}%` }}
-                               transition={{ type: "spring", stiffness: 100, damping: 30 }}
-                             />
-                          </div>
+                        {/* Real-time Film Strip Sprocket Progress Bar */}
+                        <div className="w-full max-w-md mt-0 sm:mt-6 px-4 sm:px-0">
+                          <FilmStripProgressBar progress={exportProgress} lang={lang} />
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-8 pt-12 border-t border-white/5">
-                        <div className="space-y-2">
-                          <div className="text-[8px] uppercase tracking-widest text-zinc-600 font-bold">Resolution</div>
-                          <div className="text-[10px] font-mono font-medium">1920 X 1080</div>
+                      <div className="grid grid-cols-3 gap-2 sm:gap-8 pt-6 sm:pt-12 border-t border-white/5">
+                        <div className="space-y-1 sm:space-y-2">
+                          <div className="text-[7px] sm:text-[8px] uppercase tracking-widest text-zinc-600 font-bold">Resolution</div>
+                          <div className="text-[9px] sm:text-[10px] font-mono font-medium">1920 X 1080</div>
                         </div>
-                        <div className="space-y-2">
-                          <div className="text-[8px] uppercase tracking-widest text-zinc-600 font-bold">Framerate</div>
-                          <div className="text-[10px] font-mono font-medium">60 FPS</div>
+                        <div className="space-y-1 sm:space-y-2">
+                          <div className="text-[7px] sm:text-[8px] uppercase tracking-widest text-zinc-600 font-bold">Framerate</div>
+                          <div className="text-[9px] sm:text-[10px] font-mono font-medium">60 FPS</div>
                         </div>
-                        <div className="space-y-2">
-                          <div className="text-[8px] uppercase tracking-widest text-zinc-600 font-bold">Format</div>
-                          <div className="text-[10px] font-mono font-medium">WEBM / VP9</div>
+                        <div className="space-y-1 sm:space-y-2">
+                          <div className="text-[7px] sm:text-[8px] uppercase tracking-widest text-zinc-600 font-bold">Format</div>
+                          <div className="text-[9px] sm:text-[10px] font-mono font-medium">WEBM / VP9</div>
                         </div>
                       </div>
                     </motion.div>
@@ -3336,11 +3977,11 @@ export default function App() {
               </AnimatePresence>
 
               {/* Controls Column (Left) */}
-              <aside className="w-full lg:w-[380px] border-b lg:border-b-0 lg:border-r border-white lg:overflow-y-auto lg:scrollbar-hide bg-black p-4 md:p-6 space-y-12 order-2 lg:order-1 flex-shrink-0">
+              <aside className="w-full lg:w-[460px] border-b lg:border-b-0 lg:border-r border-white lg:overflow-y-auto lg:scrollbar-hide bg-black p-5 lg:p-10 space-y-12 order-2 lg:order-1 flex-shrink-0">
                 {/* Management Section */}
                 <div className="space-y-6 credit-input">
                   <div className="flex items-center justify-between border-b border-white pb-3">
-                    <h2 className="text-[11px] font-bold uppercase tracking-[0.4em]">{translations[lang].editor.creditInput}</h2>
+                    <h2 className="text-[11px] lg:text-[13px] font-bold uppercase tracking-[0.4em]">{translations[lang].editor.creditInput}</h2>
                   </div>
                   <div className="space-y-3">
                     <input 
@@ -3348,25 +3989,25 @@ export default function App() {
                       value={newRole}
                       onChange={(e) => setNewRole(e.target.value)}
                       placeholder={translations[lang].editor.rolePlaceholder}
-                      className="w-full bg-black border border-white p-4 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-white rounded-none placeholder:text-zinc-700 font-mono"
+                      className="w-full bg-black border border-white p-4 lg:p-5 text-xs lg:text-[13px] font-medium focus:outline-none focus:ring-1 focus:ring-white rounded-none placeholder:text-zinc-700 font-mono transition-colors hover:border-white/40"
                     />
                     <textarea 
                       value={newNames}
                       onChange={(e) => setNewNames(e.target.value)}
                       placeholder={translations[lang].editor.namesPlaceholder}
-                      className="w-full h-32 bg-black border border-white p-4 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-white rounded-none resize-none placeholder:text-zinc-700 font-mono"
+                      className="w-full h-32 lg:h-40 bg-black border border-white p-4 lg:p-5 text-xs lg:text-[13px] font-medium focus:outline-none focus:ring-1 focus:ring-white rounded-none resize-none placeholder:text-zinc-700 font-mono transition-colors hover:border-white/40"
                     />
                     <button 
                       onClick={addRole}
                       disabled={!newRole.trim() || !newNames.trim()}
-                      className="w-full h-16 border border-white flex items-center justify-center hover:bg-white hover:text-black transition-all disabled:opacity-20 rounded-none group bg-zinc-950"
+                      className="w-full h-16 lg:h-20 border border-white flex items-center justify-center hover:bg-white hover:text-black transition-all disabled:opacity-20 rounded-none group bg-zinc-950"
                     >
                       {editingId ? <Check className="w-8 h-8" /> : <Plus className="w-8 h-8 transition-transform group-hover:rotate-90" />}
                     </button>
                     {editingId && (
                       <button 
                         onClick={cancelEdit}
-                        className="w-full border border-white/20 text-white p-4 text-[10px] font-bold uppercase tracking-widest hover:bg-white/10 transition-all font-mono"
+                        className="w-full border border-white/20 text-white p-4 lg:p-5 text-[10px] lg:text-[11px] font-bold uppercase tracking-widest hover:bg-white/10 transition-all font-mono"
                       >
                         {translations[lang].editor.cancelEditing}
                       </button>
@@ -3378,19 +4019,19 @@ export default function App() {
                 {/* Tape List Section */}
                 <div className="space-y-6">
                   <div className="flex items-center justify-between border-b border-white pb-3">
-                    <h2 className="text-[11px] font-bold uppercase tracking-[0.4em]">{translations[lang].editor.tapeList}</h2>
+                    <h2 className="text-[11px] lg:text-[13px] font-bold uppercase tracking-[0.4em]">{translations[lang].editor.tapeList}</h2>
                     <div className="flex gap-4">
                       {selectedIds.size > 0 && (
                         <button 
                           onClick={bulkDelete}
-                          className="text-[10px] font-bold text-red-500 hover:scale-105 transition-transform uppercase tracking-widest"
+                          className="text-[10px] lg:text-[11px] font-bold text-red-500 hover:scale-105 transition-transform uppercase tracking-widest"
                         >
                           {translations[lang].editor.delete} ({selectedIds.size})
                         </button>
                       )}
                       <button 
                         onClick={toggleSelectAll}
-                        className="text-[10px] font-black hover:text-zinc-400 transition-colors uppercase tracking-[0.15em]"
+                        className="text-[10px] lg:text-[12px] font-black hover:text-zinc-400 transition-colors uppercase tracking-[0.15em]"
                       >
                         {selectedIds.size === credits.length && credits.length > 0 ? translations[lang].editor.unselectAll : translations[lang].editor.selectAll}
                       </button>
@@ -3420,7 +4061,7 @@ export default function App() {
                       />
                     ))}
                     {credits.length === 0 && (
-                      <p className="text-[10px] text-zinc-600 uppercase tracking-widest text-center py-8 italic font-light">{translations[lang].editor.emptyList}</p>
+                      <p className="text-xs sm:text-sm text-zinc-500 tracking-normal text-center py-8 italic font-light">{translations[lang].editor.emptyList}</p>
                     )}
                   </Reorder.Group>
                 </div>
@@ -3587,7 +4228,7 @@ export default function App() {
                             animationDelay: settings.animationType === 'scroll' && !isAutoPlay ? `-${(fadeIndex / 1000) * Math.max(5, settings.animationDuration * 4)}s` : '0s',
                             width: `100%`,
                             maxWidth: `${DESIGN_BASE_WIDTH}px`,
-                            transform: `translate(-50%, 1080px)`,
+                            transform: `translate(-50%, 500px)`,
                             fontSize: `${settings.fontSize}px`,
                           }}
                         >
@@ -3893,14 +4534,37 @@ export default function App() {
                     <div className="absolute -bottom-1 -left-1 w-3 h-3 md:w-4 md:h-4 border-b-2 border-l-2 border-white z-30" />
                     <div className="absolute -bottom-1 -right-1 w-3 h-3 md:w-4 md:h-4 border-b-2 border-r-2 border-white z-30" />
                   </div>
+
+                  {/* Info Text / Export Warning di bawah Preview */}
+                  {showInfo && (
+                    <div className="mt-4 w-full max-w-[1400px] bg-white/[0.02] border border-white/10 p-4 pr-12 flex gap-3 items-start relative overflow-hidden">
+                      <Info className="w-4 h-4 text-white mt-0.5 flex-shrink-0" />
+                      <div className="space-y-1">
+                        <div className="text-[9px] font-bold uppercase tracking-widest text-white/40">
+                          {lang === 'id' ? 'INFORMASI TAMBAHAN' : 'ADDITIONAL INFORMATION'}
+                        </div>
+                        <p className="text-[10px] text-zinc-400 font-medium leading-relaxed tracking-normal">
+                          {translations[lang].editor.exportWarning}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowInfo(false)}
+                        className="absolute top-3 right-3 text-white/40 hover:text-white transition-colors cursor-pointer active:scale-90"
+                        title={lang === 'id' ? 'Tutup' : 'Close'}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </main>
 
                     {/* Visual Console for Desktop */}
                     <div className="hidden lg:block border-t border-white bg-black flex-shrink-0 relative z-[200] visual-console">
-                      <div className="px-8 py-3 border-b border-white/10 flex items-center justify-between">
-                         <h2 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white">{translations[lang].editor.visualConsole}</h2>
+                      <div className="px-12 py-5 border-b border-white/10 flex items-center justify-between">
+                         <h2 className="text-[11px] lg:text-[13px] font-bold uppercase tracking-[0.3em] text-white">{translations[lang].editor.visualConsole}</h2>
                       </div>
-                      <div className="px-8 py-6">
+                      <div className="px-12 py-10">
                         <ConsoleContent 
                           settings={settings} 
                           setSettings={setSettings} 
@@ -3915,11 +4579,11 @@ export default function App() {
                         />
 
                         {/* Export Button for Desktop */}
-                        <div className="mt-8 pt-8 border-t border-white/10 flex justify-end">
+                        <div className="mt-10 pt-10 border-t border-white/10 flex justify-end">
                           <button 
                             onClick={recordVideo}
                             title={translations[lang].editor.renderExport}
-                            className="min-w-[200px] bg-white text-black py-4 text-[11px] font-bold uppercase tracking-[0.3em] hover:bg-zinc-200 transition-all rounded-none shadow-[8px_8px_0px_rgba(255,255,255,0.05)] render-button"
+                            className="min-w-[240px] bg-white text-black py-4 lg:py-5 text-[11px] lg:text-[13px] font-bold uppercase tracking-[0.3em] hover:bg-zinc-200 transition-all rounded-none shadow-[8px_8px_0px_rgba(255,255,255,0.05)] render-button"
                           >
                             {translations[lang].editor.renderExport}
                           </button>
@@ -3929,7 +4593,7 @@ export default function App() {
                   </div>
 
                   {/* Fine Tuning Panel (Right) */}
-                  <aside className="hidden lg:block w-[380px] border-l border-white bg-black p-8 overflow-y-auto scrollbar-hide order-3 flex-shrink-0">
+                  <aside className="hidden lg:block lg:w-[460px] border-l border-white bg-black p-10 overflow-y-auto scrollbar-hide order-3 flex-shrink-0">
                     <TuningControls settings={settings} setSettings={setSettings} lang={lang} />
                   </aside>
                 </div>
@@ -4031,7 +4695,7 @@ export default function App() {
                         animationDelay: settings.animationType === 'scroll' && !isAutoPlay ? `-${(fadeIndex / 1000) * Math.max(5, settings.animationDuration * 4)}s` : '0s',
                         width: `100%`,
                         maxWidth: `${DESIGN_BASE_WIDTH}px`,
-                        transform: `translate(-50%, 1080px)`,
+                        transform: `translate(-50%, 500px)`,
                         fontSize: `${settings.fontSize}px`,
                       }}
                     >
@@ -4373,13 +5037,13 @@ export default function App() {
         }
 
         @keyframes scroll-bottomToTop {
-          0% { transform: translate(-50%, 1080px); }
+          0% { transform: translate(-50%, 500px); }
           100% { transform: translate(-50%, -100%); }
         }
 
         @keyframes scroll-topToBottom {
           0% { transform: translate(-50%, -100%); }
-          100% { transform: translate(-50%, 1080px); }
+          100% { transform: translate(-50%, 500px); }
         }
 
         .scrollbar-hide::-webkit-scrollbar {

@@ -53,3 +53,49 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+@keyframes infinite-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes infinite-scroll-reverse {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
+}
+
+.animate-infinite-scroll {
+  animation: infinite-scroll 40s linear infinite;
+  display: flex;
+  width: max-content;
+}
+
+.animate-infinite-scroll-reverse {
+  animation: infinite-scroll-reverse 40s linear infinite;
+  display: flex;
+  width: max-content;
+}
+
+@keyframes vertical-infinite-scroll {
+  from { transform: translateY(0); }
+  to { transform: translateY(-50%); }
+}
+
+@keyframes vertical-infinite-scroll-reverse {
+  from { transform: translateY(-50%); }
+  to { transform: translateY(0); }
+}
+
+.animate-vertical-infinite-scroll {
+  animation: vertical-infinite-scroll var(--duration, 40s) linear infinite;
+  display: flex;
+  flex-direction: column;
+  height: max-content;
+}
+
+.animate-vertical-infinite-scroll-reverse {
+  animation: vertical-infinite-scroll-reverse var(--duration, 40s) linear infinite;
+  display: flex;
+  flex-direction: column;
+  height: max-content;
+}
