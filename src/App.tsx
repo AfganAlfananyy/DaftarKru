@@ -18,6 +18,7 @@ import {
   Check,
   Maximize,
   Minimize,
+  Languages,
   Play,
   Pause,
   FastForward,
@@ -454,7 +455,7 @@ const translations = {
     langToggles: {
       switch: "Switch Language"
     }
-  }
+  },
 };
 
 type Lang = 'id' | 'en';
@@ -586,20 +587,29 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSe
           <div className="h-4 w-[1px] bg-white/10 mx-1 sm:mx-2" />
 
           <div className="flex items-center gap-1 px-1 sm:px-2">
-            {(['id', 'en'] as Lang[]).map((l) => (
-              <button
-                key={l}
-                onClick={() => setLang(l)}
-                className={cn(
-                  "w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-[9px] sm:text-[10px] font-bold transition-all rounded-none border",
-                  lang === l 
-                    ? "bg-white text-black border-white" 
-                    : "text-zinc-500 border-transparent hover:text-white"
-                )}
+            <div className="relative group">
+              <button 
+                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-zinc-500 hover:text-white transition-all"
               >
-                {l.toUpperCase()}
+                <Languages size={18} />
               </button>
-            ))}
+              <div className="absolute right-0 top-full mt-1 w-20 bg-black border border-zinc-800 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                {(['id', 'en'] as Lang[]).map((l) => (
+                  <button
+                    key={l}
+                    onClick={() => setLang(l)}
+                    className={cn(
+                      "w-full px-4 py-2 text-[10px] font-bold text-center block transition-all",
+                      lang === l 
+                        ? "bg-white text-black" 
+                        : "text-zinc-500 hover:text-white hover:bg-zinc-900"
+                    )}
+                  >
+                    {l.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </motion.nav>
@@ -1759,6 +1769,50 @@ const SliderWithControls = ({
   unit?: string,
   precision?: number
 }) => {
+  const ignoreChangeRef = useRef(false);
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLInputElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (rect.width === 0) return;
+    const clickX = e.clientX;
+    const clickPercent = ((clickX - rect.left) / rect.width) * 105; // Slightly scaled
+    const valuePercent = ((value - min) / (max - min)) * 100;
+    
+    // If pointer-down is further than 18% from current thumb position, ignore to prevent accidental track jumping
+    if (Math.abs(clickPercent - valuePercent) > 18) {
+      ignoreChangeRef.current = true;
+    } else {
+      ignoreChangeRef.current = false;
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLInputElement>) => {
+    if (e.touches && e.touches[0]) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      if (rect.width === 0) return;
+      const clickX = e.touches[0].clientX;
+      const clickPercent = ((clickX - rect.left) / rect.width) * 105;
+      const valuePercent = ((value - min) / (max - min)) * 100;
+      
+      if (Math.abs(clickPercent - valuePercent) > 18) {
+        ignoreChangeRef.current = true;
+      } else {
+        ignoreChangeRef.current = false;
+      }
+    }
+  };
+
+  const handlePointerUp = () => {
+    ignoreChangeRef.current = false;
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (ignoreChangeRef.current) {
+      return;
+    }
+    onChange(Number(e.target.value));
+  };
+
   const handleDecrement = () => {
     onChange(Math.max(min, Number((value - step).toFixed(precision))));
   };
@@ -1768,22 +1822,24 @@ const SliderWithControls = ({
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex justify-between items-center text-xs sm:text-[13px] font-medium tracking-normal text-zinc-400">
-        <span className="text-zinc-400">{label}</span>
+    <div className="space-y-2.5 touch-pan-y">
+      <div className="flex justify-between items-center text-xs sm:text-[13px] font-medium tracking-[0.05em] text-white">
+        <span className="text-white/95 font-medium uppercase tracking-wider">{label}</span>
         <div className="flex items-center gap-3">
           <button 
+            type="button"
             onClick={handleDecrement}
-            className="w-5 h-5 flex items-center justify-center border border-white/20 hover:bg-white hover:text-black transition-all transition-colors"
+            className="w-5 h-5 flex items-center justify-center border border-white/20 hover:bg-white hover:text-black transition-all bg-white/[0.02]"
           >
-            <Minus className="w-3 h-3" />
+            <Minus className="w-3 h-3 text-white" />
           </button>
-          <span className="min-w-[40px] text-center font-mono">{value.toFixed(precision)}{unit}</span>
+          <span className="min-w-[40px] text-right font-mono text-[11px] font-medium text-white">{value.toFixed(precision)}{unit}</span>
           <button 
+            type="button"
             onClick={handleIncrement}
-            className="w-5 h-5 flex items-center justify-center border border-white/20 hover:bg-white hover:text-black transition-all transition-colors"
+            className="w-5 h-5 flex items-center justify-center border border-white/20 hover:bg-white hover:text-black transition-all bg-white/[0.02]"
           >
-            <Plus className="w-3 h-3" />
+            <Plus className="w-3 h-3 text-white" />
           </button>
         </div>
       </div>
@@ -1793,8 +1849,12 @@ const SliderWithControls = ({
         max={max} 
         step={step} 
         value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full h-[1px] bg-white accent-white appearance-none cursor-pointer"
+        onPointerDown={handlePointerDown}
+        onTouchStart={handleTouchStart}
+        onPointerUp={handlePointerUp}
+        onTouchEnd={handlePointerUp}
+        onChange={handleChange}
+        className="w-full h-[2px] bg-zinc-800 accent-white appearance-none cursor-pointer touch-none"
       />
     </div>
   );
@@ -1826,7 +1886,7 @@ const TuningControls = React.memo(({ settings, setSettings, lang }: any) => {
   return (
     <div className="space-y-10">
       <div className="flex items-center gap-4 border-b border-white/5 pb-2">
-        <h3 className="text-xs sm:text-[13px] font-semibold tracking-normal text-zinc-300 whitespace-nowrap">{translations[lang].editor.fineTuning}</h3>
+        <h3 className="text-xs sm:text-[13px] font-medium tracking-normal text-zinc-300 whitespace-nowrap">FINE TUNING CONTROL</h3>
          <div className="h-[1px] w-full bg-white/5" />
       </div>
       <div className="grid grid-cols-1 gap-y-10">
@@ -1977,7 +2037,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
         
         {/* Typography */}
         <div className="space-y-2 sm:space-y-3">
-          <label className="text-[11px] sm:text-[12px] font-semibold tracking-wide text-zinc-400 block">{translations[lang].editor.fontStyle}</label>
+          <label className="text-[11px] sm:text-[12px] font-bold tracking-widest text-white uppercase block">{translations[lang].editor.fontStyle}</label>
           <div className="relative">
             <button 
               onClick={(e) => {
@@ -2070,7 +2130,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
 
         {/* Behavior */}
         <div className="space-y-2 sm:space-y-3">
-          <label className="text-[11px] sm:text-[12px] font-semibold tracking-wide text-zinc-400 block">{translations[lang].editor.motionType}</label>
+          <label className="text-[11px] sm:text-[12px] font-bold tracking-widest text-white uppercase block">{translations[lang].editor.motionType}</label>
           <div className="relative">
             <button 
               onClick={(e) => {
@@ -2134,7 +2194,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
 
         {/* Visuals */}
         <div className="space-y-2 sm:space-y-3">
-          <label className="text-[11px] sm:text-[12px] font-semibold tracking-wide text-zinc-400 block">{translations[lang].editor.appearance}</label>
+          <label className="text-[11px] sm:text-[12px] font-bold tracking-widest text-white uppercase block">{translations[lang].editor.appearance}</label>
           <div className="relative">
             <button 
               onClick={(e) => {
@@ -2419,7 +2479,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
 
         {/* Backdrop (Canvas) */}
         <div className="space-y-2 sm:space-y-3">
-          <label className="text-[11px] sm:text-[12px] font-semibold tracking-wide text-zinc-400 block">{translations[lang].editor.backdrop}</label>
+          <label className="text-[11px] sm:text-[12px] font-bold tracking-widest text-white uppercase block">{translations[lang].editor.backdrop}</label>
           <div className="relative">
             <button 
               onClick={(e) => {
@@ -2474,7 +2534,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
 
         {/* Presets */}
         <div className="space-y-2 sm:space-y-3">
-          <label className="text-[11px] sm:text-[12px] font-semibold tracking-wide text-zinc-400 block">{translations[lang].editor.presets}</label>
+          <label className="text-[11px] sm:text-[12px] font-bold tracking-widest text-white uppercase block">{translations[lang].editor.presets}</label>
           <div className="relative">
             <button 
               onClick={(e) => {
@@ -2784,6 +2844,7 @@ export default function App() {
       return 'UNTITLED_PROJECT';
     }
   });
+  const [isEditingProjectName, setIsEditingProjectName] = useState(false);
   const [showInfo, setShowInfo] = useState(true);
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -3504,14 +3565,14 @@ export default function App() {
 
         // Overlay effects in export
         if (settings.showNoise) {
-          ctx.fillStyle = `rgba(255,255,255,${settings.noiseOpacity * 0.4})`;
-          for (let i = 0; i < 6000; i++) {
+          ctx.fillStyle = `rgba(255,255,255,${settings.noiseOpacity * 0.8})`;
+          for (let i = 0; i < 15000; i++) {
             ctx.fillRect(Math.random() * canvasWidth, Math.random() * canvasHeight, 1, 1);
           }
         }
         if (settings.showScanlines) {
-          ctx.fillStyle = 'rgba(0,0,0,0.1)';
-          for (let i = 0; i < canvasHeight; i += 4) {
+          ctx.fillStyle = 'rgba(0,0,0,0.3)';
+          for (let i = 0; i < canvasHeight; i += 2) {
              ctx.fillRect(0, i, canvasWidth, 1);
           }
         }
@@ -3831,26 +3892,7 @@ export default function App() {
               )}
             </AnimatePresence>
 
-            {/* Footer */}
-            <footer className="w-full bg-[#000000] border-t border-white/5 py-12 px-6 sm:px-12 flex flex-col items-center gap-8 relative z-10">
-              <div className="max-w-7xl w-full flex flex-col md:flex-row justify-between items-center gap-8">
-                <div className="flex flex-col items-center md:items-start gap-2">
-                  <h3 className="text-xl font-bold tracking-tighter uppercase italic">Daftar<span className="opacity-50">Kru</span> Engine</h3>
-                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest">© 2026 AFGAN AL-FANANY. ALL RIGHT RESERVED</p>
-                </div>
-                <div className="flex gap-8">
-                   <a href="https://daftarkru.netlify.app" target="_blank" rel="noopener noreferrer" className="group" title="Official Website">
-                      <Globe className="w-5 h-5 text-zinc-500 group-hover:text-white transition-colors" />
-                   </a>
-                   <a href="https://instagram.com/afganalfananyy" target="_blank" rel="noopener noreferrer" className="group">
-                      <Instagram className="w-5 h-5 text-zinc-500 group-hover:text-white transition-colors" />
-                   </a>
-                   <a href="https://github.com/afganalfananyy" target="_blank" rel="noopener noreferrer" className="group">
-                      <Github className="w-5 h-5 text-zinc-500 group-hover:text-white transition-colors" />
-                   </a>
-                </div>
-              </div>
-            </footer>
+
           </main>
         ) : (
           <motion.div 
@@ -3862,27 +3904,55 @@ export default function App() {
             {/* Header */}
             <header className="h-16 md:h-20 border-b border-white flex items-center justify-between px-4 md:px-8 bg-black flex-shrink-0 z-[100] relative">
               <div 
-                className="flex flex-col cursor-pointer group"
+                className="flex items-center gap-4 cursor-pointer group"
                 onClick={() => setView('hero')}
               >
-                <h1 className="text-xl md:text-2xl font-bold tracking-tighter uppercase leading-none group-hover:text-zinc-500 transition-colors">
-                  DaftarKru
-                </h1>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1 hidden sm:block">
-                  Engine
-                </p>
+                <img src="/daftarkru.png" alt="DaftarKru" className="h-7 w-auto" />
               </div>
               
               <div className="flex items-center gap-2 md:gap-4">
-                <button 
-                  onClick={undo}
-                  disabled={history.length <= 1}
-                  className="p-2 md:p-3 border border-white hover:bg-white hover:text-black transition-all disabled:opacity-20 rounded-none group flex items-center gap-2"
-                  title="Undo (Ctrl+Z)"
-                >
-                  <Undo2 className="w-4 h-4 md:w-5 md:h-5" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:block">Undo</span>
-                </button>
+                {isEditingProjectName ? (
+                  <div className="flex items-center border border-white bg-black">
+                    <input 
+                      type="text" 
+                      value={projectName}
+                      placeholder="Enter new project name"
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setProjectName(val);
+                        try {
+                          localStorage.setItem('daftarkru_projectName', val);
+                        } catch (err) {}
+                      }}
+                      onBlur={() => setIsEditingProjectName(false)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          setIsEditingProjectName(false);
+                        }
+                      }}
+                      autoFocus
+                      className="bg-black text-[10px] sm:text-xs font-mono font-bold uppercase tracking-widest border-none focus:outline-none focus:ring-0 text-white w-24 sm:w-44 px-3 py-2 sm:py-3"
+                    />
+                    <button 
+                      onClick={() => setIsEditingProjectName(false)}
+                      className="p-2 sm:p-3 bg-white text-black font-bold uppercase text-[10px] hover:bg-zinc-200 transition-colors cursor-pointer border-l border-white"
+                      title="Save Name"
+                    >
+                      <Check className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <motion.button 
+                    whileHover={{scale: 1.05}} 
+                    whileTap={{scale: 0.95}}
+                    onClick={() => setIsEditingProjectName(true)}
+                    className="p-2 md:p-3 border border-white hover:bg-white hover:text-black transition-all rounded-none group flex items-center gap-2 text-white hover:text-black"
+                    title={translations[lang].editor.projectName}
+                  >
+                    <Settings2 className="w-4 h-4 md:w-5 md:h-5" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:block">RENAME PROJECT</span>
+                  </motion.button>
+                )}
                 <button 
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
                   className={cn(
@@ -4165,26 +4235,28 @@ export default function App() {
 
                 {/* Console Section (Mobile only) */}
                 <div className="space-y-12 lg:hidden">
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between border-b border-white pb-2">
-                      <h2 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white">{translations[lang].editor.visualConsole}</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-6">
+                      <div className="border-b border-white pb-2">
+                        <h2 className="text-[10px] font-medium uppercase tracking-[0.3em] text-white">VISUAL DESIGNER CONSOLE</h2>
+                      </div>
+                      <ConsoleContent 
+                        settings={settings} 
+                        setSettings={setSettings} 
+                        activeConsole={activeConsole} 
+                        setActiveConsole={setActiveConsole}
+                        setFadeIndex={setFadeIndex}
+                        customFonts={customFonts}
+                        setCustomFonts={setCustomFonts}
+                        lang={lang}
+                        onFontUpload={handleFontUpload}
+                        onDeleteFont={handleDeleteFont}
+                      />
                     </div>
-                    <ConsoleContent 
-                      settings={settings} 
-                      setSettings={setSettings} 
-                      activeConsole={activeConsole} 
-                      setActiveConsole={setActiveConsole}
-                      setFadeIndex={setFadeIndex}
-                      customFonts={customFonts}
-                      setCustomFonts={setCustomFonts}
-                      lang={lang}
-                      onFontUpload={handleFontUpload}
-                      onDeleteFont={handleDeleteFont}
-                    />
-                  </div>
 
-                  <div className="space-y-6">
-                    <TuningControls settings={settings} setSettings={setSettings} lang={lang} />
+                    <div className="space-y-6">
+                      <TuningControls settings={settings} setSettings={setSettings} lang={lang} />
+                    </div>
                   </div>
 
                   {/* Move Export here for Mobile */}
@@ -4203,7 +4275,7 @@ export default function App() {
               </aside>
 
               {/* Preview & Desktop Console Container */}
-              <div className="flex-1 flex flex-col min-w-0 bg-[#050505] order-1 lg:order-2 sticky top-0 lg:static z-[150] shadow-[0_10px_30px_rgba(0,0,0,0.5)] lg:shadow-none border-b border-white/20 lg:border-b-0 backdrop-blur-md">
+              <div className="flex-1 flex flex-col min-w-0 bg-[#050505] order-1 lg:order-2 sticky top-0 z-[150] shadow-[0_10px_30px_rgba(0,0,0,0.5)] lg:shadow-none border-b border-white/20 lg:border-b-0 backdrop-blur-md">
                 <main className="flex-1 p-2 sm:p-6 lg:p-12 flex flex-col items-center justify-center overflow-hidden min-h-[250px] sm:min-h-[300px] lg:min-h-0 relative">
                   <div className="w-full max-w-[1400px] max-h-[75vh] aspect-video relative border border-white/10 group shadow-[0_0_100px_rgba(255,255,255,0.05)] overflow-hidden bg-black ring-1 ring-white/5 preview-viewport">
 
@@ -4659,7 +4731,7 @@ export default function App() {
                     {/* Visual Console for Desktop */}
                     <div className="hidden lg:block border-t border-white bg-black flex-shrink-0 relative z-[200] visual-console">
                       <div className="px-12 py-5 border-b border-white/10 flex items-center justify-between">
-                         <h2 className="text-[11px] lg:text-[13px] font-bold uppercase tracking-[0.3em] text-white">{translations[lang].editor.visualConsole}</h2>
+                         <h2 className="text-[11px] lg:text-[13px] font-medium uppercase tracking-[0.3em] text-white">VISUAL DESIGNER CONSOLE</h2>
                       </div>
                       <div className="px-12 py-10">
                         <ConsoleContent 
@@ -4695,15 +4767,7 @@ export default function App() {
                   </aside>
                 </div>
 
-            {/* Micro Footer */}
-            <footer className="h-10 border-t border-white px-4 md:px-8 flex items-center justify-between text-[7px] md:text-[8px] font-semibold uppercase tracking-[0.3em] md:tracking-[0.5em] text-zinc-600 flex-shrink-0">
-              <div className="flex gap-4 md:gap-8">
-                <span className="flex items-center gap-2">{translations[lang].editor.version}</span>
-              </div>
-              <div className="flex gap-4 md:gap-8">
-                <span className="text-zinc-600">copyright DaftarKru 2026</span>
-              </div>
-            </footer>
+{/* Footer removed */}
           </motion.div>
         )}
       </AnimatePresence>
