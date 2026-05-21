@@ -32,7 +32,28 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder, useDragControls } from 'motion/react';
 import Lenis from 'lenis';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
+import { useGSAP } from '@gsap/react';
 import { cn } from './lib/utils';
+
+// Global GSAP Configuration for high performance
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+  gsap.config({
+    force3D: true,
+    nullTargetWarn: false,
+    units: { left: "px", top: "px", rotation: "deg" }
+  });
+  // Enable hardware acceleration for all GSAP instances by default
+  gsap.defaults({
+    ease: "power2.out",
+    duration: 0.5,
+    force3D: true,
+    lazy: true,
+  });
+}
 // @ts-ignore - webm-muxer types might be missing in some environments
 import { Muxer, ArrayBufferTarget } from 'webm-muxer';
 
@@ -482,24 +503,38 @@ const TypingDescription = ({ lang }: { lang: Lang }) => {
   return <span className="inline-block">{displayedText}<span className="inline-block w-1 h-4 bg-white ml-1 animate-pulse" /></span>;
 };
 
-const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSection, isHidden, isScrolled }: { 
+const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSection, isHidden, isScrolled, lenisRef }: { 
   lang: Lang, 
   setLang: (l: Lang) => void, 
   isMobileMenuOpen: boolean, 
   setIsMobileMenuOpen: (v: boolean) => void,
   activeSection: string,
   isHidden: boolean,
-  isScrolled: boolean
+  isScrolled: boolean,
+  lenisRef: React.RefObject<Lenis | null>
 }) => {
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (lenisRef.current) {
+        lenisRef.current.scrollTo(el, {
+          duration: 1.5,
+          lock: true,
+          easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t))
+        });
+      } else {
+        gsap.to(window, {
+          duration: 1.2,
+          scrollTo: { y: el, offsetY: 0 },
+          ease: "power4.out",
+          overwrite: true
+        });
+      }
     }
   };
 
   return (
-    <>
+    <header>
       <motion.nav
         initial={{ y: -100, opacity: 0 }}
         animate={{ 
@@ -528,12 +563,13 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSe
                   e.preventDefault();
                   const targetId = item === 'getStarted' ? 'get-started' : item;
                   if (item === 'home') {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  } else {
-                    const el = document.getElementById(targetId);
-                    if (el) {
-                      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    if (lenisRef.current) {
+                      lenisRef.current.scrollTo(0, { duration: 1.5 });
+                    } else {
+                      gsap.to(window, { duration: 1.2, scrollTo: 0, ease: "power4.out", overwrite: true });
                     }
+                  } else {
+                    scrollTo(targetId);
                   }
                 }}
               >
@@ -611,29 +647,46 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSe
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </header>
   );
 };
 
 const FilmStrip = ({ speed = 40, reverse = false, rotate = -4, yOffset = "25%", opacity = 0.12 }: { speed?: number, reverse?: boolean, rotate?: number, yOffset?: string, opacity?: number }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  useGSAP(() => {
+    if (!containerRef.current) return;
+    
+    gsap.to(containerRef.current, {
+      x: reverse ? -912 : 912,
+      duration: speed,
+      repeat: -1,
+      ease: "none",
+      // Optimization: use hardware acceleration and lazy loading
+      force3D: true,
+      lazy: true,
+    });
+  }, { scope: containerRef, dependencies: [speed, reverse] });
+
   return (
     <div 
       className="absolute inset-x-0 overflow-hidden pointer-events-none z-0 select-none flex items-center"
       style={{ 
-        transform: `rotate(${rotate}deg) translateZ(0)`,
-        willChange: 'transform',
+        transform: `rotate(${rotate}deg)`,
         top: yOffset,
         height: '110px',
         opacity: opacity,
+        willChange: 'transform',
       }}
     >
-      <motion.div
-        animate={{ x: reverse ? [0, -912] : [-912, 0] }}
-        transition={{ duration: speed, repeat: Infinity, ease: "linear" }}
+      <div
+        ref={containerRef}
         className="flex whitespace-nowrap gap-6"
         style={{ 
           width: 'max-content',
           willChange: 'transform',
+          // Offset initial position to handle seamless loop
+          transform: `translateX(${reverse ? 0 : -912}px)`,
         }}
       >
         {[...Array(9)].map((_, i) => (
@@ -684,7 +737,7 @@ const FilmStrip = ({ speed = 40, reverse = false, rotate = -4, yOffset = "25%", 
             </div>
           </div>
         ))}
-      </motion.div>
+      </div>
     </div>
   );
 };
@@ -708,41 +761,6 @@ const BackgroundElements = () => {
       {/* Fluid Animated Blobs */}
       <div className="absolute top-[20%] right-[10%] w-[400px] h-[400px] rounded-full bg-white/[0.03] blur-[100px]" />
       <div className="absolute bottom-[20%] left-[10%] w-[400px] h-[400px] rounded-full bg-white/[0.02] blur-[100px]" />
-
-      {/* Optimized Floating 3D Cubes - Reduced count from 12 to 6 */}
-      {/* 
-      {[...Array(6)].map((_, i) => (
-        <motion.div
-          key={`cube-${i}`}
-          style={{
-            x: useTransform(mouseX, x => x * (40 + i * 15)),
-            y: useTransform(mouseY, y => y * (40 + i * 15)),
-            left: `${(i * 25) % 90 + 5}%`,
-            top: `${(i * 35) % 80 + 10}%`,
-          }}
-          className="absolute"
-        >
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ 
-              opacity: [0.05, 0.1, 0.05],
-              rotate: [0, 90],
-            }}
-            transition={{ 
-              duration: 15 + i * 5, 
-              repeat: Infinity, 
-              ease: "linear",
-              delay: i * 0.5
-            }}
-            style={{
-              width: `${40 + (i % 2) * 20}px`,
-              height: `${40 + (i % 2) * 20}px`,
-            }}
-            className="border border-white/20 rounded-none bg-white/[0.02] backdrop-blur-[2px]"
-          />
-        </motion.div>
-      ))}
-      */}
 
       {/* Simplified Scanning Bar */}
       <motion.div 
@@ -1075,14 +1093,15 @@ const FilmStripProgressBar = ({ progress, lang }: { progress: number; lang: Lang
 
         {/* Central Film Negative Core (the frames showing light or progress bar) */}
         <div className="relative flex-1 my-1.5 bg-zinc-900 overflow-hidden rounded-sm flex items-center">
-          {/* Real progress bar inside film track */}
+          {/* Real progress bar inside film track - Hardware accelerated using scaleX */}
           <motion.div
-            className="absolute inset-y-0 left-0 bg-gradient-to-r from-zinc-800 via-zinc-400 to-white"
+            className="absolute inset-y-0 left-0 bg-gradient-to-r from-zinc-800 via-zinc-400 to-white w-full origin-left"
             style={{ 
               boxShadow: "0 0 20px rgba(255, 255, 255, 0.4)",
-              borderRight: "2px solid #fff"
+              borderRight: "2px solid #fff",
+              willChange: 'transform'
             }}
-            animate={{ width: `${progress}%` }}
+            animate={{ scaleX: progress / 100 }}
             transition={{ type: "spring", stiffness: 80, damping: 25 }}
           />
 
@@ -1129,12 +1148,30 @@ const FilmStripProgressBar = ({ progress, lang }: { progress: number; lang: Lang
 };
 
 const Marquee = ({ text, reverse = false, speed = 30 }: { text: string, reverse?: boolean, speed?: number }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  useGSAP(() => {
+    if (!containerRef.current) return;
+    
+    gsap.to(containerRef.current, {
+      x: reverse ? 1000 : -1000,
+      duration: speed,
+      repeat: -1,
+      ease: "none",
+      force3D: true,
+      lazy: true,
+    });
+  }, { scope: containerRef, dependencies: [speed, reverse] });
+
   return (
     <div className="w-full overflow-hidden bg-white/5 border-y border-white/10 py-4 sm:py-6 flex whitespace-nowrap rotate-[-1.5deg] z-20 relative backdrop-blur-xl">
-      <motion.div
-        animate={{ x: reverse ? [0, -1000] : [-1000, 0] }}
-        transition={{ duration: speed, repeat: Infinity, ease: "linear" }}
+      <div
+        ref={containerRef}
         className="flex gap-12 sm:gap-24 items-center"
+        style={{ 
+          willChange: 'transform',
+          transform: `translateX(${reverse ? -1000 : 0}px)` 
+        }}
       >
         {[...Array(10)].map((_, i) => (
           <div key={i} className="flex items-center gap-8 sm:gap-16">
@@ -1144,66 +1181,63 @@ const Marquee = ({ text, reverse = false, speed = 30 }: { text: string, reverse?
             <div className="w-4 h-4 sm:w-6 sm:h-6 rounded-full border-2 border-white/10" />
           </div>
         ))}
-      </motion.div>
+      </div>
     </div>
   );
 };
-
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-gsap.registerPlugin(ScrollTrigger);
 
 const GsapAnimatedConsole = ({ lang, onPlay }: { lang: Lang, onPlay: () => void }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const playheadRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  useGSAP(() => {
     if (!containerRef.current || !playheadRef.current || !textRef.current) return;
 
-    let ctx = gsap.context(() => {
-      // Timeline scrub animation
-      gsap.to(playheadRef.current, {
-        x: "0%",
+    // Timeline scrub animation
+    gsap.to(playheadRef.current, {
+      x: "0%",
+      scrollTrigger: {
+        trigger: containerRef.current.closest('section'),
+        start: "top top",
+        end: "+=700%",
+        scrub: 1.2,
+      },
+      force3D: true,
+      lazy: true,
+    });
+
+    gsap.fromTo(textRef.current,
+      { y: "45%", opacity: 1 },
+      {
+        y: "-45%", opacity: 1,
         scrollTrigger: {
           trigger: containerRef.current.closest('section'),
           start: "top top",
           end: "+=700%",
-          scrub: 1.2, // Match text scroll velocity scrub
-        }
-      });
+          scrub: 1.2,
+        },
+        force3D: true,
+        lazy: true,
+      }
+    );
 
-      gsap.fromTo(textRef.current,
-        { y: "45%", opacity: 1 },
-        {
-          y: "-45%", opacity: 1,
-          scrollTrigger: {
-            trigger: containerRef.current.closest('section'),
-            start: "top top",
-            end: "+=700%",
-            scrub: 1.2,
-          }
-        }
-      );
-
-      // Unified animation for the entire console container
-      gsap.fromTo(containerRef.current,
-        { y: 100, rotateX: 15, opacity: 0, scale: 0.9 },
-        {
-          y: 0, rotateX: 0, opacity: 1, scale: 1,
-          scrollTrigger: {
-            trigger: containerRef.current,
-            start: "top bottom",
-            end: "center center",
-            scrub: 1.5,
-          }
-        }
-      );
-    }, containerRef);
-    
-    return () => ctx.revert();
-  }, []);
+    // Unified animation for the entire console container
+    gsap.fromTo(containerRef.current,
+      { y: 100, rotateX: 15, opacity: 0, scale: 0.9 },
+      {
+        y: 0, rotateX: 0, opacity: 1, scale: 1,
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top bottom",
+          end: "center center",
+          scrub: 1.5,
+        },
+        force3D: true,
+        lazy: true,
+      }
+    );
+  }, { scope: containerRef });
 
   return (
     <div ref={containerRef} className="flex-1 w-full max-w-2xl min-h-[300px] sm:min-h-[500px] relative perspective-[1500px] flex items-center justify-center -mt-[50px] md:-mt-[160px] lg:mt-0 lg:-translate-y-8">
@@ -1313,22 +1347,21 @@ const AboutSection = ({ lang, onStart }: { lang: Lang, onStart: () => void }) =>
   const titleText = "DAFTARKRU ENGINE";
   const [displayedTitle, setDisplayedTitle] = useState("");
 
-  useEffect(() => {
+  useGSAP(() => {
     if (!sectionRef.current) return;
     
-    let ctx = gsap.context(() => {
-      ScrollTrigger.create({
-        trigger: sectionRef.current,
-        start: "top top",
-        end: "+=700%",
-        pin: true,
-        scrub: 1.2,
-        pinSpacing: true,
-      });
+    ScrollTrigger.create({
+      trigger: sectionRef.current,
+      start: "top top",
+      end: "+=700%",
+      pin: true,
+      scrub: 1.2,
+      pinSpacing: true,
+      // Reflow optimization
+      fastScrollEnd: true,
+      preventOverlaps: true,
     });
-
-    return () => ctx.revert();
-  }, []);
+  }, { scope: sectionRef });
 
   useEffect(() => {
     if (titleVisible && displayedTitle.length < titleText.length) {
@@ -1367,10 +1400,10 @@ const AboutSection = ({ lang, onStart }: { lang: Lang, onStart: () => void }) =>
           </p>
           <div className="flex items-center gap-6 mt-0 pt-4">
              <div className="group w-auto h-8 md:h-10 border-none overflow-hidden transition-all duration-500 flex items-center justify-center">
-                <img src="/daftarkru.png" alt="Card 1" className="h-full w-auto object-contain opacity-40 group-hover:opacity-80 transition-opacity duration-300" />
+                <img src="/daftarkru.png" alt="DaftarKru Professional Work" loading="lazy" className="h-full w-auto object-contain opacity-40 group-hover:opacity-80 transition-opacity duration-300" />
              </div>
              <div className="group w-auto h-8 md:h-10 border-none overflow-hidden transition-all duration-500 flex items-center justify-center">
-                <img src="/afganvisualworklogo.png" alt="Card 2" className="h-full w-auto object-contain opacity-40 group-hover:opacity-80 transition-opacity duration-300" />
+                <img src="/afganvisualworklogo.png" alt="Afgan Visual Work Branding" loading="lazy" className="h-full w-auto object-contain opacity-40 group-hover:opacity-80 transition-opacity duration-300" />
              </div>
           </div>
         </div>
@@ -1491,11 +1524,30 @@ const FAQSection = ({ lang }: { lang: Lang }) => {
   );
 };
 
-const CardMarquee = ({ items, reverse = false }: { items: string[], reverse?: boolean }) => {
+const CardMarquee = ({ items, reverse = false, speed = 25 }: { items: string[], reverse?: boolean, speed?: number }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    if (!containerRef.current) return;
+    
+    gsap.to(containerRef.current, {
+      x: reverse ? "25%" : "-25%",
+      duration: speed,
+      repeat: -1,
+      ease: "none",
+      force3D: true,
+      lazy: true,
+    });
+  }, { scope: containerRef, dependencies: [speed, reverse] });
+
   return (
-    <div className="w-full overflow-hidden py-4">
-      <div className={cn("flex gap-8 whitespace-nowrap", reverse ? "animate-infinite-scroll-reverse" : "animate-infinite-scroll")}>
-        {[...Array(4)].map((_, i) => (
+    <div className="w-full overflow-hidden py-4 select-none pointer-events-none">
+      <div 
+        ref={containerRef}
+        className="flex gap-8 whitespace-nowrap"
+        style={{ width: 'max-content', willChange: 'transform' }}
+      >
+        {[...Array(8)].map((_, i) => (
           <div key={i} className="flex gap-8 items-center">
             {items.map((item, idx) => (
               <div key={idx} className="bg-[#0a0a0a] border border-white/5 px-10 py-5 flex items-center gap-5 shadow-2xl">
@@ -1511,6 +1563,7 @@ const CardMarquee = ({ items, reverse = false }: { items: string[], reverse?: bo
 };
 
 const BackgroundCreditsAnimation = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const tracks = [
     {
       items: [
@@ -1554,13 +1607,29 @@ const BackgroundCreditsAnimation = () => {
     }
   ];
 
+  useGSAP(() => {
+    if (!containerRef.current) return;
+    
+    containerRef.current.querySelectorAll('.track-inner').forEach((track, i) => {
+      const isReverse = tracks[i].reverse;
+      gsap.to(track, {
+        y: isReverse ? "25%" : "-25%",
+        duration: tracks[i].speed,
+        repeat: -1,
+        ease: "none",
+        force3D: true,
+        lazy: true,
+      });
+    });
+  }, { scope: containerRef });
+
   return (
-    <div className="absolute inset-0 z-0 opacity-[0.06] flex justify-around select-none pointer-events-none overflow-hidden max-w-7xl mx-auto px-4 md:px-12">
+    <div ref={containerRef} className="absolute inset-0 z-0 opacity-[0.06] flex justify-around select-none pointer-events-none overflow-hidden max-w-7xl mx-auto px-4 md:px-12">
       {tracks.map((track, i) => (
         <div key={i} className="w-[18%] sm:w-[22%] h-full relative overflow-hidden flex flex-col items-center">
           <div 
-            className={track.reverse ? "animate-vertical-infinite-scroll-reverse" : "animate-vertical-infinite-scroll"} 
-            style={{ '--duration': `${track.speed}s` } as React.CSSProperties}
+            className="track-inner flex flex-col"
+            style={{ willChange: 'transform' }}
           >
             {[...Array(4)].map((_, groupIdx) => (
               <div key={groupIdx} className="flex flex-col gap-12 py-12 items-center">
@@ -1582,7 +1651,6 @@ const BackgroundCreditsAnimation = () => {
           </div>
         </div>
       ))}
-      {/* Top and Bottom cinematic vignettes */}
       <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-[#000000] to-transparent pointer-events-none" />
       <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#000000] to-transparent pointer-events-none" />
     </div>
@@ -2587,6 +2655,7 @@ const safeParse = (value: string | null, defaultValue: any) => {
 };
 
 export default function App() {
+  const lenisRef = useRef<Lenis | null>(null);
   const [view, setView] = useState<View>('hero');
   const [isClapping, setIsClapping] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
@@ -2604,11 +2673,10 @@ export default function App() {
     }, 2200); // Animation completion (2.2 seconds)
   };
 
-  useEffect(() => {
+  useGSAP(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      const previousScrollY = lastScrollY.current;
-      const diff = currentScrollY - previousScrollY;
+      const diff = currentScrollY - lastScrollY.current;
       
       if (currentScrollY > 100) {
         if (diff > 10) {
@@ -2624,40 +2692,38 @@ export default function App() {
     };
     
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-  const lastScrollY = useRef(0);
 
-  useEffect(() => {
-    const handleSection = () => {
-      if (view !== 'hero') return;
-      const documentation = document.getElementById('documentation');
-      const faq = document.getElementById('faq');
-      const getStarted = document.getElementById('get-started');
-      const scrollPos = window.scrollY;
-      
-      // If we are at the very top, it's definitely home
-      if (scrollPos < 50) {
-        setActiveSection('home');
-        return;
-      }
+    // Precise section tracking with ScrollTrigger
+    if (view === 'hero') {
+      const sections = [
+        { id: 'documentation', target: 'documentation' },
+        { id: 'faq', target: 'faq' },
+        { id: 'get-started', target: 'get-started' }
+      ];
 
-      // Check sections from bottom up to avoid early activation
-      if (getStarted && scrollPos >= getStarted.offsetTop - 500) {
-        setActiveSection('get-started');
-      } else if (faq && scrollPos >= faq.offsetTop - 500) {
-        setActiveSection('faq');
-      } else if (documentation && scrollPos >= documentation.offsetTop - 500) {
-        setActiveSection('documentation');
-      } else {
-        setActiveSection('home');
-      }
+      sections.forEach(section => {
+        ScrollTrigger.create({
+          trigger: `#${section.target}`,
+          start: "top 40%",
+          end: "bottom 40%",
+          onToggle: self => self.isActive && setActiveSection(section.id),
+        });
+      });
+
+      // Special case for home (top of page)
+      ScrollTrigger.create({
+        start: 0,
+        end: 200,
+        onToggle: self => self.isActive && setActiveSection('home'),
+      });
+    }
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
     };
-    window.addEventListener('scroll', handleSection);
-    // Call once to set initial state
-    handleSection();
-    return () => window.removeEventListener('scroll', handleSection);
-  }, [view]);
+  }, { dependencies: [view] });
+
+  const lastScrollY = useRef(0);
 
   const [lang, setLang] = useState<Lang>(() => {
     try {
@@ -2672,13 +2738,17 @@ export default function App() {
   useEffect(() => {
     if (view === 'hero') {
       const lenis = new Lenis({
-        duration: 1.2,
+        duration: 1.4,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         orientation: 'vertical',
         gestureOrientation: 'vertical',
         smoothWheel: true,
+        wheelMultiplier: 1,
+        touchMultiplier: 2,
+        syncTouch: true,
       });
 
+      lenisRef.current = lenis;
       lenis.on('scroll', ScrollTrigger.update);
 
       const tickerRaf = (time: number) => {
@@ -2686,12 +2756,18 @@ export default function App() {
       };
 
       gsap.ticker.add(tickerRaf);
-
       gsap.ticker.lagSmoothing(0);
 
+      // Refresh ScrollTrigger after a slight delay to ensure layout is ready
+      const timeout = setTimeout(() => {
+        ScrollTrigger.refresh();
+      }, 1000);
+
       return () => {
+        clearTimeout(timeout);
         lenis.destroy();
         gsap.ticker.remove(tickerRaf);
+        lenisRef.current = null;
       };
     }
   }, [view]);
@@ -3571,12 +3647,13 @@ export default function App() {
           activeSection={activeSection}
           isHidden={isHidden}
           isScrolled={isScrolled}
+          lenisRef={lenisRef}
         />
       )}
       
       <AnimatePresence mode="wait">
         {view === 'hero' ? (
-          <div key="landing-wrapper" className="flex flex-col w-full">
+          <main key="landing-wrapper" className="flex flex-col w-full">
             <motion.section 
               key="hero"
               id="home"
@@ -3754,7 +3831,27 @@ export default function App() {
               )}
             </AnimatePresence>
 
-          </div>
+            {/* Footer */}
+            <footer className="w-full bg-[#000000] border-t border-white/5 py-12 px-6 sm:px-12 flex flex-col items-center gap-8 relative z-10">
+              <div className="max-w-7xl w-full flex flex-col md:flex-row justify-between items-center gap-8">
+                <div className="flex flex-col items-center md:items-start gap-2">
+                  <h3 className="text-xl font-bold tracking-tighter uppercase italic">Daftar<span className="opacity-50">Kru</span> Engine</h3>
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest">© 2026 AFGAN AL-FANANY. ALL RIGHT RESERVED</p>
+                </div>
+                <div className="flex gap-8">
+                   <a href="https://daftarkru.netlify.app" target="_blank" rel="noopener noreferrer" className="group" title="Official Website">
+                      <Globe className="w-5 h-5 text-zinc-500 group-hover:text-white transition-colors" />
+                   </a>
+                   <a href="https://instagram.com/afganalfananyy" target="_blank" rel="noopener noreferrer" className="group">
+                      <Instagram className="w-5 h-5 text-zinc-500 group-hover:text-white transition-colors" />
+                   </a>
+                   <a href="https://github.com/afganalfananyy" target="_blank" rel="noopener noreferrer" className="group">
+                      <Github className="w-5 h-5 text-zinc-500 group-hover:text-white transition-colors" />
+                   </a>
+                </div>
+              </div>
+            </footer>
+          </main>
         ) : (
           <motion.div 
             key="editor"

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
-/* Google Fonts Imports */
-@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bebas+Neue&family=Bungee&family=Cinzel:wght@400;700;900&family=Cormorant+Garamond:wght@300;400;700&family=Crimson+Text:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&family=Kanit:wght@300;400;700;900&family=Manrope:wght@400;700;800&family=Montserrat:wght@400;700;900&family=Oswald:wght@300;400;700&family=Playfair+Display:wght@400;700;900&family=Plus+Jakarta+Sans:wght@400;700;800&family=Poppins:wght@300;400;500;700&family=Roboto+Mono:wght@400;700&family=Sora:wght@400;700;800&family=Space+Grotesk:wght@300;400;700&family=Syne:wght@400;700;800&family=Teko:wght@300;400;700&family=Unbounded:wght@300;400;700;900&display=swap');
+/* Google Fonts Imports - Optimized List based on FONT_OPTIONS */
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bebas+Neue&family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&family=Kanit:wght@300;400;700;900&family=Manrope:wght@400;700;800&family=Montserrat:wght@400;700;900&family=Oswald:wght@300;400;700&family=Playfair+Display:wght@400;700;900&family=Plus+Jakarta+Sans:wght@400;700;800&family=Sora:wght@400;700;800&family=Space+Grotesk:wght@300;400;700&family=Syne:wght@400;700;800&family=Unbounded:wght@300;400;700;900&display=swap');
 
 @theme {
   --font-sans: "Kanit", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -9,13 +9,17 @@
 }
 
 html {
-  scroll-behavior: smooth;
+  /* Disable browser-native smooth scroll to avoid conflicts with Lenis smooth scroll */
+  scroll-behavior: auto !important;
+  overflow-x: hidden;
 }
 
 body {
   font-family: var(--font-sans);
   background-color: black;
   color: white;
+  overscroll-behavior: none;
+  width: 100%;
 }
 
 /* F1 Style Shadows */
@@ -52,50 +56,4 @@ body {
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
-}
-
-@keyframes infinite-scroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-
-@keyframes infinite-scroll-reverse {
-  from { transform: translateX(-50%); }
-  to { transform: translateX(0); }
-}
-
-.animate-infinite-scroll {
-  animation: infinite-scroll 40s linear infinite;
-  display: flex;
-  width: max-content;
-}
-
-.animate-infinite-scroll-reverse {
-  animation: infinite-scroll-reverse 40s linear infinite;
-  display: flex;
-  width: max-content;
-}
-
-@keyframes vertical-infinite-scroll {
-  from { transform: translateY(0); }
-  to { transform: translateY(-50%); }
-}
-
-@keyframes vertical-infinite-scroll-reverse {
-  from { transform: translateY(-50%); }
-  to { transform: translateY(0); }
-}
-
-.animate-vertical-infinite-scroll {
-  animation: vertical-infinite-scroll var(--duration, 40s) linear infinite;
-  display: flex;
-  flex-direction: column;
-  height: max-content;
-}
-
-.animate-vertical-infinite-scroll-reverse {
-  animation: vertical-infinite-scroll-reverse var(--duration, 40s) linear infinite;
-  display: flex;
-  flex-direction: column;
-  height: max-content;
 }

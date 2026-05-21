@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://daftarkru.com/sitemap.xml

@@ -1,6 +1,6 @@
 {
   "name": "DAFTARKRU ENGINE",
-  "description": "Alat otomatis untuk membantu editor dalam pembuatan Credit Title secara cepat.",
+  "description": "Professional credit title automation engine for film and video editors, optimized for high-performance visual effects and seamless export workflow.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
