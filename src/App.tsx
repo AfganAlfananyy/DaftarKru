@@ -12,8 +12,12 @@ import {
   Menu,
   X,
   ChevronRight,
+  ChevronLeft,
+  ChevronUp,
   Home,
   ChevronDown,
+  Eye,
+  EyeOff,
   GripVertical,
   Check,
   Maximize,
@@ -29,7 +33,8 @@ import {
   Trash,
   Globe,
   Instagram,
-  Github
+  Github,
+  Keyboard
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder, useDragControls } from 'motion/react';
 import Lenis from 'lenis';
@@ -224,7 +229,7 @@ const PRESETS = {
 
 const translations = {
   id: {
-    nav: { home: 'BERANDA', documentation: 'TENTANG', faq: 'FAQ', getStarted: 'MULAI' },
+    nav: { home: 'BERANDA', about: 'TENTANG', documentation: 'DOKUMENTASI', faq: 'FAQ', getStarted: 'MULAI' },
     hero: {
       tag1: "Next Generation Credits Engine",
       tag2: "Sangat mudah digunakan",
@@ -243,6 +248,21 @@ const translations = {
       card2Desc: "Visual Kelas Sinema",
       tutorialTitle: "Tutorial Engine",
       tutorialDesc: "Pelajari teknik dasar pembuatan kredit engine dalam hitungan detik. Semua fitur didesain untuk kemudahan workflow anda."
+    },
+    documentation: {
+      title: "Dokumentasi",
+      heading: "Tutorial &\nPanduan",
+      subheading: "Kuasai cara penggunaan DaftarKru Engine dengan pintasan keyboard dan panduan lengkap.",
+      videoTitle: "Video Tutorial Resmi",
+      kbdTitle: "Pintasan Keyboard",
+      kbdDesc: "Tingkatkan produktivitas Anda menggunakan pintasan keyboard berikut di layar workspace (Laptop/Desktop):",
+      guidesTitle: "Panduan Fitur Utama",
+      guide1Title: "1. Pengunggahan Font Kustom",
+      guide1Desc: "Unggah file font .ttf, .otf, atau .woff milik Anda sendiri di bagian 'Font Style' untuk menyesuaikan identitas teks film Anda.",
+      guide2Title: "2. Ekspor Latar Transparan (Alpha)",
+      guide2Desc: "Centang opsi 'Transparan' pada panel 'Backdrop' sebelum mengekspor untuk mendapatkan video format WebM dengan transparansi penuh.",
+      guide3Title: "3. Mode Grid Pasangan (Pairs)",
+      guide3Desc: "Aktifkan mode 'Pairs' di panel tampilan untuk meletakkan Posisi dan Nama berdampingan secara horizontal dengan garis hubung otomatis."
     },
     faq: {
       title: "Pusat Bantuan",
@@ -342,7 +362,7 @@ const translations = {
     }
   },
   en: {
-    nav: { home: 'HOME', documentation: 'ABOUT', faq: 'FAQ', getStarted: 'START' },
+    nav: { home: 'HOME', about: 'ABOUT', documentation: 'DOCUMENTATION', faq: 'FAQ', getStarted: 'START' },
     hero: {
       tag1: "Next Generation Credits Engine",
       tag2: "Extremely easy to use",
@@ -361,6 +381,21 @@ const translations = {
       card2Desc: "Cine-Grade Visuals",
       tutorialTitle: "Engine Tutorial",
       tutorialDesc: "Learn the basic techniques of creating credits engine in seconds. All features are designed for your workflow convenience."
+    },
+    documentation: {
+      title: "DOCUMENTATION",
+      heading: "Tutorials &\nGuides",
+      subheading: "Master the use of DaftarKru Engine with specialized keyboard shortcuts and feature overviews.",
+      videoTitle: "Official Video Tutorial",
+      kbdTitle: "Keyboard Shortcuts",
+      kbdDesc: "Boost your productivity with the following keyboard hotkeys inside the workspace (Laptop/Desktop):",
+      guidesTitle: "Core Feature Guides",
+      guide1Title: "1. Custom Font Upload",
+      guide1Desc: "Upload your own .ttf, .otf, or .woff file in the 'Font Style' panel to match your film's typography design.",
+      guide2Title: "2. Transparent Backdrop (Alpha Channel)",
+      guide2Desc: "Check the 'Transparent' option in the 'Backdrop' panel to export WebM files with complete transparency for overlaying.",
+      guide3Title: "3. Grid Pairs Layout",
+      guide3Desc: "Toggle 'Pairs Mode' inside the appearance panel to align roles and names horizontally with adjustable gaps."
     },
     faq: {
       title: "Support Center",
@@ -534,6 +569,12 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSe
     }
   };
 
+  const getActiveLabel = () => {
+    let item = activeSection;
+    if (activeSection === 'get-started') item = 'getStarted';
+    return translations[lang].nav[item as keyof typeof translations.id.nav] || activeSection.toUpperCase();
+  };
+
   return (
     <header>
       <motion.nav
@@ -544,115 +585,125 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSe
         }}
         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
         className={cn(
-          "fixed top-6 sm:top-8 left-1/2 -translate-x-1/2 z-[999] p-1 rounded-none border transition-all duration-200 flex items-center gap-1",
+          "fixed top-6 sm:top-8 left-1/2 -translate-x-1/2 z-[999] p-1 rounded-none border transition-all duration-200 flex items-center justify-between gap-1",
           isScrolled 
-            ? "bg-black/80 backdrop-blur-2xl border-white/20 f1-shadow" 
+            ? "bg-black/90 backdrop-blur-2xl border-white/20 f1-shadow" 
             : "bg-black/60 backdrop-blur-md border-white/10"
         )}
       >
-        <div className="flex items-center">
-          <div className="flex items-center relative px-1 sm:px-2 gap-1 sm:gap-2">
-            {['home', 'documentation', 'faq', 'getStarted'].map((item) => (
-              <a
-                key={item}
-                href={`#${item === 'getStarted' ? 'get-started' : item}`}
-                className={cn(
-                  "relative px-3 sm:px-5 py-2 sm:py-2.5 text-[8px] sm:text-[10px] font-bold uppercase tracking-widest sm:tracking-[0.3em] transition-all duration-500 z-10 text-center block nav-" + item,
-                  activeSection === (item === 'getStarted' ? 'get-started' : item) ? "text-black" : "text-zinc-500 hover:text-white"
-                )}
-                onClick={(e) => {
-                  e.preventDefault();
-                  const targetId = item === 'getStarted' ? 'get-started' : item;
-                  if (item === 'home') {
-                    if (lenisRef.current) {
-                      lenisRef.current.scrollTo(0, { duration: 1.5 });
-                    } else {
-                      gsap.to(window, { duration: 1.2, scrollTo: 0, ease: "power4.out", overwrite: true });
-                    }
-                  } else {
-                    scrollTo(targetId);
-                  }
-                }}
-              >
-                {translations[lang].nav[item as keyof typeof translations.id.nav]}
-                {activeSection === (item === 'getStarted' ? 'get-started' : item) && (
-                  <div 
-                    className="absolute inset-0 bg-white rounded-none -z-10"
-                  />
-                )}
-              </a>
-            ))}
+        {/* UNIFIED COMPACT PILL LAYOUT FOR ALL SCREEN BREAKPOINTS */}
+        <div className="flex items-center justify-between w-[230px] sm:w-[280px] md:w-[320px] h-9 sm:h-10 px-2 pl-3">
+          <div className="flex items-center gap-2 overflow-hidden select-none">
+            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse shrink-0" />
+            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.25em] text-white truncate max-w-[110px] sm:max-w-[160px]">
+              {getActiveLabel()}
+            </span>
           </div>
+          
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="flex items-center gap-1.5 bg-white/5 hover:bg-white text-white hover:text-black hover:border-white border border-white/10 px-2.5 sm:px-3.5 py-1 sm:py-1.5 text-[8px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-300 cursor-pointer shadow-[2px_2px_0px_rgba(255,255,255,0.05)] active:translate-x-[1px] active:translate-y-[1px]"
+          >
+            <Menu className="w-3.5 h-3.5" />
+            <span>MENU</span>
+          </button>
+        </div>
+      </motion.nav>
 
-          <div className="h-4 w-[1px] bg-white/10 mx-1 sm:mx-2" />
-
-          <div className="flex items-center gap-1 px-1 sm:px-2">
-            <div className="relative group">
+      {/* COOL RESPONSIVE DARK OVERLAY DRAWER */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-[1000] bg-black/98 backdrop-blur-3xl flex flex-col justify-between p-6 sm:p-12 md:p-16 lg:p-24"
+          >
+            {/* Tech-brutalist grid background behind the mobile drawer */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+            
+            {/* Header Area */}
+            <div className="flex items-center justify-between border-b border-white/10 pb-6 relative z-10 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-[9px] sm:text-[11px] font-bold text-zinc-500 uppercase tracking-[0.25em]">// NAV_PIPELINE v1.12</span>
+              </div>
               <button 
-                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-zinc-500 hover:text-white transition-all"
+                onClick={() => setIsMobileMenuOpen(false)} 
+                className="w-10 h-10 flex items-center justify-center bg-zinc-900 border border-white/10 hover:border-white hover:bg-white hover:text-black transition-all duration-200 cursor-pointer text-white"
               >
-                <Languages size={18} />
+                <X size={18} />
               </button>
-              <div className="absolute right-0 top-full mt-1 w-20 bg-black border border-zinc-800 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-50">
+            </div>
+
+            {/* Nav Links Container */}
+            <div className="flex-1 flex flex-col justify-center py-8 relative z-10">
+              <div className="space-y-3 sm:space-y-5 max-w-md w-full mx-auto">
+                {['home', 'about', 'documentation', 'faq', 'getStarted'].map((item, idx) => {
+                  const isActive = activeSection === (item === 'getStarted' ? 'get-started' : item);
+                  return (
+                    <motion.div
+                      key={item}
+                      initial={{ opacity: 0, x: -30 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: idx * 0.05, duration: 0.4 }}
+                    >
+                      <button
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          const targetId = item === 'getStarted' ? 'get-started' : item;
+                          if (item === 'home') {
+                            if (lenisRef.current) {
+                              lenisRef.current.scrollTo(0, { duration: 1.5 });
+                            } else {
+                              gsap.to(window, { duration: 1.2, scrollTo: 0, ease: "power4.out", overwrite: true });
+                            }
+                          } else {
+                            scrollTo(targetId);
+                          }
+                        }}
+                        className={cn(
+                          "w-full text-left font-black tracking-widest uppercase transition-all duration-300 py-3 sm:py-4 flex items-center justify-between border-b border-white/5 group",
+                          isActive ? "text-white scale-100" : "text-zinc-500 hover:text-white"
+                        )}
+                      >
+                        <div className="flex items-center gap-3 sm:gap-4">
+                          <span className="font-mono text-[9px] sm:text-[10px] text-zinc-600 group-hover:text-zinc-400 transition-colors">0{idx + 1} //</span>
+                          <span className={cn("text-base sm:text-xl lg:text-2xl tracking-[0.25em]", isActive && "underline underline-offset-8 decoration-white")}>
+                            {translations[lang].nav[item as keyof typeof translations.id.nav]}
+                          </span>
+                        </div>
+                        {isActive ? (
+                          <div className="w-2.5 h-2.5 bg-white" />
+                        ) : (
+                          <div className="w-1.5 h-1.5 bg-white/0 group-hover:bg-white/20 transition-all" />
+                        )}
+                      </button>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Language Selection inside Drawer Menu */}
+            <div className="border-t border-white/10 pt-6 relative z-10 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4 max-w-md w-full mx-auto">
+              <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">ACTIVE_ENGINE_LANGUAGE //</span>
+              <div className="flex gap-2 w-full sm:w-auto">
                 {(['id', 'en'] as Lang[]).map((l) => (
                   <button
                     key={l}
                     onClick={() => setLang(l)}
                     className={cn(
-                      "w-full px-4 py-2 text-[10px] font-bold text-center block transition-all",
+                      "flex-1 sm:flex-none px-6 py-2.5 text-[10px] font-bold text-center uppercase tracking-widest transition-all cursor-pointer border",
                       lang === l 
-                        ? "bg-white text-black" 
-                        : "text-zinc-500 hover:text-white hover:bg-zinc-900"
+                        ? "bg-white border-white text-black font-black" 
+                        : "bg-zinc-950/20 border-white/10 text-zinc-400 hover:text-white hover:border-white"
                     )}
                   >
                     {l.toUpperCase()}
                   </button>
                 ))}
               </div>
-            </div>
-          </div>
-        </div>
-      </motion.nav>
-
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="fixed inset-0 z-[600] bg-black/90 backdrop-blur-lg flex flex-col items-center justify-center gap-8 md:hidden p-8"
-          >
-            <button onClick={() => setIsMobileMenuOpen(false)} className="absolute top-6 right-6 text-white p-2">
-              <X size={24} />
-            </button>
-            {['home', 'documentation', 'faq'].map((item) => (
-              <button
-                key={item}
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  item === 'home' ? window.scrollTo({ top: 0, behavior: 'smooth' }) : scrollTo(item);
-                }}
-                className={cn(
-                  "text-2xl font-bold uppercase tracking-[0.2em] transition-all",
-                  activeSection === item ? "text-white" : "text-zinc-500 hover:text-white"
-                )}
-              >
-                {translations[lang].nav[item as keyof typeof translations.id.nav]}
-              </button>
-            ))}
-            <div className="flex gap-4">
-              {(['id', 'en'] as Lang[]).map((l) => (
-                <button
-                  key={l}
-                  onClick={() => setLang(l)}
-                  className={cn(
-                    "text-xl font-bold p-4 rounded-none border",
-                    lang === l ? "bg-white text-black" : "text-zinc-500 border-white/20"
-                  )}
-                >
-                  {l.toUpperCase()}
-                </button>
-              ))}
             </div>
           </motion.div>
         )}
@@ -1385,7 +1436,7 @@ const AboutSection = ({ lang, onStart }: { lang: Lang, onStart: () => void }) =>
   }, [titleVisible, displayedTitle, titleText]);
 
   return (
-    <section ref={sectionRef} id="documentation" className="min-h-screen w-full bg-[#050505] flex flex-col lg:flex-row items-center justify-start lg:justify-center p-4 sm:p-12 lg:p-24 gap-0 sm:gap-8 lg:gap-24 relative overflow-hidden border-t border-white/5 pt-12 lg:pt-24">
+    <section ref={sectionRef} id="about" className="min-h-screen w-full bg-[#050505] flex flex-col lg:flex-row items-center justify-start lg:justify-center p-4 sm:p-12 lg:p-24 gap-0 sm:gap-8 lg:gap-24 relative overflow-hidden border-t border-white/5 pt-12 lg:pt-24">
       <BackgroundElements />
 
       <motion.div 
@@ -1420,6 +1471,260 @@ const AboutSection = ({ lang, onStart }: { lang: Lang, onStart: () => void }) =>
       </motion.div>
 
       <GsapAnimatedConsole lang={lang} onPlay={onStart} />
+    </section>
+  );
+};
+
+const DocumentationSection = ({ lang }: { lang: Lang }) => {
+  const [embedId, setEmbedId] = useState("dQw4w9WgXcQ");
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [showAllShortcuts, setShowAllShortcuts] = useState(false);
+
+  const shortcuts = [
+    { key: "Space", desc: lang === 'id' ? "Putar / Jeda Pratinjau Kredit" : "Play / Pause Credits Preview" },
+    { key: "Q", desc: lang === 'id' ? "Sembunyikan / Tampilkan Input Kredit (Kiri)" : "Toggle Credit Input Sidebar (Left)" },
+    { key: "E", desc: lang === 'id' ? "Sembunyikan / Tampilkan Kontrol Fine-Tuning (Kanan)" : "Toggle Fine-Tuning Sidebar (Right)" },
+    { key: "S", desc: lang === 'id' ? "Sembunyikan / Tampilkan Konsol Desainer (Bawah)" : "Toggle Designer Console (Bottom)" },
+    { key: "1", desc: lang === 'id' ? "Buka Menu Pilihan Gaya Font" : "Open Font Style Selection" },
+    { key: "2", desc: lang === 'id' ? "Buka Menu Pilihan Tipe Gerak / Animasi" : "Open Motion Type Selection" },
+    { key: "3", desc: lang === 'id' ? "Buka Menu Pilihan Tampilan / Kepadatan" : "Open Appearance Options" },
+    { key: "4", desc: lang === 'id' ? "Buka Menu Pilihan Backdrop / Kanvas" : "Open Backdrop Options" },
+    { key: "5", desc: lang === 'id' ? "Buka Menu Pilihan Preset Desain" : "Open Layout Presets" },
+    { key: "ESC", desc: lang === 'id' ? "Tutup Popover Menu Opsi Aktif" : "Close Active Options Dialog" },
+    { key: "← / →", desc: lang === 'id' ? "Navigasi Frame / Lompati Detik Video" : "Skip Seconds / Frame Navigation" },
+    { key: "Ctrl + S", desc: lang === 'id' ? "Inisiasi Render & Unduh File Hasil" : "Trigger Render & Export Download" },
+  ];
+
+  const displayedShortcuts = showAllShortcuts ? shortcuts : shortcuts.slice(0, 5);
+
+  return (
+    <section id="documentation" className="min-h-screen w-full bg-[#050505] flex flex-col items-center justify-center p-6 sm:p-12 lg:p-24 relative overflow-hidden border-t border-white/5">
+      {/* Cinematic Cyber Ambient Background (Floating soft light lines & radial glow instead of squares) */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Soft floating glow orbs */}
+        <motion.div 
+          animate={{
+            x: [-100, 100, -100],
+            y: [-50, 50, -50],
+            opacity: [0.03, 0.08, 0.03]
+          }}
+          transition={{
+            duration: 25,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          style={{ willChange: "transform" }}
+          className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-white rounded-full blur-[160px]"
+        />
+        <motion.div 
+          animate={{
+            x: [100, -100, 100],
+            y: [50, -50, 50],
+            opacity: [0.02, 0.06, 0.02]
+          }}
+          transition={{
+            duration: 30,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          style={{ willChange: "transform" }}
+          className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-white rounded-full blur-[180px]"
+        />
+
+        {/* Slow vertical scanning cinematic laser line */}
+        <motion.div 
+          animate={{
+            y: ["-10vh", "110vh"]
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          style={{ willChange: "transform" }}
+          className="absolute inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/15 to-transparent blur-[1.5px]"
+        />
+      </div>
+
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Rotating Tech Orbits */}
+        <motion.div 
+          animate={{ rotate: 360 }}
+          transition={{ duration: 70, repeat: Infinity, ease: "linear" }}
+          style={{ willChange: "transform" }}
+          className="absolute -top-32 -left-32 w-96 h-96 border border-white/[0.03] rounded-full flex items-center justify-center"
+        >
+          <div className="w-80 h-80 border border-dashed border-white/[0.02] rounded-full flex items-center justify-center">
+            <div className="w-64 h-64 border border-white/[0.01] rounded-full" />
+          </div>
+        </motion.div>
+
+        <motion.div 
+          animate={{ rotate: -360 }}
+          transition={{ duration: 90, repeat: Infinity, ease: "linear" }}
+          style={{ willChange: "transform" }}
+          className="absolute -bottom-48 -right-48 w-[500px] h-[500px] border border-white/[0.02] rounded-full flex items-center justify-center"
+        >
+          <div className="w-[450px] h-[450px] border border-dashed border-white/[0.01] rounded-full" />
+        </motion.div>
+
+        {/* Floating Matrix Particles */}
+        {["RENDER_PIPELINE", "FPS_60_SYNC", "ALPHA_CHANNEL", "WEBM_VIDEO_EXPORT", "S_CURVE_SMOOTH"].map((text, index) => {
+          const startX = (index * 20) + 12;
+          const startY = (index * 15) + 25;
+          return (
+            <motion.div
+              key={index}
+              initial={{ x: `${startX}%`, y: `${startY}%`, opacity: 0 }}
+              animate={{ 
+                y: [`${startY}%`, `${startY - 10}%`, `${startY}%`],
+                opacity: [0.01, 0.06, 0.01]
+              }}
+              transition={{
+                duration: 12 + index * 5,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="absolute font-mono text-[9px] tracking-[0.3em] text-white/40 pointer-events-none hidden md:block"
+            >
+              {`[${text}]`}
+            </motion.div>
+          );
+        })}
+
+        {/* Blinking Plus Indicators */}
+        {[[15, 20], [80, 40], [40, 85]].map(([x, y], idx) => (
+          <motion.div
+            key={idx}
+            style={{ left: `${x}%`, top: `${y}%` }}
+            animate={{ opacity: [0.1, 0.5, 0.1] }}
+            transition={{ duration: 4 + idx, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute text-white/30 font-light text-sm pointer-events-none select-none"
+          >
+            +
+          </motion.div>
+        ))}
+
+        {/* Ambient top glowing line */}
+        <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      </div>
+
+      <div className="max-w-7xl w-full space-y-16 relative z-10">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-8 border-b border-white/10">
+          <div className="space-y-4">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: false }}
+              className="text-[9px] font-black tracking-[0.8em] text-white/40 uppercase"
+            >
+              {translations[lang].documentation.title}
+            </motion.div>
+            <motion.h2 
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tighter uppercase leading-none italic"
+            >
+              {lang === 'id' ? "PANDUAN STUDIO" : "STUDIO GUIDELINE"}
+            </motion.h2>
+          </div>
+          <p className="text-xs sm:text-sm text-zinc-400 max-w-sm tracking-normal leading-relaxed">
+            {translations[lang].documentation.subheading}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-12 lg:gap-16 items-start">
+          <div className="space-y-10">
+            <div className="space-y-4">
+              <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-white flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" />
+                {translations[lang].documentation.videoTitle}
+              </h3>
+              
+              <div className="relative aspect-video w-full bg-black border border-white/10 group overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+                {!isPlaying ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-zinc-950/90 transition-all duration-500">
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#111_1px,transparent_1px),linear-gradient(to_bottom,#111_1px,transparent_1px)] bg-[size:32px_32px] opacity-20 pointer-events-none" />
+                    <button 
+                      onClick={() => setIsPlaying(true)}
+                      className="group/btn relative flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-white hover:bg-white text-black transition-all duration-300 active:scale-95 z-20 cursor-pointer shadow-[0_0_50px_rgba(255,255,255,0.15)] rounded-none"
+                    >
+                      <Play className="w-6 h-6 sm:w-8 sm:h-8 text-black fill-black ml-1 transition-transform group-hover/btn:scale-110" />
+                    </button>
+                    <span className="mt-8 text-[10px] sm:text-xs font-bold uppercase tracking-[0.4em] text-zinc-400 font-mono">PLAY TUTORIAL VIDEO</span>
+                  </div>
+                ) : (
+                  <iframe
+                    className="w-full h-full object-cover relative z-10"
+                    src={`https://www.youtube.com/embed/${embedId}?autoplay=1&rel=0&modestbranding=1`}
+                    title="DaftarKru Tutorial Guide"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                )}
+                <div className="absolute top-0 inset-x-0 h-[1px] bg-white/20 z-20 pointer-events-none" />
+              </div>
+
+              <div className="flex items-center gap-2 bg-zinc-900/40 border border-white/5 px-4 py-2.5">
+                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">CUSTOM_YT_ID:</span>
+                <input 
+                  type="text" 
+                  value={embedId} 
+                  onChange={(e) => {
+                    setEmbedId(e.target.value.trim());
+                    setIsPlaying(false);
+                  }}
+                  placeholder="e.g., dQw4w9WgXcQ"
+                  className="bg-transparent border-none text-[10px] font-mono text-white focus:outline-none flex-1 placeholder-zinc-700 uppercase"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-6 lg:sticky lg:top-24">
+            <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-white flex items-center gap-2">
+              <Keyboard className="w-4 h-4 text-white animate-pulse" />
+              {translations[lang].documentation.kbdTitle}
+            </h3>
+            <p className="text-xs text-zinc-400 tracking-normal leading-relaxed pb-2 border-b border-white/5">
+              {translations[lang].documentation.kbdDesc}
+            </p>
+
+            <div className="grid grid-cols-1 gap-2.5">
+              {displayedShortcuts.map((shortcut, index) => (
+                <div 
+                  key={index} 
+                  className="flex items-center justify-between p-3.5 bg-zinc-950 border border-white/5 transition-all hover:bg-zinc-900/50 hover:border-white/10 group animate-none"
+                >
+                  <span className="text-xs text-zinc-400 tracking-normal leading-relaxed group-hover:text-zinc-200 transition-colors mr-4">{shortcut.desc}</span>
+                  <kbd className="px-3 py-1 bg-zinc-900 border border-white/20 rounded font-mono text-[9px] font-bold text-white uppercase shadow-[3px_3px_0px_rgba(255,255,255,0.05)] tracking-widest whitespace-nowrap group-hover:bg-white group-hover:text-black group-hover:border-white transition-all duration-300">
+                    {shortcut.key}
+                  </kbd>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setShowAllShortcuts(!showAllShortcuts)}
+              className="w-full flex items-center justify-center gap-2 p-3 bg-zinc-900/50 hover:bg-white border border-white/10 hover:border-white text-xs text-white hover:text-black font-extrabold uppercase tracking-widest transition-all duration-300 active:scale-[0.98] cursor-pointer"
+            >
+              {showAllShortcuts ? (
+                <>
+                  <ChevronUp className="w-4 h-4" />
+                  <span>{lang === 'id' ? "Sembunyikan Sebagian" : "Show Less"}</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4" />
+                  <span>{lang === 'id' ? `Tampilkan Semua (${shortcuts.length})` : `Show All (${shortcuts.length})`}</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
     </section>
   );
 };
@@ -1974,34 +2279,60 @@ const TuningControls = React.memo(({ settings, setSettings, lang }: any) => {
   );
 });
 
-const CategoryPopover = ({ id, title, children, activeConsole, closeConsole }: { id: string, title: string, children: React.ReactNode, activeConsole: string, closeConsole: () => void }) => (
+const CategoryPopover = ({ id, title, children, activeConsole, closeConsole, lang }: { id: string, title: string, children: React.ReactNode, activeConsole: string, closeConsole: () => void, lang: string }) => (
   <AnimatePresence>
     {activeConsole === id && (
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: 15 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-        className="fixed sm:absolute inset-x-0 bottom-0 sm:bottom-full sm:left-1/2 sm:-translate-x-1/2 mb-0 sm:mb-2 w-full sm:w-[450px] lg:w-[600px] border-t sm:border border-white/20 bg-zinc-950 z-[10000] shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-3xl flex flex-col max-h-[85vh] sm:max-h-[min(600px,80vh)] overflow-hidden"
-      >
-        <div className="p-4 sm:p-5 border-b border-white/5 flex items-center justify-between sticky top-0 bg-zinc-950 z-20 shrink-0">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{title}</span>
-          <button 
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              closeConsole();
-            }}
-            className="group relative flex items-center justify-center w-10 h-10 rounded-none bg-zinc-900 hover:bg-white border border-white/10 hover:border-white transition-all duration-300 shadow-[2px_2px_0px_rgba(255,255,255,0.05)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-          >
-            <X className="w-4 h-4 text-white group-hover:text-black transition-transform duration-500 group-hover:rotate-180" />
-            <div className="absolute inset-0 rounded-none bg-white/5 opacity-0 group-hover:opacity-100 blur-md transition-opacity pointer-events-none" />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-8 space-y-8 overscroll-contain">
-          {children}
-        </div>
-      </motion.div>
+      <>
+        {/* Backdrop for all views */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={closeConsole}
+          className="fixed inset-0 bg-black/60 backdrop-blur-[6px] z-[9999]"
+        />
+        
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 10 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          className={cn(
+            "fixed z-[10000] flex flex-col overflow-hidden shadow-[0_30px_100px_rgba(0,0,0,1)]",
+            // Mobile: Bottom sheet style
+            "inset-x-0 bottom-0 max-h-[85vh] border-t border-white/20 bg-zinc-950/90 backdrop-blur-2xl sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-[500px]",
+            // Desktop: True central layout
+            "lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[700px] lg:max-h-[min(750px,85vh)] lg:border lg:border-white/20 bg-black/95 lg:backdrop-blur-3xl"
+          )}
+        >
+          <div className="p-4 sm:p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-zinc-950/80 lg:bg-white/5 backdrop-blur-xl z-20 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+              <span className="text-[10px] lg:text-[12px] font-bold uppercase tracking-[0.4em] text-white underline decoration-white/30 underline-offset-8 transition-all hover:decoration-white">{title}</span>
+            </div>
+            <button 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                closeConsole();
+              }}
+              className="group relative flex items-center justify-center w-10 h-10 lg:w-12 lg:h-12 rounded-none bg-zinc-900 hover:bg-white border border-white/10 hover:border-white transition-all duration-300 shadow-[4px_4px_0px_rgba(255,255,255,0.05)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer"
+              title={translations[lang].editor.close}
+            >
+              <X className="w-4 h-4 lg:w-5 lg:h-5 text-white group-hover:text-black transition-transform duration-500 group-hover:rotate-90" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-6 sm:p-10 lg:p-12 space-y-12 overscroll-contain">
+            {children}
+          </div>
+          
+          {/* Footer Decoration (Desktop only) */}
+          <div className="hidden lg:flex px-12 py-4 border-t border-white/5 bg-zinc-900/30 items-center justify-between shrink-0">
+            <div className="text-[8px] text-zinc-500 uppercase tracking-widest">ESC or Click Outside to Dismiss</div>
+            <div className="text-[8px] text-zinc-600 font-mono">ID: {id.toUpperCase()}_CTX_V02</div>
+          </div>
+        </motion.div>
+      </>
     )}
   </AnimatePresence>
 );
@@ -2053,7 +2384,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
               <span className="truncate">{getDisplayFontName()}</span>
               <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", activeConsole === 'font' && "rotate-90")} />
             </button>
-            <CategoryPopover id="font" title={translations[lang].editor.fontStyle} activeConsole={activeConsole} closeConsole={closeConsole}>
+            <CategoryPopover id="font" title={translations[lang].editor.fontStyle} activeConsole={activeConsole} closeConsole={closeConsole} lang={lang}>
               <div className="space-y-4">
                 <input 
                   type="file" 
@@ -2146,7 +2477,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
               <span className="truncate">{settings.animationType.toUpperCase()}</span>
               <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", activeConsole === 'anim' && "rotate-90")} />
             </button>
-            <CategoryPopover id="anim" title={translations[lang].editor.motionType} activeConsole={activeConsole} closeConsole={closeConsole}>
+            <CategoryPopover id="anim" title={translations[lang].editor.motionType} activeConsole={activeConsole} closeConsole={closeConsole} lang={lang}>
               <div className="space-y-8">
                 <div className="grid grid-cols-1 gap-1">
                   {[
@@ -2209,7 +2540,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
               {translations[lang].editor.visuals}
               <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", activeConsole === 'color' && "rotate-90")} />
             </button>
-            <CategoryPopover id="color" title={translations[lang].editor.visuals} activeConsole={activeConsole} closeConsole={closeConsole}>
+            <CategoryPopover id="color" title={translations[lang].editor.visuals} activeConsole={activeConsole} closeConsole={closeConsole} lang={lang}>
                 {/* Role / Identity */}
                 <div className="space-y-4">
                   <div className="flex justify-between items-center text-[8px] font-bold uppercase tracking-widest text-zinc-500">
@@ -2495,7 +2826,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
               {translations[lang].editor.canvas}
               <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", activeConsole === 'bg' && "rotate-90")} />
             </button>
-            <CategoryPopover id="bg" title={translations[lang].editor.canvas} activeConsole={activeConsole} closeConsole={closeConsole}>
+            <CategoryPopover id="bg" title={translations[lang].editor.canvas} activeConsole={activeConsole} closeConsole={closeConsole} lang={lang}>
               <div className="space-y-8">
                 <button 
                   onClick={() => setSettings({...settings, transparentBg: !settings.transparentBg})}
@@ -2552,7 +2883,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
               </span>
               <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", activeConsole === 'preset' && "rotate-90")} />
             </button>
-            <CategoryPopover id="preset" title={translations[lang].editor.presets} activeConsole={activeConsole} closeConsole={closeConsole}>
+            <CategoryPopover id="preset" title={translations[lang].editor.presets} activeConsole={activeConsole} closeConsole={closeConsole} lang={lang}>
               <div className="grid grid-cols-1 gap-1">
                 {Object.keys(PRESETS).map((presetKey) => (
                   <button 
@@ -2756,6 +3087,7 @@ export default function App() {
     // Precise section tracking with ScrollTrigger
     if (view === 'hero') {
       const sections = [
+        { id: 'about', target: 'about' },
         { id: 'documentation', target: 'documentation' },
         { id: 'faq', target: 'faq' },
         { id: 'get-started', target: 'get-started' }
@@ -2764,9 +3096,10 @@ export default function App() {
       sections.forEach(section => {
         ScrollTrigger.create({
           trigger: `#${section.target}`,
-          start: "top 40%",
-          end: "bottom 40%",
-          onToggle: self => self.isActive && setActiveSection(section.id),
+          start: "top 60%",
+          end: "bottom 60%",
+          onEnter: () => setActiveSection(section.id),
+          onEnterBack: () => setActiveSection(section.id),
         });
       });
 
@@ -2774,7 +3107,8 @@ export default function App() {
       ScrollTrigger.create({
         start: 0,
         end: 200,
-        onToggle: self => self.isActive && setActiveSection('home'),
+        onEnter: () => setActiveSection('home'),
+        onEnterBack: () => setActiveSection('home'),
       });
     }
 
@@ -2974,7 +3308,7 @@ export default function App() {
   const [newRole, setNewRole] = useState('');
   const [newNames, setNewNames] = useState('');
 
-  const [activeConsole, setActiveConsole] = useState<'none' | 'color' | 'bg' | 'font' | 'anim'>('none');
+  const [activeConsole, setActiveConsole] = useState<'none' | 'color' | 'bg' | 'font' | 'anim' | 'preset'>('none');
   const [openSettingsId, setOpenSettingsId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -2996,6 +3330,20 @@ export default function App() {
   const [exportProgress, setExportProgress] = useState(0);
   const [previewScaleValue, setPreviewScale] = useState(1);
   const [fadeIndex, setFadeIndex] = useState(0);
+  const [isConsoleCollapsed, setIsConsoleCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isRightSidebarCollapsed, setIsRightSidebarCollapsed] = useState(false);
+  const [isPreviewCollapsedMobile, setIsPreviewCollapsedMobile] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const [isAutoPlay, setIsAutoPlay] = useState(true);
   const [customFonts, setCustomFonts] = useState<{ name: string, url: string, value: string }[]>(() => {
     return safeParse(localStorage.getItem('daftarkru_customFonts'), []);
@@ -3671,11 +4019,29 @@ export default function App() {
       } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         recordVideo();
+      } else if (e.key.toLowerCase() === 'e') {
+        setIsRightSidebarCollapsed(prev => !prev);
+      } else if (e.key.toLowerCase() === 'q') {
+        setIsSidebarCollapsed(prev => !prev);
+      } else if (e.key.toLowerCase() === 's' && !e.ctrlKey && !e.metaKey) {
+        setIsConsoleCollapsed(prev => !prev);
+      } else if (e.key === 'Escape') {
+        setActiveConsole('none');
+      } else if (e.key === '1') {
+        setActiveConsole('font');
+      } else if (e.key === '2') {
+        setActiveConsole('anim');
+      } else if (e.key === '3') {
+        setActiveConsole('color');
+      } else if (e.key === '4') {
+        setActiveConsole('bg');
+      } else if (e.key === '5') {
+        setActiveConsole('preset');
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [history, isAutoPlay, credits.length, recordVideo]);
+  }, [history, isAutoPlay, credits.length, recordVideo, setIsSidebarCollapsed, setIsRightSidebarCollapsed, setIsConsoleCollapsed, setActiveConsole]);
 
   const [tagTextIndex, setTagTextIndex] = useState(0);
   const tagTexts = [
@@ -3853,6 +4219,7 @@ export default function App() {
             
             <AboutSection lang={lang} onStart={triggerClapperTransition} />
             <Marquee text={translations[lang].editor.rendering + " CREDITS ENGINE"} />
+            <DocumentationSection lang={lang} />
             <FAQSection lang={lang} />
             <GetStartedSection lang={lang} onStart={triggerClapperTransition} />
 
@@ -4144,9 +4511,28 @@ export default function App() {
               </AnimatePresence>
 
               {/* Controls Column (Left) */}
-              <aside className="w-full lg:w-[460px] border-b lg:border-b-0 lg:border-r border-white lg:overflow-y-auto lg:scrollbar-hide bg-black p-5 lg:p-10 space-y-12 order-2 lg:order-1 flex-shrink-0">
-                {/* Management Section */}
-                <div className="space-y-6 credit-input">
+              <motion.aside 
+                animate={isDesktop ? { 
+                  width: isSidebarCollapsed ? 32 : 420
+                } : { width: '100%' }}
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                className="w-full lg:w-[420px] border-b lg:border-b-0 lg:border-r border-white lg:overflow-y-auto lg:scrollbar-hide bg-black order-2 lg:order-1 flex-shrink-0 relative overflow-hidden group/sidebar flex flex-row-reverse"
+              >
+                {/* Sidebar Toggle Button (Desktop only) */}
+                <button 
+                  onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                  className="hidden lg:flex sticky top-0 h-screen w-8 bg-zinc-900 border-l border-white/10 hover:bg-white hover:text-black transition-all items-center justify-center z-[250] group/toggle cursor-pointer shrink-0"
+                  title={isSidebarCollapsed ? (lang === 'id' ? "Buka Sidebar (Q)" : "Expand Sidebar (Q)") : (lang === 'id' ? "Tutup Sidebar (Q)" : "Collapse Sidebar (Q)")}
+                >
+                  {isSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                </button>
+
+                <div className={cn(
+                  "flex-1 p-5 lg:p-10 space-y-12 transition-opacity duration-300 min-w-0 lg:min-w-[350px]",
+                  isSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
+                )}>
+                  {/* Management Section */}
+                  <div className="space-y-6 credit-input">
                   <div className="flex items-center justify-between border-b border-white pb-3">
                     <h2 className="text-[11px] lg:text-[13px] font-bold uppercase tracking-[0.4em]">{translations[lang].editor.creditInput}</h2>
                   </div>
@@ -4269,15 +4655,53 @@ export default function App() {
                       {isExporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Film className="w-5 h-5" />}
                       {isExporting ? `${translations[lang].editor.rendering} ${exportProgress}%` : translations[lang].editor.renderExport}
                     </button>
-                    <div className="mt-2 text-[8px] text-zinc-600 uppercase tracking-widest text-center hidden sm:block">Shortcut: Space (Play/Pause) • Arrows (Skip) • Ctrl+S (Export)</div>
+                    <div className="mt-2 text-[8px] text-zinc-600 uppercase tracking-widest text-center hidden sm:block">Shortcut: Space (Play/Pause) • Q/E/S (Layout) • 1-5 (Menu) • Arrows (Skip) • Ctrl+S (Export)</div>
+                  </div>
                   </div>
                 </div>
-              </aside>
+              </motion.aside>
 
               {/* Preview & Desktop Console Container */}
-              <div className="flex-1 flex flex-col min-w-0 bg-[#050505] order-1 lg:order-2 sticky top-0 z-[150] shadow-[0_10px_30px_rgba(0,0,0,0.5)] lg:shadow-none border-b border-white/20 lg:border-b-0 backdrop-blur-md">
-                <main className="flex-1 p-2 sm:p-6 lg:p-12 flex flex-col items-center justify-center overflow-hidden min-h-[250px] sm:min-h-[300px] lg:min-h-0 relative">
-                  <div className="w-full max-w-[1400px] max-h-[75vh] aspect-video relative border border-white/10 group shadow-[0_0_100px_rgba(255,255,255,0.05)] overflow-hidden bg-black ring-1 ring-white/5 preview-viewport">
+              <div className={cn(
+                "flex-1 flex flex-col min-w-0 bg-[#050505] order-1 lg:order-2 sticky top-0 shadow-[0_10px_30px_rgba(0,0,0,0.5)] lg:shadow-none border-b border-white/20 lg:border-b-0 backdrop-blur-md",
+                activeConsole !== 'none' ? "z-[500]" : "z-[150]"
+              )}>
+                
+                {/* Mobile Preview Control Header (Only below lg) */}
+                <div className="flex lg:hidden bg-[#0a0a0a] border-b border-white/10 px-4 py-2.5 items-center justify-between z-20">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400">
+                      PREVIEW VIEWPORT ({settings.animationType.toUpperCase()})
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setIsPreviewCollapsedMobile(!isPreviewCollapsedMobile)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-[9px] font-bold tracking-wider uppercase border border-white/20 hover:border-white hover:bg-white hover:text-black transition-all cursor-pointer rounded-none text-white bg-transparent"
+                  >
+                    {isPreviewCollapsedMobile ? (
+                      <>
+                        <Eye className="w-3" />
+                        <span>{lang === 'id' ? 'Tampilkan' : 'Show'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <EyeOff className="w-3" />
+                        <span>{lang === 'id' ? 'Sembunyikan' : 'Hide'}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <main className={cn(
+                  "flex-1 p-2 sm:p-6 lg:p-12 flex flex-col items-center justify-center overflow-hidden relative transition-all duration-300",
+                  isPreviewCollapsedMobile ? "hidden lg:flex lg:min-h-0 lg:p-12" : "min-h-[250px] sm:min-h-[300px] lg:min-h-0"
+                )}>
+                  <div className={cn(
+                    "w-full aspect-video relative border border-white/10 group shadow-[0_0_100px_rgba(255,255,255,0.05)] overflow-hidden bg-black ring-1 ring-white/5 preview-viewport transition-all duration-500",
+                    isSidebarCollapsed ? "max-w-[1600px]" : "max-w-[1400px]",
+                    isConsoleCollapsed ? "max-h-[75vh] lg:max-h-[90vh]" : "max-h-[75vh]"
+                  )}>
 
               {/* Viewport Grid Overlay */}
               <div className="absolute inset-x-0 bottom-0 top-6 pointer-events-none grid grid-cols-6 grid-rows-6 opacity-0 lg:group-hover:opacity-10 transition-opacity z-20">
@@ -4729,9 +5153,23 @@ export default function App() {
                 </main>
 
                     {/* Visual Console for Desktop */}
-                    <div className="hidden lg:block border-t border-white bg-black flex-shrink-0 relative z-[200] visual-console">
-                      <div className="px-12 py-5 border-b border-white/10 flex items-center justify-between">
+                    <motion.div 
+                      animate={{ height: isConsoleCollapsed ? 64 : 'auto' }}
+                      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                      className={cn(
+                        "hidden lg:block border-t border-white bg-black flex-shrink-0 relative z-[200] visual-console transition-all duration-300",
+                        isConsoleCollapsed ? "overflow-hidden" : "overflow-visible"
+                      )}
+                    >
+                      <div className="px-12 py-5 border-b border-white/10 flex items-center justify-between sticky top-0 bg-black z-10">
                          <h2 className="text-[11px] lg:text-[13px] font-medium uppercase tracking-[0.3em] text-white">VISUAL DESIGNER CONSOLE</h2>
+                         <button 
+                           onClick={() => setIsConsoleCollapsed(!isConsoleCollapsed)}
+                           className="p-2 text-zinc-500 hover:text-white transition-all cursor-pointer hover:bg-white/5 active:scale-95"
+                           title={isConsoleCollapsed ? (lang === 'id' ? "Buka Konsol (S)" : "Expand Console (S)") : (lang === 'id' ? "Tutup Konsol (S)" : "Collapse Console (S)")}
+                         >
+                           {isConsoleCollapsed ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                         </button>
                       </div>
                       <div className="px-12 py-10">
                         <ConsoleContent 
@@ -4758,13 +5196,33 @@ export default function App() {
                           </button>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   </div>
 
                   {/* Fine Tuning Panel (Right) */}
-                  <aside className="hidden lg:block lg:w-[460px] border-l border-white bg-black p-10 overflow-y-auto scrollbar-hide order-3 flex-shrink-0">
-                    <TuningControls settings={settings} setSettings={setSettings} lang={lang} />
-                  </aside>
+                  <motion.aside 
+                    animate={{ 
+                      width: isRightSidebarCollapsed ? 32 : 420
+                    }}
+                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                    className="hidden lg:flex border-l border-white lg:overflow-y-auto lg:scrollbar-hide bg-black order-3 flex-shrink-0 relative overflow-hidden group/right-sidebar flex-row"
+                  >
+                    {/* Right Sidebar Toggle Button */}
+                    <button 
+                      onClick={() => setIsRightSidebarCollapsed(!isRightSidebarCollapsed)}
+                      className="hidden lg:flex sticky top-0 h-screen w-8 bg-zinc-900 border-r border-white/10 hover:bg-white hover:text-black transition-all items-center justify-center z-[250] group/toggle cursor-pointer shrink-0"
+                      title={isRightSidebarCollapsed ? (lang === 'id' ? "Buka Panel Tuning (E)" : "Expand Tuning Panel (E)") : (lang === 'id' ? "Tutup Panel Tuning (E)" : "Collapse Tuning Panel (E)")}
+                    >
+                      {isRightSidebarCollapsed ? <ChevronLeft className="w-4 h-4 ml-[-2px]" /> : <ChevronRight className="w-4 h-4 ml-[-2px]" />}
+                    </button>
+
+                    <div className={cn(
+                      "flex-1 p-5 lg:p-10 space-y-12 transition-opacity duration-300 min-w-[388px]",
+                      isRightSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
+                    )}>
+                      <TuningControls settings={settings} setSettings={setSettings} lang={lang} />
+                    </div>
+                  </motion.aside>
                 </div>
 
 {/* Footer removed */}
