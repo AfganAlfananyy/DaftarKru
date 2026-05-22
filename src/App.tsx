@@ -1277,7 +1277,7 @@ const GsapAnimatedConsole = ({ onPlay }: { onPlay: () => void }) => {
   }, { scope: containerRef });
 
   return (
-    <div ref={containerRef} className="flex-1 w-full max-w-2xl min-h-[300px] sm:min-h-[500px] relative perspective-[1500px] flex items-center justify-center -mt-[50px] md:-mt-[160px] lg:mt-0 lg:-translate-y-8">
+    <div ref={containerRef} className="flex-1 w-full max-w-2xl min-h-[300px] sm:min-h-[500px] relative perspective-[1500px] flex items-center justify-center -mt-[100px] md:-mt-[210px] lg:mt-0 lg:-translate-y-8">
        <div className="relative w-full h-full transform-style-3d flex items-center justify-center">
          
          {/* Preview Screen Mock */}
@@ -1390,9 +1390,9 @@ const AboutSection = ({ lang, onStart }: { lang: Lang, onStart: () => void }) =>
     ScrollTrigger.create({
       trigger: sectionRef.current,
       start: "top top",
-      end: "+=350%",
+      end: "+=700%",
       pin: true,
-      scrub: 0.8,
+      scrub: 1.2,
       pinSpacing: true,
       // Reflow optimization
       fastScrollEnd: true,
@@ -3138,6 +3138,8 @@ export default function App() {
         gestureOrientation: 'vertical',
         smoothWheel: true,
         wheelMultiplier: 1,
+        touchMultiplier: 1.25,
+        syncTouch: true,
       });
 
       lenisRef.current = lenis;
@@ -3177,7 +3179,6 @@ export default function App() {
     }
   });
   const [initialProjectName] = useState(projectName);
-  const [isEditingProjectName, setIsEditingProjectName] = useState(false);
   const [showInfo, setShowInfo] = useState(true);
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -4025,6 +4026,13 @@ export default function App() {
         setActiveConsole('bg');
       } else if (e.key === '5') {
         setActiveConsole('preset');
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        if (view === 'hero') {
+          setIsMobileMenuOpen(prev => !prev);
+        } else {
+          setIsMenuOpen(prev => !prev);
+        }
       } else if (e.key === '?' || e.key.toLowerCase() === 'h') {
         e.preventDefault();
         setIsShortcutsOpen(prev => !prev);
@@ -4032,7 +4040,7 @@ export default function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [history, isAutoPlay, credits.length, recordVideo, setIsSidebarCollapsed, setIsRightSidebarCollapsed, setIsConsoleCollapsed, setActiveConsole, setIsShortcutsOpen]);
+  }, [history, isAutoPlay, credits.length, recordVideo, setIsSidebarCollapsed, setIsRightSidebarCollapsed, setIsConsoleCollapsed, setActiveConsole, setIsShortcutsOpen, view, setIsMobileMenuOpen, setIsMenuOpen]);
 
   const [tagTextIndex, setTagTextIndex] = useState(0);
   const tagTexts = [
@@ -4269,48 +4277,6 @@ export default function App() {
               </div>
               
               <div className="flex items-center gap-2 md:gap-4">
-                {isEditingProjectName ? (
-                  <div className="flex items-center border border-white bg-black">
-                    <input 
-                      type="text" 
-                      value={projectName}
-                      placeholder="Enter new project name"
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setProjectName(val);
-                        try {
-                          localStorage.setItem('daftarkru_projectName', val);
-                        } catch (err) {}
-                      }}
-                      onBlur={() => setIsEditingProjectName(false)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          setIsEditingProjectName(false);
-                        }
-                      }}
-                      autoFocus
-                      className="bg-black text-[10px] sm:text-xs font-mono font-bold uppercase tracking-widest border-none focus:outline-none focus:ring-0 text-white w-24 sm:w-44 px-3 py-2 sm:py-3"
-                    />
-                    <button 
-                      onClick={() => setIsEditingProjectName(false)}
-                      className="p-2 sm:p-3 bg-white text-black font-bold uppercase text-[10px] hover:bg-zinc-200 transition-colors cursor-pointer border-l border-white"
-                      title="Save Name"
-                    >
-                      <Check className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <motion.button 
-                    whileHover={{scale: 1.05}} 
-                    whileTap={{scale: 0.95}}
-                    onClick={() => setIsEditingProjectName(true)}
-                    className="p-2 md:p-3 border border-white hover:bg-white hover:text-black transition-all rounded-none group flex items-center gap-2 text-white hover:text-black"
-                    title={translations[lang].editor.projectName}
-                  >
-                    <Settings2 className="w-4 h-4 md:w-5 md:h-5" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:block">RENAME PROJECT</span>
-                  </motion.button>
-                )}
                 <button 
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
                   className={cn(
@@ -5412,14 +5378,6 @@ export default function App() {
                     </div>
                   </motion.aside>
                 </div>
-
-                 {/* Editor Bottom Footer */}
-                 <footer className="h-10 md:h-12 border-t border-white/10 bg-zinc-950 flex items-center justify-between px-4 sm:px-8 text-[9px] font-mono text-zinc-500 uppercase flex-shrink-0 z-40 select-none">
-                   <span className="tracking-widest">DAFTARKRU WORKSPACE v1.12 //</span>
-                   <span className="tracking-[0.2em] font-semibold text-white/50 text-[10px] uppercase font-mono">
-                     DEVELOPED BY AFGAN ALFANANY
-                   </span>
-                 </footer>
            </motion.div>
         )}
       </AnimatePresence>
