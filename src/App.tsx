@@ -3132,13 +3132,13 @@ export default function App() {
   useEffect(() => {
     if (view === 'hero') {
       const lenis = new Lenis({
-        duration: 1.4,
+        duration: 2.0,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         orientation: 'vertical',
         gestureOrientation: 'vertical',
         smoothWheel: true,
         wheelMultiplier: 1,
-        touchMultiplier: 1.25,
+        touchMultiplier: 0.8,
         syncTouch: true,
       });
 
