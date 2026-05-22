@@ -29,7 +29,10 @@ import {
   Globe,
   Instagram,
   Github,
-  Keyboard
+  Keyboard,
+  Undo,
+  Redo,
+  History
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder, useDragControls } from 'motion/react';
 import Lenis from 'lenis';
@@ -1512,112 +1515,10 @@ const DocumentationSection = ({ lang }: { lang: Lang }) => {
 
   return (
     <section id="documentation" className="min-h-screen w-full bg-[#050505] flex flex-col items-center justify-center p-6 sm:p-12 lg:p-24 relative overflow-hidden border-t border-white/5">
-      {/* Cinematic Cyber Ambient Background (Floating soft light lines & radial glow instead of squares) */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Soft floating glow orbs */}
-        <motion.div 
-          animate={{
-            x: [-100, 100, -100],
-            y: [-50, 50, -50],
-            opacity: [0.03, 0.08, 0.03]
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          style={{ willChange: "transform" }}
-          className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-white rounded-full blur-[160px]"
-        />
-        <motion.div 
-          animate={{
-            x: [100, -100, 100],
-            y: [50, -50, 50],
-            opacity: [0.02, 0.06, 0.02]
-          }}
-          transition={{
-            duration: 30,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          style={{ willChange: "transform" }}
-          className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-white rounded-full blur-[180px]"
-        />
-
-        {/* Slow vertical scanning cinematic laser line */}
-        <motion.div 
-          animate={{
-            y: ["-10vh", "110vh"]
-          }}
-          transition={{
-            duration: 12,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          style={{ willChange: "transform" }}
-          className="absolute inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/15 to-transparent blur-[1.5px]"
-        />
-      </div>
-
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Rotating Tech Orbits */}
-        <motion.div 
-          animate={{ rotate: 360 }}
-          transition={{ duration: 70, repeat: Infinity, ease: "linear" }}
-          style={{ willChange: "transform" }}
-          className="absolute -top-32 -left-32 w-96 h-96 border border-white/[0.03] rounded-full flex items-center justify-center"
-        >
-          <div className="w-80 h-80 border border-dashed border-white/[0.02] rounded-full flex items-center justify-center">
-            <div className="w-64 h-64 border border-white/[0.01] rounded-full" />
-          </div>
-        </motion.div>
-
-        <motion.div 
-          animate={{ rotate: -360 }}
-          transition={{ duration: 90, repeat: Infinity, ease: "linear" }}
-          style={{ willChange: "transform" }}
-          className="absolute -bottom-48 -right-48 w-[500px] h-[500px] border border-white/[0.02] rounded-full flex items-center justify-center"
-        >
-          <div className="w-[450px] h-[450px] border border-dashed border-white/[0.01] rounded-full" />
-        </motion.div>
-
-        {/* Floating Matrix Particles */}
-        {["RENDER_PIPELINE", "FPS_60_SYNC", "ALPHA_CHANNEL", "WEBM_VIDEO_EXPORT", "S_CURVE_SMOOTH"].map((text, index) => {
-          const startX = (index * 20) + 12;
-          const startY = (index * 15) + 25;
-          return (
-            <motion.div
-              key={index}
-              initial={{ x: `${startX}%`, y: `${startY}%`, opacity: 0 }}
-              animate={{ 
-                y: [`${startY}%`, `${startY - 10}%`, `${startY}%`],
-                opacity: [0.01, 0.06, 0.01]
-              }}
-              transition={{
-                duration: 12 + index * 5,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-              className="absolute font-mono text-[9px] tracking-[0.3em] text-white/40 pointer-events-none hidden md:block"
-            >
-              {`[${text}]`}
-            </motion.div>
-          );
-        })}
-
-        {/* Blinking Plus Indicators */}
-        {[[15, 20], [80, 40], [40, 85]].map(([x, y], idx) => (
-          <motion.div
-            key={idx}
-            style={{ left: `${x}%`, top: `${y}%` }}
-            animate={{ opacity: [0.1, 0.5, 0.1] }}
-            transition={{ duration: 4 + idx, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute text-white/30 font-light text-sm pointer-events-none select-none"
-          >
-            +
-          </motion.div>
-        ))}
-
+      {/* Static Background instead of animated one */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03]">
+        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-white rounded-full blur-[160px]" />
+        <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-white rounded-full blur-[180px]" />
         {/* Ambient top glowing line */}
         <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
       </div>
@@ -1628,7 +1529,7 @@ const DocumentationSection = ({ lang }: { lang: Lang }) => {
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: false }}
+              viewport={{ once: true }}
               className="text-[9px] font-black tracking-[0.8em] text-white/40 uppercase"
             >
               {translations[lang].documentation.title}
@@ -1754,7 +1655,7 @@ const FAQItem: React.FC<FAQProps> = ({ faq, index }) => {
     <motion.div 
       initial={{ opacity: 0, x: -20 }}
       whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: false, amount: 0.1 }}
+      viewport={{ once: true, amount: 0.1 }}
       transition={{ delay: index * 0.05, duration: 0.6 }}
       className="relative"
     >
@@ -1816,7 +1717,7 @@ const FAQSection = ({ lang }: { lang: Lang }) => {
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: false }}
+              viewport={{ once: true }}
               className="text-[9px] font-black tracking-[0.8em] text-white/40 uppercase"
             >
               {translations[lang].faq.title}
@@ -3065,7 +2966,7 @@ CreditItem.displayName = 'CreditItem';
 
 
 const safeParse = (value: string | null, defaultValue: any) => {
-  if (!value || value === 'undefined' || value === 'null' || value === '') return defaultValue;
+  if (!value || value.trim() === 'undefined' || value.trim() === 'null' || value.trim() === '') return defaultValue;
   try {
     const parsed = JSON.parse(value);
     return parsed !== undefined ? parsed : defaultValue;
@@ -3169,13 +3070,13 @@ export default function App() {
   useEffect(() => {
     if (view === 'hero') {
       const lenis = new Lenis({
-        duration: 0.9,
+        duration: 1.8,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         orientation: 'vertical',
         gestureOrientation: 'vertical',
         smoothWheel: true,
-        wheelMultiplier: 0.8,
-        touchMultiplier: 1.0,
+        wheelMultiplier: 0.6,
+        touchMultiplier: 0.5,
         syncTouch: true,
       });
 
@@ -3273,13 +3174,20 @@ export default function App() {
     return { ...defaultSettings, ...(parsed && typeof parsed === 'object' ? parsed : {}) };
   });
 
-  // History for Undo
+  // History for Undo/Redo & Selective Revert
   interface HistoryFrame {
     credits: CreditEntry[];
     settings: ProjectSettings;
+    projectName: string;
+    labelId: string;
+    labelEn: string;
+    timestamp: string;
   }
   const [history, setHistory] = useState<HistoryFrame[]>([]);
+  const [historyIndex, setHistoryIndex] = useState<number>(-1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [historyTab, setHistoryTab] = useState<'timeline' | 'selective'>('timeline');
   const isUndoing = useRef(false);
 
   // Initialize history after first render to ensure we capture the initial state correctly
@@ -3290,14 +3198,20 @@ export default function App() {
         const settingsClone = JSON.parse(JSON.stringify(settings || {}));
         setHistory([{ 
           credits: creditsClone, 
-          settings: settingsClone 
+          settings: settingsClone,
+          projectName: projectName || 'UNTITLED_PROJECT',
+          labelId: 'Inisialisasi Proyek',
+          labelEn: 'Project Initialized',
+          timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
         }]);
+        setHistoryIndex(0);
       } catch (e) {
         console.error("Failed to initialize history:", e);
       }
     }
   }, []);
 
+  // Auto record modifications dynamically with smart labels
   useEffect(() => {
     if (isUndoing.current) {
       isUndoing.current = false;
@@ -3307,23 +3221,122 @@ export default function App() {
     const timer = setTimeout(() => {
       setHistory(prev => {
         if (!prev || prev.length === 0) return prev;
-        const last = prev[prev.length - 1];
+        
+        // Use historyIndex as active head of the stack
+        const activeHeadIndex = historyIndex >= 0 ? historyIndex : prev.length - 1;
+        const last = prev[activeHeadIndex];
         if (!last || !credits || !settings) return prev;
         
         try {
           if (JSON.stringify(last.credits) === JSON.stringify(credits) && 
-              JSON.stringify(last.settings) === JSON.stringify(settings)) {
+              JSON.stringify(last.settings) === JSON.stringify(settings) &&
+              last.projectName === projectName) {
             return prev;
           }
           
           const creditsClone = JSON.parse(JSON.stringify(credits || []));
           const settingsClone = JSON.parse(JSON.stringify(settings || {}));
           
-          const updated = [...prev, { 
+          let labelId = 'Ubah Konfigurasi';
+          let labelEn = 'Modify Configuration';
+
+          // Check if projectName changed
+          if (last.projectName !== projectName) {
+            labelId = `Ubah Nama Proyek: ${projectName}`;
+            labelEn = `Rename Project: ${projectName}`;
+          }
+          // Compare credits length
+          else if (last.credits.length !== credits.length) {
+            if (credits.length > last.credits.length) {
+              labelId = 'Tambah Tape Baru';
+              labelEn = 'Add New Tape';
+            } else {
+              labelId = 'Hapus Tape';
+              labelEn = 'Delete Tape';
+            }
+          }
+          // Compare individual tape contents
+          else if (JSON.stringify(last.credits) !== JSON.stringify(credits)) {
+            labelId = 'Ubah Susunan Tape';
+            labelEn = 'Modify Tape Layout';
+          }
+          // Compare settings
+          else {
+            const keys = Object.keys(settings) as Array<keyof ProjectSettings>;
+            for (const k of keys) {
+              if (last.settings[k] !== settings[k]) {
+                switch (k) {
+                  case 'fontFamily':
+                    labelId = `Ganti Font: ${settings.fontFamily}`;
+                    labelEn = `Change Font: ${settings.fontFamily}`;
+                    break;
+                  case 'fontSize':
+                    labelId = `Atur Ukuran Nama: ${settings.fontSize}px`;
+                    labelEn = `Set Name Size: ${settings.fontSize}px`;
+                    break;
+                  case 'roleFontSize':
+                    labelId = `Atur Ukuran Posisi: ${settings.roleFontSize}px`;
+                    labelEn = `Set Role Size: ${settings.roleFontSize}px`;
+                    break;
+                  case 'activePreset':
+                    labelId = `Ganti Preset: ${settings.activePreset}`;
+                    labelEn = `Change Preset: ${settings.activePreset}`;
+                    break;
+                  case 'bgColor':
+                    labelId = 'Ubah Warna Latar';
+                    labelEn = 'Change Background Color';
+                    break;
+                  case 'transparentBg':
+                    labelId = settings.transparentBg ? 'Aktifkan Latar Transparan' : 'Nonaktifkan Latar Transparan';
+                    labelEn = settings.transparentBg ? 'Enable Transparent Bg' : 'Disable Transparent Bg';
+                    break;
+                  case 'animationType':
+                    labelId = `Ubah Animasi ke: ${settings.animationType}`;
+                    labelEn = `Change Animation: ${settings.animationType}`;
+                    break;
+                  case 'roleColor':
+                    labelId = 'Ubah Warna Posisi';
+                    labelEn = 'Change Role Color';
+                    break;
+                  case 'namesColor':
+                    labelId = 'Ubah Warna Nama';
+                    labelEn = 'Change Names Color';
+                    break;
+                  case 'marginBlock':
+                    labelId = 'Ubah Jarak Blok';
+                    labelEn = 'Change Block Space';
+                    break;
+                  case 'pairsGap':
+                    labelId = 'Ubah Jarak Pairs';
+                    labelEn = 'Change Pairs Gap';
+                    break;
+                  case 'showNoise':
+                    labelId = settings.showNoise ? 'Aktifkan Film Grain' : 'Matikan Film Grain';
+                    labelEn = settings.showNoise ? 'Enable Film Grain' : 'Disable Film Grain';
+                    break;
+                  default:
+                    labelId = `Ubah Parameter: ${String(k)}`;
+                    labelEn = `Modify Parameter: ${String(k)}`;
+                    break;
+                }
+                break;
+              }
+            }
+          }
+
+          const newFrame: HistoryFrame = { 
             credits: creditsClone, 
-            settings: settingsClone
-          }];
-          return updated.slice(-50);
+            settings: settingsClone,
+            projectName: projectName,
+            labelId,
+            labelEn,
+            timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+          };
+
+          const baseHistory = prev.slice(0, activeHeadIndex + 1);
+          const updated = [...baseHistory, newFrame].slice(-50);
+          setHistoryIndex(updated.length - 1);
+          return updated;
         } catch (e) {
           console.error("Failed to update history:", e);
           return prev;
@@ -3332,16 +3345,59 @@ export default function App() {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [credits, settings]);
+  }, [credits, settings, projectName]);
 
   const undo = () => {
-    if (history.length <= 1) return;
+    if (historyIndex <= 0) return;
+    const prevIdx = historyIndex - 1;
+    const previous = history[prevIdx];
+    if (!previous) return;
+
     isUndoing.current = true;
-    const previous = history[history.length - 2];
     setCredits(previous.credits);
     setSettings(previous.settings);
-    setHistory(prev => prev.slice(0, -1));
+    setProjectName(previous.projectName);
+    setHistoryIndex(prevIdx);
     setSelectedIds(new Set());
+  };
+
+  const redo = () => {
+    if (historyIndex >= history.length - 1) return;
+    const nextIdx = historyIndex + 1;
+    const nextFrame = history[nextIdx];
+    if (!nextFrame) return;
+
+    isUndoing.current = true;
+    setCredits(nextFrame.credits);
+    setSettings(nextFrame.settings);
+    setProjectName(nextFrame.projectName);
+    setHistoryIndex(nextIdx);
+    setSelectedIds(new Set());
+  };
+
+  const jumpToHistoryIndex = (idx: number) => {
+    if (idx < 0 || idx >= history.length) return;
+    const frame = history[idx];
+    if (!frame) return;
+
+    isUndoing.current = true;
+    setCredits(frame.credits);
+    setSettings(frame.settings);
+    setProjectName(frame.projectName);
+    setHistoryIndex(idx);
+    setSelectedIds(new Set());
+  };
+
+  // Selective feature reset back to timeline initial baseline state
+  const resetSelectiveFeature = (key: keyof ProjectSettings) => {
+    if (history.length === 0) return;
+    const originalSettings = history[0]?.settings;
+    if (!originalSettings) return;
+
+    setSettings(prev => ({
+      ...prev,
+      [key]: originalSettings[key]
+    }));
   };
 
   const [newRole, setNewRole] = useState('');
@@ -4025,9 +4081,16 @@ export default function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
-        undo();
+        if (e.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        redo();
       }
       
       // Don't trigger shortcuts if user is typing in an input or textarea
@@ -4305,7 +4368,7 @@ export default function App() {
             className="flex-1 flex flex-col lg:h-screen lg:overflow-hidden"
           >
             {/* Header */}
-            <header className="h-16 md:h-20 border-b border-white flex items-center justify-between px-4 md:px-8 bg-black flex-shrink-0 z-[100] relative">
+            <header className={cn("h-16 md:h-20 border-b border-white flex items-center justify-between px-4 md:px-8 bg-black flex-shrink-0 relative", (isHistoryOpen || isMenuOpen) ? "z-[11000]" : "z-[100]")}>
               <div 
                 className="flex items-center gap-4 cursor-pointer group"
                 onClick={() => setView('hero')}
@@ -4313,12 +4376,258 @@ export default function App() {
                 <img src="/daftarkru.png" alt="DaftarKru" className="h-7 w-auto" />
               </div>
               
-              <div className="flex items-center gap-2 md:gap-4">
+              <div className="flex items-center gap-2 md:gap-4 relative">
+                {/* RIWAYAT (HISTORY) COMPONENT POPUP */}
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      setIsHistoryOpen(!isHistoryOpen);
+                      if (isMenuOpen) setIsMenuOpen(false);
+                    }}
+                    className={cn(
+                      "p-2 md:p-3 border border-white transition-all rounded-none flex items-center justify-center gap-2 text-[10px] md:text-sm font-bold tracking-widest cursor-pointer",
+                      isHistoryOpen ? "bg-white text-black" : "text-white bg-black hover:bg-white hover:text-black"
+                    )}
+                    title={lang === 'id' ? "Lihat Riwayat & Batal Khusus" : "View History & Selective Undo"}
+                  >
+                    <History className="w-4 h-4" />
+                    <span className="hidden sm:inline">RIWAYAT</span>
+                  </button>
+
+                  <AnimatePresence>
+                    {isHistoryOpen && (
+                      <>
+                        {/* Underlay click out with elegant dim on mobile */}
+                        <div 
+                          className="fixed inset-0 z-[10998] cursor-default bg-black/50 backdrop-blur-[1px] md:bg-transparent md:backdrop-blur-none" 
+                          onClick={() => setIsHistoryOpen(false)} 
+                        />
+                        
+                        <motion.div
+                          initial={{ opacity: 0, y: 15 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 15 }}
+                          transition={{ duration: 0.2 }}
+                          className="fixed inset-x-4 top-[72px] mx-auto w-auto max-w-[440px] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-3 sm:w-96 bg-[#0c0c0c] border border-white p-4 z-[11000] shadow-[10px_10px_0px_rgba(255,255,255,0.03)] flex flex-col font-sans text-xs max-h-[75vh] sm:max-h-[480px] overflow-hidden"
+                        >
+                          <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-2">
+                            <span className="font-extrabold tracking-widest text-white text-[10px] uppercase font-sans">
+                              {lang === 'id' ? "PANEL RIWAYAT DESAIN" : "DESIGN HISTORY PANEL"}
+                            </span>
+                            <button 
+                              onClick={() => setIsHistoryOpen(false)}
+                              className="text-white/40 hover:text-white cursor-pointer"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          {/* Quick description note */}
+                          <div className="text-[10px] text-zinc-400 mb-2 leading-relaxed">
+                            {lang === 'id' 
+                              ? (historyTab === 'timeline' 
+                                ? "Tips: Klik pada salah satu aktivitas di bawah untuk melompat langsung ke momen tersebut."
+                                : "Tips: Anda bisa membatalkan/mereset satu fitur pilihan saja tanpa merusak perubahan lainnya.")
+                              : (historyTab === 'timeline'
+                                ? "Tip: Click on any activity below to jump back to that exact moment instanlty."
+                                : "Tip: Revert only a specific visual change without losing your other edits.")
+                            }
+                          </div>
+
+                          {/* QUICK UNDO/REDO ACTION BAR */}
+                          <div className="grid grid-cols-2 gap-1.5 mb-3 bg-white/5 border border-white/10 p-1.5">
+                            <button
+                              onClick={undo}
+                              disabled={historyIndex <= 0}
+                              className={cn(
+                                "py-1.5 flex items-center justify-center gap-1.5 text-[9px] font-bold tracking-wider uppercase transition-all rounded-none border",
+                                historyIndex <= 0 
+                                  ? "opacity-25 border-transparent text-zinc-600 cursor-not-allowed" 
+                                  : "bg-black text-white hover:bg-white hover:text-black cursor-pointer border-white/20 hover:border-white"
+                              )}
+                              title={lang === 'id' ? "Batal perubahan terakhir" : "Undo last change"}
+                            >
+                              <Undo className="w-3.5 h-3.5" />
+                              {lang === 'id' ? 'BATAL' : 'UNDO'}
+                            </button>
+                            <button
+                              onClick={redo}
+                              disabled={historyIndex >= history.length - 1}
+                              className={cn(
+                                "py-1.5 flex items-center justify-center gap-1.5 text-[9px] font-bold tracking-wider uppercase transition-all rounded-none border",
+                                historyIndex >= history.length - 1 
+                                  ? "opacity-25 border-transparent text-zinc-600 cursor-not-allowed" 
+                                  : "bg-black text-white hover:bg-white hover:text-black cursor-pointer border-white/20 hover:border-white"
+                              )}
+                              title={lang === 'id' ? "Ulangi perubahan terakhir" : "Redo last change"}
+                            >
+                              <Redo className="w-3.5 h-3.5" />
+                              {lang === 'id' ? 'ULANG' : 'REDO'}
+                            </button>
+                          </div>
+
+                          {/* Tabs */}
+                          <div className="grid grid-cols-2 gap-1 bg-black border border-white/10 p-1 mb-3">
+                            <button
+                              onClick={() => setHistoryTab('timeline')}
+                              className={cn(
+                                "py-1.5 text-center text-[9px] font-bold tracking-wider uppercase transition-all cursor-pointer",
+                                historyTab === 'timeline' ? "bg-white text-black" : "text-zinc-400 hover:text-white"
+                              )}
+                            >
+                              {lang === 'id' ? 'URUTAN WAKTU' : 'TIMELINE'}
+                            </button>
+                            <button
+                              onClick={() => setHistoryTab('selective')}
+                              className={cn(
+                                "py-1.5 text-center text-[9px] font-bold tracking-wider uppercase transition-all cursor-pointer",
+                                historyTab === 'selective' ? "bg-white text-black" : "text-zinc-400 hover:text-white"
+                              )}
+                            >
+                              {lang === 'id' ? 'BATAL FITUR PILIHAN' : 'SELECTIVE RESET'}
+                            </button>
+                          </div>
+
+                          {/* TIMELINE VIEW */}
+                          {historyTab === 'timeline' && (
+                            <div className="flex flex-col flex-1 overflow-y-auto pr-1 space-y-1.5 max-h-[220px] custom-scrollbar scrollbar-thin">
+                              {history.map((frame, idx) => {
+                                const isActive = idx === historyIndex;
+                                const isRedoState = idx > historyIndex;
+                                return (
+                                  <button
+                                    key={idx}
+                                    onClick={() => jumpToHistoryIndex(idx)}
+                                    className={cn(
+                                      "w-full text-left p-2 border transition-all flex items-center justify-between group cursor-pointer",
+                                      isActive 
+                                        ? "bg-white/10 border-white text-white font-bold" 
+                                        : isRedoState 
+                                          ? "bg-transparent border-dashed border-white/5 text-zinc-600 hover:border-white/20 hover:text-zinc-400"
+                                          : "bg-transparent border-white/10 text-zinc-400 hover:border-white/30 hover:text-white"
+                                    )}
+                                  >
+                                    <div className="flex flex-col gap-0.5 font-sans">
+                                      <span className="text-[10px] font-medium tracking-wide truncate max-w-[200px] md:max-w-[260px]">
+                                        {lang === 'id' ? frame.labelId : frame.labelEn}
+                                      </span>
+                                      <span className="text-[8px] opacity-40 font-mono">
+                                        ⏱️ {frame.timestamp}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-1 font-mono">
+                                      {isActive && (
+                                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                                      )}
+                                      <span className="text-[8px] opacity-30">
+                                        #{idx + 1}
+                                      </span>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* SELECTIVE FEATURE UNDO VIEW */}
+                          {historyTab === 'selective' && (
+                            <div className="flex flex-col flex-1 overflow-y-auto pr-1 space-y-2 max-h-[220px] custom-scrollbar">
+                              {(() => {
+                                if (history.length === 0) return (
+                                  <div className="py-8 text-center text-zinc-500 text-[10px] font-sans">
+                                    {lang === 'id' ? 'BELUM ADA PERUBAHAN GAYA' : 'NO STYLE CHANGES YET'}
+                                  </div>
+                                );
+
+                                const originalSettings = history[0]?.settings;
+                                if (!originalSettings) return null;
+
+                                // Filter to only see properties that have changed from original index 0
+                                const selectiveFeaturesList = [
+                                  { key: 'fontFamily' as keyof ProjectSettings, labelId: 'Gaya Font', labelEn: 'Font Family', value: settings.fontFamily },
+                                  { key: 'fontSize' as keyof ProjectSettings, labelId: 'Ukuran Nama', labelEn: 'Name Font Size', value: `${settings.fontSize}px` },
+                                  { key: 'roleFontSize' as keyof ProjectSettings, labelId: 'Ukuran Posisi', labelEn: 'Role Font Size', value: `${settings.roleFontSize}px` },
+                                  { key: 'roleColor' as keyof ProjectSettings, labelId: 'Warna Posisi', labelEn: 'Role Color', value: settings.roleColor, isColor: true },
+                                  { key: 'namesColor' as keyof ProjectSettings, labelId: 'Warna Nama', labelEn: 'Names Color', value: settings.namesColor, isColor: true },
+                                  { key: 'bgColor' as keyof ProjectSettings, labelId: 'Warna Latar', labelEn: 'Backdrop Color', value: settings.bgColor, isColor: true },
+                                  { key: 'transparentBg' as keyof ProjectSettings, labelId: 'Latar Transparan', labelEn: 'Transparent Backdrop', value: settings.transparentBg ? 'YA' : 'TIDAK' },
+                                  { key: 'marginBlock' as keyof ProjectSettings, labelId: 'Jarak Blok', labelEn: 'Block Spacing', value: `${settings.marginBlock}px` },
+                                  { key: 'pairsGap' as keyof ProjectSettings, labelId: 'Jarak Pairs', labelEn: 'Pairs Gaps', value: `${settings.pairsGap}px` },
+                                  { key: 'animationType' as keyof ProjectSettings, labelId: 'Tipe Animasi', labelEn: 'Animation Type', value: settings.activePreset !== 'default' ? `${settings.animationType} (${settings.activePreset})` : settings.animationType },
+                                  { key: 'showNoise' as keyof ProjectSettings, labelId: 'Film Grain', labelEn: 'Film Grain Overlay', value: settings.showNoise ? 'ON' : 'OFF' },
+                                  { key: 'showScanlines' as keyof ProjectSettings, labelId: 'Scanlines', labelEn: 'Scanlines Overlay', value: settings.showScanlines ? 'ON' : 'OFF' },
+                                  { key: 'vignette' as keyof ProjectSettings, labelId: 'Vignette', labelEn: 'Vignette Amount', value: settings.vignette },
+                                  { key: 'letterSpacing' as keyof ProjectSettings, labelId: 'Jarak Huruf', labelEn: 'Letter Spacing', value: `${settings.letterSpacing}px` },
+                                  { key: 'lut' as keyof ProjectSettings, labelId: 'LUT / Mood Warna', labelEn: 'Color LUT Mode', value: settings.lut },
+                                ];
+
+                                const modifiedFeaturesList = selectiveFeaturesList.filter(f => settings[f.key] !== originalSettings[f.key]);
+
+                                if (modifiedFeaturesList.length === 0) {
+                                  return (
+                                    <div className="py-8 text-center text-zinc-500 text-[10px] leading-relaxed uppercase font-sans">
+                                      {lang === 'id' 
+                                        ? 'Semua konfigurasi sesuai bawaan asli.' 
+                                        : 'All configurations match baseline defaults.'}
+                                    </div>
+                                  );
+                                }
+
+                                return modifiedFeaturesList.map((feature, i) => (
+                                  <div 
+                                    key={i}
+                                    className="p-2 bg-black border border-white/5 flex items-center justify-between font-sans"
+                                  >
+                                    <div className="flex flex-col pr-2">
+                                      <span className="font-extrabold tracking-wider text-[10px] text-zinc-300">
+                                        {lang === 'id' ? feature.labelId : feature.labelEn}
+                                      </span>
+                                      <div className="flex items-center gap-1.5 mt-0.5">
+                                        {feature.isColor && (
+                                          <div 
+                                            className="w-2.5 h-2.5 border border-white/20 rounded-full animate-none" 
+                                            style={{ backgroundColor: String(feature.value) }} 
+                                          />
+                                        )}
+                                        <span className="text-[9px] text-zinc-500 font-mono">
+                                          {String(feature.value)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <button
+                                      onClick={() => {
+                                        resetSelectiveFeature(feature.key);
+                                      }}
+                                      className="p-1.5 border border-white/10 hover:border-white hover:bg-white hover:text-black transition-all rounded-none cursor-pointer"
+                                      title={lang === 'id' ? `Kembalikan ${feature.labelId}` : `Reset ${feature.labelEn}`}
+                                    >
+                                      <RotateCcw className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ));
+                              })()}
+                            </div>
+                          )}
+
+                          {/* Footer details */}
+                          <div className="mt-3 border-t border-white/10 pt-2 flex justify-between items-center text-[8px] text-zinc-500 uppercase tracking-widest font-mono">
+                            <span>{lang === 'id' ? `TOTAL: ${history.length} LANGKAH` : `TOTAL: ${history.length} STEPS`}</span>
+                            <span>{lang === 'id' ? `POSISI: KE-${historyIndex + 1}` : `ACTIVE: #${historyIndex + 1}`}</span>
+                          </div>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
+
                 <button 
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  onClick={() => {
+                    setIsMenuOpen(!isMenuOpen);
+                    if (isHistoryOpen) setIsHistoryOpen(false);
+                  }}
                   className={cn(
-                    "p-2 md:p-3 border border-white transition-all rounded-none",
-                    isMenuOpen ? "bg-white text-black" : "hover:bg-white hover:text-black"
+                    "p-2 md:p-3 border border-white transition-all rounded-none flex items-center justify-center",
+                    isMenuOpen ? "bg-white text-black" : "hover:bg-white hover:text-black cursor-pointer"
                   )}
                 >
                   <Menu className="w-4 h-4 md:w-5 md:h-5" />
