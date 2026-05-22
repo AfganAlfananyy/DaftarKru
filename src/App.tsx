@@ -5,7 +5,6 @@ import {
   Settings2,
   Film, 
   Loader2,
-  Undo2,
   CheckSquare,
   Square,
   Rocket,
@@ -14,18 +13,14 @@ import {
   ChevronRight,
   ChevronLeft,
   ChevronUp,
-  Home,
   ChevronDown,
   Eye,
   EyeOff,
   GripVertical,
   Check,
   Maximize,
-  Minimize,
-  Languages,
   Play,
   Pause,
-  FastForward,
   RotateCcw,
   Info,
   Upload,
@@ -497,46 +492,18 @@ type Lang = 'id' | 'en';
 
 const TypingDescription = ({ lang }: { lang: Lang }) => {
   const text = translations[lang].hero.description;
-  const [displayedText, setDisplayedText] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    setDisplayedText("");
-    setIsDeleting(false);
-  }, [lang]);
-
-  useEffect(() => {
-    let timeout: NodeJS.Timeout;
-    
-    if (!isDeleting && displayedText.length < text.length) {
-      if (text.startsWith(displayedText)) {
-        // Typing
-        timeout = setTimeout(() => {
-          setDisplayedText(text.slice(0, displayedText.length + 1));
-        }, 100);
-      } else {
-        setDisplayedText("");
-      }
-    } else if (!isDeleting && displayedText.length === text.length) {
-      // Pause after typing
-      timeout = setTimeout(() => {
-        setIsDeleting(true);
-      }, 3000);
-    } else if (isDeleting && displayedText.length > 0) {
-      // Deleting
-      timeout = setTimeout(() => {
-        setDisplayedText(text.slice(0, displayedText.length - 1));
-      }, 50);
-    } else if (isDeleting && displayedText.length === 0) {
-      // Pause after deleting
-      setIsDeleting(false);
-      timeout = setTimeout(() => {}, 500);
-    }
-
-    return () => clearTimeout(timeout);
-  }, [displayedText, isDeleting, text]);
-
-  return <span className="inline-block">{displayedText}<span className="inline-block w-1 h-4 bg-white ml-1 animate-pulse" /></span>;
+  return (
+    <motion.p
+      key={lang}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      className="inline-block"
+    >
+      {text}
+    </motion.p>
+  );
 };
 
 const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSection, isHidden, isScrolled, lenisRef }: { 
@@ -614,12 +581,21 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSe
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            key="mobile-drawer-menu"
+            initial={{ opacity: 0, clipPath: 'polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)' }}
+            animate={{ opacity: 1, clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)' }}
+            exit={{ opacity: 0, transition: { duration: 0 } }}
+            transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
             className="fixed inset-0 z-[1000] bg-black/98 backdrop-blur-3xl flex flex-col justify-between p-6 sm:p-12 md:p-16 lg:p-24"
           >
+            {/* Top glowing laser line during opening */}
+            <motion.div 
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ delay: 0.15, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-zinc-800 via-white to-zinc-800 origin-left"
+            />
+
             {/* Tech-brutalist grid background behind the mobile drawer */}
             <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
             
@@ -836,7 +812,7 @@ const BackgroundElements = () => {
   );
 };
 
-const ClapperboardTransition = ({ isOpen, lang }: { isOpen: boolean; lang: Lang }) => {
+const ClapperboardTransition = ({ isOpen }: { isOpen: boolean }) => {
   if (!isOpen) return null;
 
   return (
@@ -1247,7 +1223,7 @@ const Marquee = ({ text, reverse = false, speed = 30 }: { text: string, reverse?
   );
 };
 
-const GsapAnimatedConsole = ({ lang, onPlay }: { lang: Lang, onPlay: () => void }) => {
+const GsapAnimatedConsole = ({ onPlay }: { onPlay: () => void }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const playheadRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -1362,7 +1338,7 @@ const GsapAnimatedConsole = ({ lang, onPlay }: { lang: Lang, onPlay: () => void 
          </div>
 
          {/* Control Panel Mock */}
-         <div className="absolute bottom-[50px] md:bottom-[50px] lg:-bottom-12 left-1/2 -translate-x-1/2 w-[95%] lg:w-[110%] h-24 md:h-40 lg:h-48 bg-zinc-900/90 backdrop-blur-md border border-white/10 shadow-[4px_4px_0px_rgba(255,255,255,0.02)] z-20 flex flex-col rounded sm:rounded-none">
+         <div className="absolute bottom-[80px] md:bottom-[150px] lg:-bottom-12 left-1/2 -translate-x-1/2 w-[95%] lg:w-[110%] h-24 md:h-40 lg:h-48 bg-zinc-900/90 backdrop-blur-md border border-white/10 shadow-[4px_4px_0px_rgba(255,255,255,0.02)] z-20 flex flex-col rounded sm:rounded-none">
             <div className="h-5 sm:h-8 border-b border-white/5 flex items-center px-3 sm:px-4 justify-between bg-black/40">
                <div className="text-[5px] sm:text-[8px] font-bold tracking-[0.3em] text-white/40 truncate pr-2">VERSION 1.0 DAFTARKRU</div>
                <Settings2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white/40" />
@@ -1414,9 +1390,9 @@ const AboutSection = ({ lang, onStart }: { lang: Lang, onStart: () => void }) =>
     ScrollTrigger.create({
       trigger: sectionRef.current,
       start: "top top",
-      end: "+=700%",
+      end: "+=350%",
       pin: true,
-      scrub: 1.2,
+      scrub: 0.8,
       pinSpacing: true,
       // Reflow optimization
       fastScrollEnd: true,
@@ -1470,7 +1446,7 @@ const AboutSection = ({ lang, onStart }: { lang: Lang, onStart: () => void }) =>
         </div>
       </motion.div>
 
-      <GsapAnimatedConsole lang={lang} onPlay={onStart} />
+      <GsapAnimatedConsole onPlay={onStart} />
     </section>
   );
 };
@@ -1734,7 +1710,7 @@ interface FAQProps {
   index: number;
 }
 
-const FAQItem: React.FC<FAQProps & { lang: Lang }> = ({ faq, index, lang }) => {
+const FAQItem: React.FC<FAQProps> = ({ faq, index }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -1831,7 +1807,7 @@ const FAQSection = ({ lang }: { lang: Lang }) => {
 
           <div className="w-full space-y-4">
             {faqs.map((faq, i) => (
-              <FAQItem key={i} faq={faq} index={i} lang={lang} />
+              <FAQItem key={i} faq={faq} index={i} />
             ))}
           </div>
        </div>
@@ -1839,43 +1815,6 @@ const FAQSection = ({ lang }: { lang: Lang }) => {
   );
 };
 
-const CardMarquee = ({ items, reverse = false, speed = 25 }: { items: string[], reverse?: boolean, speed?: number }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useGSAP(() => {
-    if (!containerRef.current) return;
-    
-    gsap.to(containerRef.current, {
-      x: reverse ? "25%" : "-25%",
-      duration: speed,
-      repeat: -1,
-      ease: "none",
-      force3D: true,
-      lazy: true,
-    });
-  }, { scope: containerRef, dependencies: [speed, reverse] });
-
-  return (
-    <div className="w-full overflow-hidden py-4 select-none pointer-events-none">
-      <div 
-        ref={containerRef}
-        className="flex gap-8 whitespace-nowrap"
-        style={{ width: 'max-content', willChange: 'transform' }}
-      >
-        {[...Array(8)].map((_, i) => (
-          <div key={i} className="flex gap-8 items-center">
-            {items.map((item, idx) => (
-              <div key={idx} className="bg-[#0a0a0a] border border-white/5 px-10 py-5 flex items-center gap-5 shadow-2xl">
-                <div className="w-2.5 h-2.5 bg-white rounded-full" />
-                <span className="text-[12px] font-black uppercase tracking-[0.5em] text-white font-sans">{item}</span>
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
 
 const BackgroundCreditsAnimation = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -2192,7 +2131,60 @@ const TuningControls = React.memo(({ settings, setSettings, lang }: any) => {
     <div className="space-y-10">
       <div className="flex items-center gap-4 border-b border-white/5 pb-2">
         <h3 className="text-xs sm:text-[13px] font-medium tracking-normal text-zinc-300 whitespace-nowrap">FINE TUNING CONTROL</h3>
-         <div className="h-[1px] w-full bg-white/5" />
+        <button 
+          type="button"
+          onClick={() => {
+            const defaultSettings = {
+              fontFamily: 'Kanit',
+              fontSize: 36,
+              roleColor: '#ffffff',
+              roleOpacity: 0.2,
+              namesColor: '#ffffff',
+              namesOpacity: 1,
+              bgColor: '#000000',
+              transparentBg: false,
+              direction: 'bottomToTop' as Direction,
+              animationType: 'scroll' as AnimationType,
+              paddingText: 20,
+              marginBlock: 120,
+              roleFontSize: 14,
+              lineHeight: 1.2,
+              roleNameGap: 10,
+              namesGap: 4,
+              roleBold: false,
+              roleItalic: false,
+              namesBold: false,
+              namesItalic: false,
+              animationDuration: 4,
+              showNoise: false,
+              noiseOpacity: 0.1,
+              showScanlines: false,
+              vignette: 0,
+              pairsGap: 80,
+              activePreset: 'default',
+              textShadowBlur: 0,
+              textShadowColor: '#000000',
+              textShadowOpacity: 0.5,
+              textOutline: false,
+              textOutlineWidth: 1,
+              textOutlineColor: '#000000',
+              letterSpacing: 0,
+              lut: 'none',
+            };
+            const activePresetKey = settings.activePreset || 'default';
+            const presetData = PRESETS[activePresetKey as keyof typeof PRESETS] || PRESETS.default;
+            setSettings({
+              ...defaultSettings,
+              ...presetData,
+              activePreset: activePresetKey
+            });
+          }}
+          className="ml-auto flex items-center gap-1.5 px-3 py-1 border border-white/10 hover:border-white text-white hover:text-black hover:bg-white text-[9px] font-bold uppercase tracking-widest transition-all duration-200 cursor-pointer rounded-none"
+          title={lang === 'id' ? "Reset semua pengaturan tuning kembali ke asal untuk preset ini" : "Reset all tuning settings back to original for this preset"}
+        >
+          <RotateCcw className="w-3 h-3" />
+          <span>{lang === 'id' ? "RESET" : "RESET"}</span>
+        </button>
       </div>
       <div className="grid grid-cols-1 gap-y-10">
         <SliderWithControls 
@@ -2337,7 +2329,7 @@ const CategoryPopover = ({ id, title, children, activeConsole, closeConsole, lan
   </AnimatePresence>
 );
 
-const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setActiveConsole, setFadeIndex, customFonts, setCustomFonts, lang, onFontUpload, onDeleteFont }: any) => {
+const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setActiveConsole, setFadeIndex, customFonts, lang, onFontUpload, onDeleteFont }: any) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -2909,7 +2901,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
   );
 });
 
-const CreditItem = ({ 
+const CreditItem = React.memo(({ 
   item, 
   selectedIds, 
   toggleSelect, 
@@ -3031,7 +3023,8 @@ const CreditItem = ({
       </div>
     </Reorder.Item>
   );
-};
+});
+CreditItem.displayName = 'CreditItem';
 
 
 const safeParse = (value: string | null, defaultValue: any) => {
@@ -3065,21 +3058,28 @@ export default function App() {
   };
 
   useGSAP(() => {
+    let ticking = false;
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      const diff = currentScrollY - lastScrollY.current;
-      
-      if (currentScrollY > 100) {
-        if (diff > 10) {
-          setIsHidden(true);
-        } else if (diff < -10) {
-          setIsHidden(false);
-        }
-      } else {
-        setIsHidden(false);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+          const diff = currentScrollY - lastScrollY.current;
+          
+          if (currentScrollY > 100) {
+            if (diff > 10) {
+              setIsHidden(true);
+            } else if (diff < -10) {
+              setIsHidden(false);
+            }
+          } else {
+            setIsHidden(false);
+          }
+          setIsScrolled(currentScrollY > 50);
+          lastScrollY.current = currentScrollY;
+          ticking = false;
+        });
+        ticking = true;
       }
-      setIsScrolled(currentScrollY > 50);
-      lastScrollY.current = currentScrollY;
     };
     
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -3138,8 +3138,6 @@ export default function App() {
         gestureOrientation: 'vertical',
         smoothWheel: true,
         wheelMultiplier: 1,
-        touchMultiplier: 2,
-        syncTouch: true,
       });
 
       lenisRef.current = lenis;
@@ -3178,10 +3176,13 @@ export default function App() {
       return 'UNTITLED_PROJECT';
     }
   });
+  const [initialProjectName] = useState(projectName);
   const [isEditingProjectName, setIsEditingProjectName] = useState(false);
   const [showInfo, setShowInfo] = useState(true);
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isNavSubOpen, setIsNavSubOpen] = useState(false);
+  const [showSaveToast, setShowSaveToast] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [credits, setCredits] = useState<CreditEntry[]>(() => {
     const defaultCredits = [
@@ -3335,6 +3336,7 @@ export default function App() {
   const [isRightSidebarCollapsed, setIsRightSidebarCollapsed] = useState(false);
   const [isPreviewCollapsedMobile, setIsPreviewCollapsedMobile] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -3553,20 +3555,6 @@ export default function App() {
     setEditingId(null);
     setNewRole('');
     setNewNames('');
-  };
-
-  const moveCredit = (id: string, direction: 'up' | 'down') => {
-    const index = credits.findIndex(c => c.id === id);
-    if (index === -1) return;
-    
-    if (direction === 'up' && index === 0) return;
-    if (direction === 'down' && index === credits.length - 1) return;
-
-    const newCredits = [...credits];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    [newCredits[index], newCredits[targetIndex]] = [newCredits[targetIndex], newCredits[index]];
-    
-    setCredits(newCredits);
   };
 
   const removeRole = (id: string) => {
@@ -4037,11 +4025,14 @@ export default function App() {
         setActiveConsole('bg');
       } else if (e.key === '5') {
         setActiveConsole('preset');
+      } else if (e.key === '?' || e.key.toLowerCase() === 'h') {
+        e.preventDefault();
+        setIsShortcutsOpen(prev => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [history, isAutoPlay, credits.length, recordVideo, setIsSidebarCollapsed, setIsRightSidebarCollapsed, setIsConsoleCollapsed, setActiveConsole]);
+  }, [history, isAutoPlay, credits.length, recordVideo, setIsSidebarCollapsed, setIsRightSidebarCollapsed, setIsConsoleCollapsed, setActiveConsole, setIsShortcutsOpen]);
 
   const [tagTextIndex, setTagTextIndex] = useState(0);
   const tagTexts = [
@@ -4063,7 +4054,7 @@ export default function App() {
       "min-h-screen bg-black text-white font-sans selection:bg-white selection:text-black",
       view === 'editor' ? "lg:h-screen lg:overflow-hidden flex flex-col" : "overflow-x-hidden"
     )}>
-      <ClapperboardTransition isOpen={isClapping} lang={lang} />
+      <ClapperboardTransition isOpen={isClapping} />
       
       {view !== 'editor' && (
         <Navbar 
@@ -4335,122 +4326,310 @@ export default function App() {
             {/* Sidebar Menu */}
             <AnimatePresence>
               {isMenuOpen && (
-                <>
+                <motion.div
+                  key="workspace-drawer-menu"
+                  initial={{ opacity: 0, clipPath: 'polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)' }}
+                  animate={{ opacity: 1, clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)' }}
+                  exit={{ opacity: 0, transition: { duration: 0 } }}
+                  transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+                  className="fixed inset-0 z-[2100] bg-black/98 backdrop-blur-3xl flex flex-col justify-between p-6 sm:p-12 md:p-16 lg:p-24"
+                >
+                  {/* Top glowing laser line during opening */}
                   <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                    onClick={() => setIsMenuOpen(false)}
-                    className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[300]"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ delay: 0.15, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                    className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-zinc-800 via-white to-zinc-800 origin-left"
                   />
-                  <motion.div 
-                    initial={{ x: '100%' }}
-                    animate={{ x: 0 }}
-                    exit={{ x: '100%' }}
-                    transition={{ type: "tween", ease: [0.16, 1, 0.3, 1], duration: 0.45 }}
-                    className="fixed top-0 right-0 h-full w-full sm:w-96 bg-black border-l border-white z-[310] p-6 md:p-8 flex flex-col"
-                  >
-                    <div className="flex items-center justify-between mb-12">
-                      <h2 className="text-sm font-bold uppercase tracking-widest">{translations[lang].editor.projectOptions}</h2>
-                      <button 
-                        onClick={() => setIsMenuOpen(false)} 
-                        className="group relative flex items-center justify-center w-10 h-10 rounded-none border border-white/10 bg-white/5 hover:bg-white/10 transition-all duration-300"
-                      >
-                        <X className="w-5 h-5 text-white transition-transform duration-500 group-hover:rotate-180" />
-                        <div className="absolute inset-0 rounded-none bg-white/10 blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </button>
-                    </div>
-                    
-                    <div className="flex flex-col flex-1 h-full">
-                      <div className="space-y-8">
-                        <div className="space-y-1">
-                          {['home', 'documentation', 'faq'].map((item) => (
-                              <button
-                                key={item}
-                                onClick={() => {
-                                  setView('hero');
-                                  setTimeout(() => {
-                                    if (item === 'home') {
-                                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                                    } else {
-                                      const el = document.getElementById(item);
-                                      if (el) {
-                                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                      }
-                                    }
-                                  }, 500);
-                                  setIsMenuOpen(false);
-                                }}
-                                className="block w-full text-left py-4 text-xs font-semibold uppercase tracking-widest text-zinc-400 hover:text-white transition-colors border-b border-white/5"
-                              >
-                                {translations[lang].nav[item as keyof typeof translations.id.nav]}
-                              </button>
-                          ))}
-                        </div>
 
-                        <div className="space-y-3">
-                          <label className="text-[10px] uppercase font-semibold tracking-widest text-zinc-500">{translations[lang].editor.projectName}</label>
-                          <div className="flex gap-2">
+                  {/* Tech-brutalist grid background behind the menu */}
+                  <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+                  
+                  {/* Header Area */}
+                  <motion.div 
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                    className="flex items-center justify-between border-b border-white/10 pb-6 relative z-10 shrink-0"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[9px] sm:text-[11px] font-bold text-zinc-500 uppercase tracking-[0.25em]">
+                        // {translations[lang].editor.projectOptions.toUpperCase()} v1.12
+                      </span>
+                    </div>
+                    <button 
+                      onClick={() => setIsMenuOpen(false)} 
+                      className="w-10 h-10 flex items-center justify-center bg-zinc-900 border border-white/10 hover:border-white hover:bg-white hover:text-black transition-all duration-200 cursor-pointer text-white"
+                    >
+                      <X size={18} />
+                    </button>
+                  </motion.div>
+
+                  {/* Nav Links Container */}
+                  <div className="flex-1 flex flex-col justify-center py-8 relative z-10">
+                    <div className="space-y-4 sm:space-y-6 max-w-md w-full mx-auto">
+                      
+                      {/* 01 // NAVIGASI */}
+                      <motion.div 
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.15, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                        className="border-b border-white/5 pb-2"
+                      >
+                        <button
+                          onClick={() => setIsNavSubOpen(!isNavSubOpen)}
+                          className="w-full text-left font-black tracking-widest uppercase transition-all duration-300 py-3 sm:py-4 flex items-center justify-between bg-transparent text-white border-none cursor-pointer"
+                        >
+                          <div className="flex items-center gap-3 sm:gap-4">
+                            <span className="font-mono text-[9px] sm:text-[10px] text-zinc-600">01 //</span>
+                            <span className="text-base sm:text-lg md:text-xl lg:text-2xl tracking-[0.25em]">
+                              {lang === 'id' ? "NAVIGASI" : "NAVIGATION"}
+                            </span>
+                          </div>
+                          <div className="text-zinc-300 font-mono text-xs sm:text-sm">
+                            {isNavSubOpen ? "[-]" : "[+]"}
+                          </div>
+                        </button>
+
+                        <AnimatePresence>
+                          {isNavSubOpen && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                              className="pl-6 sm:pl-8 border-l border-white/5 mt-2 space-y-2 overflow-hidden"
+                            >
+                              {[
+                                { key: 'home', label: translations[lang].nav.home },
+                                { key: 'about', label: translations[lang].nav.about },
+                                { key: 'documentation', label: translations[lang].nav.documentation },
+                                { key: 'faq', label: translations[lang].nav.faq },
+                                { key: 'getStarted', label: translations[lang].nav.getStarted }
+                              ].map((subItem) => {
+                                const isActive = activeSection === (subItem.key === 'getStarted' ? 'get-started' : subItem.key);
+                                return (
+                                  <button
+                                    key={subItem.key}
+                                    onClick={() => {
+                                      setIsMenuOpen(false);
+                                      setView('hero');
+                                      const targetId = subItem.key === 'getStarted' ? 'get-started' : subItem.key;
+                                      setTimeout(() => {
+                                        if (subItem.key === 'home') {
+                                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                                        } else {
+                                          const el = document.getElementById(targetId);
+                                          if (el) {
+                                            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                          }
+                                        }
+                                      }, 400);
+                                    }}
+                                    className={cn(
+                                      "w-full text-left font-black tracking-widest uppercase transition-all duration-200 py-2 sm:py-3 flex items-center justify-between group bg-transparent border-none cursor-pointer",
+                                      isActive ? "text-white" : "text-zinc-500 hover:text-zinc-300"
+                                    )}
+                                  >
+                                    <span className="text-xs sm:text-sm tracking-[0.2em]">↳ {subItem.label}</span>
+                                    {isActive && <div className="w-1.5 h-1.5 bg-white shrink-0" />}
+                                  </button>
+                                );
+                              })}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+
+                      {/* 02 // FITUR CHANGE PROJECT NAME */}
+                      <motion.div 
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.22, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                        className="border-b border-white/5 pb-4"
+                      >
+                        <div className="flex items-center gap-3 sm:gap-4 py-3">
+                          <span className="font-mono text-[9px] sm:text-[10px] text-zinc-600">02 //</span>
+                          <span className="font-black tracking-widest text-base sm:text-lg md:text-xl lg:text-2xl text-white uppercase tracking-[0.25em]">
+                            {translations[lang].editor.projectName}
+                          </span>
+                        </div>
+                        <div className="pl-6 sm:pl-8">
+                          <div className="relative overflow-hidden max-w-sm flex items-center gap-2">
                             <input 
                               type="text" 
                               value={projectName}
                               onChange={(e) => setProjectName(e.target.value)}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
-                                  setIsMenuOpen(false);
+                                  setShowSaveToast(true);
+                                  setTimeout(() => setShowSaveToast(false), 1500);
+                                  // Add logic to save to localStorage
+                                  localStorage.setItem('daftarkru_projectName', projectName);
                                 }
                               }}
-                              className="flex-1 min-w-0 bg-black border border-white p-4 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-white transition-all rounded-none"
+                              className="flex-1 bg-zinc-950 border border-white/10 p-3 text-xs sm:text-sm font-mono text-white focus:outline-none focus:border-white transition-all rounded-none uppercase"
                               placeholder="PROJECT_MASTER"
                             />
-                            <button 
-                              type="button"
-                              onClick={() => setIsMenuOpen(false)}
-                              className="flex-shrink-0 w-14 h-14 bg-white text-black flex items-center justify-center hover:bg-zinc-200 active:scale-95 transition-all cursor-pointer rounded-none"
-                              title="Confirm Name"
-                            >
-                              <Check className="w-5 h-5" />
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="pt-6 border-t border-white/10">
-                          <p className="text-xs text-zinc-400 tracking-normal leading-relaxed font-medium">
-                            Developed by Afgan Al-fanany.
-                          </p>
-                        </div>
-
-                        <div className="pt-6 border-t border-white/10">
-                          <label className="text-xs font-semibold tracking-normal text-zinc-400 mb-2 block">{translations[lang].langToggles.switch}</label>
-                          <div className="flex items-center gap-1 border border-white/10 p-1 rounded-none bg-white/[0.03]">
-                            {(['id', 'en'] as Lang[]).map((l) => (
+                            {projectName !== initialProjectName && (
                               <button
-                                key={l}
-                                onClick={() => setLang(l)}
-                                className={cn(
-                                  "flex-1 px-3 py-1.5 text-[9px] font-bold transition-all rounded-none",
-                                  lang === l 
-                                    ? "bg-white text-black" 
-                                    : "text-zinc-500 hover:text-white"
-                                )}
+                                type="button"
+                                onClick={() => {
+                                  setShowSaveToast(true);
+                                  setTimeout(() => setShowSaveToast(false), 1500);
+                                  // Add logic to save to localStorage
+                                  localStorage.setItem('daftarkru_projectName', projectName);
+                                }}
+                                className="h-[46px] w-[46px] bg-white text-black border border-white hover:bg-zinc-200 transition-all flex items-center justify-center cursor-pointer rounded-none active:scale-95 shrink-0"
+                                title={lang === 'id' ? "Simpan nama proyek" : "Save project name"}
                               >
-                                {l.toUpperCase()}
+                                <Check className="w-5 h-5" />
                               </button>
-                            ))}
+                            )}
+
+                            {/* Inline sliding block covering the inputs */}
+                            <AnimatePresence>
+                              {showSaveToast && (
+                                <motion.div
+                                  initial={{ x: "-100%" }}
+                                  animate={{ x: 0 }}
+                                  exit={{ x: "100%" }}
+                                  transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                                  className="absolute inset-0 bg-white text-black flex items-center justify-center font-mono font-black text-[10px] sm:text-xs tracking-widest uppercase z-10 px-4 whitespace-nowrap"
+                                >
+                                  <motion.div 
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: 0.15, duration: 0.3 }}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <Check className="w-4 h-4 text-emerald-600 block shrink-0" />
+                                    <span>{lang === 'id' ? "NAMA PROYEK DISIMPAN" : "PROJECT NAME SAVED"}</span>
+                                  </motion.div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </div>
                         </div>
-                      </div>
-                      
-                      <div className="mt-auto">
-                        <button 
-                          onClick={() => { setView('hero'); setIsMenuOpen(false); }}
-                          className="w-full bg-white text-black p-4 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-zinc-200 transition-all rounded-none"
+                      </motion.div>
+
+                      {/* 03 // KEYBOARD SHORTCUTS */}
+                      <motion.div 
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.29, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                        className="border-b border-white/5"
+                      >
+                        <button
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                            setIsShortcutsOpen(true);
+                          }}
+                          className="w-full text-left font-black tracking-widest uppercase transition-all duration-300 py-3 sm:py-4 flex items-center justify-between bg-transparent text-white border-none cursor-pointer group"
                         >
-                          <Home className="w-4 h-4" />
-                          {translations[lang].editor.backHome}
+                          <div className="flex items-center gap-3 sm:gap-4">
+                            <span className="font-mono text-[9px] sm:text-[10px] text-zinc-600">03 //</span>
+                            <span className="text-base sm:text-lg md:text-xl lg:text-2xl tracking-[0.25em] text-zinc-400 group-hover:text-white transition-colors">
+                              {lang === 'id' ? "PINTASAN KEYBOARD" : "KEYBOARD SHORTCUTS"}
+                            </span>
+                          </div>
+                          <div className="w-1.5 h-1.5 bg-white/0 group-hover:bg-white/20 transition-all shrink-0" />
                         </button>
+                      </motion.div>
+
+                    </div>
+                  </div>
+
+                  {/* Language Selection inside Drawer Menu */}
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.36, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                    className="border-t border-white/10 pt-6 relative z-10 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4 max-w-md w-full mx-auto"
+                  >
+                    <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">ACTIVE_ENGINE_LANGUAGE //</span>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                      {(['id', 'en'] as Lang[]).map((l) => (
+                        <button
+                          key={l}
+                          onClick={() => setLang(l)}
+                          className={cn(
+                            "flex-1 sm:flex-none px-6 py-2.5 text-[10px] font-bold text-center uppercase tracking-widest transition-all cursor-pointer border",
+                            lang === l 
+                              ? "bg-white border-white text-black font-black" 
+                              : "bg-zinc-950/20 border-white/10 text-zinc-400 hover:text-white hover:border-white"
+                          )}
+                        >
+                          {l.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Keyboard Shortcuts Cheat Sheet Modal */}
+            <AnimatePresence>
+              {isShortcutsOpen && (
+                <>
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 0.8 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setIsShortcutsOpen(false)}
+                    className="fixed inset-0 bg-black/95 backdrop-blur-md z-[2000] cursor-pointer"
+                  />
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 30 }}
+                    transition={{ type: "spring", damping: 25, stiffness: 350 }}
+                    className="fixed inset-x-4 top-[8%] sm:top-1/2 -sm:translate-y-0 sm:-translate-y-1/2 mx-auto max-w-xl bg-black border border-white z-[2001] p-6 sm:p-8 flex flex-col shadow-[12px_12px_0px_rgba(255,255,255,0.05)] overflow-hidden"
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                        <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-[0.3em] text-white">
+                          {lang === 'id' ? "PINTASAN KEYBOARD //" : "KEYBOARD SHORTCUTS //"}
+                        </h3>
                       </div>
+                      <button 
+                        onClick={() => setIsShortcutsOpen(false)} 
+                        className="px-3 py-1.5 text-[9px] sm:text-[10px] font-bold border border-white/10 hover:border-white text-zinc-400 hover:text-white transition-all active:scale-95 cursor-pointer uppercase font-mono bg-zinc-950"
+                      >
+                        ESC / CLOSE
+                      </button>
+                    </div>
+
+                    {/* Shortcuts Grid/List */}
+                    <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 scrollbar-none">
+                      {[
+                        { key: "Space", desc: lang === 'id' ? "Putar / Jeda Pratinjau Kredit" : "Play / Pause Credits Preview" },
+                        { key: "Q", desc: lang === 'id' ? "Sembunyikan / Tampilkan Input Kredit (Kiri)" : "Toggle Credit Input Sidebar (Left)" },
+                        { key: "E", desc: lang === 'id' ? "Sembunyikan / Tampilkan Kontrol Fine-Tuning (Kanan)" : "Toggle Fine-Tuning Sidebar (Right)" },
+                        { key: "S", desc: lang === 'id' ? "Sembunyikan / Tampilkan Konsol Desainer (Bawah)" : "Toggle Designer Console (Bottom)" },
+                        { key: "1 - 5", desc: lang === 'id' ? "Buka Menu Pilihan Desain (Font, Gerak, Tampilan, Backdrop, Preset)" : "Open Submenus (Font, Motion, Appearance, Backdrop, Presets)" },
+                        { key: "ESC", desc: lang === 'id' ? "Tutup Popover / Menu Desain Aktif" : "Close Active Submenu Dialog" },
+                        { key: "← / →", desc: lang === 'id' ? "Navigasi Frame / Lompati Detik Video" : "Skip Seconds / Frame Navigation" },
+                        { key: "Ctrl + S", desc: lang === 'id' ? "Inisiasi Render & Unduh File Hasil" : "Trigger Render & Export Download" },
+                        { key: "Ctrl + Z", desc: lang === 'id' ? "Batal Tindakan Terakhir (Undo)" : "Undo Last Action" },
+                        { key: "? / H", desc: lang === 'id' ? "Sembunyikan / Tampilkan Cheat Sheet Ini" : "Toggle This Cheat Sheet" },
+                      ].map((item, index) => (
+                        <div key={index} className="flex items-center justify-between py-2.5 border-b border-white/[0.03] group hover:bg-white/[0.02] px-2 transition-colors">
+                          <span className="text-[10px] sm:text-[11px] text-zinc-400 font-medium group-hover:text-zinc-200 transition-colors uppercase tracking-wider">{item.desc}</span>
+                          <kbd className="min-w-[44px] text-center font-mono text-[9px] sm:text-[10px] font-bold text-white bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1 shadow-[2px_2px_0px_rgba(255,255,255,0.1)] uppercase select-none shrink-0 ml-4">
+                            {item.key}
+                          </kbd>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-6 pt-4 border-t border-white/10 flex justify-between items-center text-[9px] font-mono text-zinc-500 uppercase">
+                      <span>DAFTARKRU ENGINE v1.12 //</span>
+                      <span>PRESS "?" OR "H" TO TOGGLE</span>
                     </div>
                   </motion.div>
                 </>
@@ -4620,8 +4799,8 @@ export default function App() {
                 </div>
 
                 {/* Console Section (Mobile only) */}
-                <div className="space-y-12 lg:hidden">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-12 lg:hidden px-4 md:px-8">
+                  <div className="grid grid-cols-1 md:grid-cols-1 gap-12 lg:gap-24">
                     <div className="space-y-6">
                       <div className="border-b border-white pb-2">
                         <h2 className="text-[10px] font-medium uppercase tracking-[0.3em] text-white">VISUAL DESIGNER CONSOLE</h2>
@@ -4633,7 +4812,6 @@ export default function App() {
                         setActiveConsole={setActiveConsole}
                         setFadeIndex={setFadeIndex}
                         customFonts={customFonts}
-                        setCustomFonts={setCustomFonts}
                         lang={lang}
                         onFontUpload={handleFontUpload}
                         onDeleteFont={handleDeleteFont}
@@ -5179,7 +5357,6 @@ export default function App() {
                           setActiveConsole={setActiveConsole}
                           setFadeIndex={setFadeIndex}
                           customFonts={customFonts}
-                          setCustomFonts={setCustomFonts}
                           lang={lang}
                           onFontUpload={handleFontUpload}
                           onDeleteFont={handleDeleteFont}
@@ -5187,12 +5364,23 @@ export default function App() {
 
                         {/* Export Button for Desktop */}
                         <div className="mt-10 pt-10 border-t border-white/10 flex justify-end">
-                          <button 
+                        <button 
                             onClick={recordVideo}
+                            disabled={isExporting}
                             title={translations[lang].editor.renderExport}
-                            className="min-w-[240px] bg-white text-black py-4 lg:py-5 text-[11px] lg:text-[13px] font-bold uppercase tracking-[0.3em] hover:bg-zinc-200 transition-all rounded-none shadow-[8px_8px_0px_rgba(255,255,255,0.05)] render-button"
+                            className={cn(
+                              "min-w-[240px] bg-white text-black py-4 lg:py-5 text-[11px] lg:text-[13px] font-bold uppercase tracking-[0.3em] transition-all rounded-none shadow-[8px_8px_0px_rgba(255,255,255,0.05)] render-button",
+                              isExporting ? "opacity-50 cursor-not-allowed" : "hover:bg-zinc-200"
+                            )}
                           >
-                            {translations[lang].editor.renderExport}
+                            {isExporting ? (
+                              <div className="flex items-center justify-center gap-2">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                {translations[lang].editor.rendering}
+                              </div>
+                            ) : (
+                              translations[lang].editor.renderExport
+                            )}
                           </button>
                         </div>
                       </div>
@@ -5225,8 +5413,14 @@ export default function App() {
                   </motion.aside>
                 </div>
 
-{/* Footer removed */}
-          </motion.div>
+                 {/* Editor Bottom Footer */}
+                 <footer className="h-10 md:h-12 border-t border-white/10 bg-zinc-950 flex items-center justify-between px-4 sm:px-8 text-[9px] font-mono text-zinc-500 uppercase flex-shrink-0 z-40 select-none">
+                   <span className="tracking-widest">DAFTARKRU WORKSPACE v1.12 //</span>
+                   <span className="tracking-[0.2em] font-semibold text-white/50 text-[10px] uppercase font-mono">
+                     DEVELOPED BY AFGAN ALFANANY
+                   </span>
+                 </footer>
+           </motion.div>
         )}
       </AnimatePresence>
 
