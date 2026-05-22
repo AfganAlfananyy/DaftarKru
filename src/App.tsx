@@ -1223,7 +1223,7 @@ const Marquee = ({ text, reverse = false, speed = 30 }: { text: string, reverse?
   );
 };
 
-const GsapAnimatedConsole = ({ onPlay }: { onPlay: () => void }) => {
+const GsapAnimatedConsole = ({ onPlay, lang }: { onPlay: () => void, lang: Lang }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const playheadRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -1237,7 +1237,7 @@ const GsapAnimatedConsole = ({ onPlay }: { onPlay: () => void }) => {
       scrollTrigger: {
         trigger: containerRef.current.closest('section'),
         start: "top top",
-        end: "+=700%",
+        end: "+=250%",
         scrub: 1.2,
       },
       force3D: true,
@@ -1251,7 +1251,7 @@ const GsapAnimatedConsole = ({ onPlay }: { onPlay: () => void }) => {
         scrollTrigger: {
           trigger: containerRef.current.closest('section'),
           start: "top top",
-          end: "+=700%",
+          end: "+=250%",
           scrub: 1.2,
         },
         force3D: true,
@@ -1259,9 +1259,9 @@ const GsapAnimatedConsole = ({ onPlay }: { onPlay: () => void }) => {
       }
     );
 
-    // Unified animation for the entire console container
+    // Unified 3D entrance transition for the entire console container card
     gsap.fromTo(containerRef.current,
-      { y: 100, rotateX: 15, opacity: 0, scale: 0.9 },
+      { y: 80, rotateX: 12, opacity: 0, scale: 0.93 },
       {
         y: 0, rotateX: 0, opacity: 1, scale: 1,
         scrollTrigger: {
@@ -1277,105 +1277,142 @@ const GsapAnimatedConsole = ({ onPlay }: { onPlay: () => void }) => {
   }, { scope: containerRef });
 
   return (
-    <div ref={containerRef} className="flex-1 w-full max-w-2xl min-h-[300px] sm:min-h-[500px] relative perspective-[1500px] flex items-center justify-center -mt-[100px] md:-mt-[210px] lg:mt-0 lg:-translate-y-8">
+    <div ref={containerRef} className="flex-1 w-full max-w-2xl relative perspective-[1500px] flex items-center justify-center py-6 lg:py-0">
        <div className="relative w-full h-full transform-style-3d flex items-center justify-center">
-         
-         {/* Preview Screen Mock */}
-         <div className="relative w-full aspect-video bg-zinc-950 border border-white/20 shadow-[4px_4px_0px_rgba(255,255,255,0.02)] flex flex-col z-10 overflow-hidden transform-origin-bottom max-w-[100vw] lg:max-w-none scale-[0.85] md:scale-[0.8] lg:scale-100">
-            <div className="h-6 sm:h-8 border-b border-white/10 flex items-center px-4 gap-2 bg-black/80 backdrop-blur-sm z-20">
-               <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-white/40" />
-               <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-white/20" />
-               <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-black border border-white/20" />
-               <div className="text-[5px] sm:text-[8px] font-mono text-zinc-500 tracking-widest ml-4 hidden xs:block uppercase">PREVIEW_RENDER_HQ</div>
-            </div>
-            
-            <div className="flex-1 relative flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.05)_0%,transparent_70%)] overflow-hidden">
-               {/* Animated scrolling text */}
-               <div ref={textRef} className="text-center space-y-2 sm:space-y-4 absolute w-full px-4">
-                 <h4 className="text-[6px] sm:text-[10px] font-bold text-white/40 tracking-[0.4em] uppercase">DIRECTED BY</h4>
-                 <p className="text-xs sm:text-2xl font-black text-white tracking-widest uppercase pb-4 sm:pb-12">THE CREATOR</p>
-                 <h4 className="text-[6px] sm:text-[10px] font-bold text-white/40 tracking-[0.4em] uppercase">PRODUCED BY</h4>
-                 <p className="text-xs sm:text-2xl font-black text-white tracking-widest uppercase pb-4 sm:pb-12">DAFTARKRU ENGINE</p>
-                 <h4 className="text-[6px] sm:text-[10px] font-bold text-white/40 tracking-[0.4em] uppercase">WRITTEN BY</h4>
-                 <p className="text-xs sm:text-2xl font-black text-white tracking-widest uppercase pb-4 sm:pb-12">THE ARCHITECT</p>
-                 <h4 className="text-[6px] sm:text-[10px] font-bold text-white/40 tracking-[0.4em] uppercase">EXECUTIVE PRODUCER</h4>
-                 <p className="text-xs sm:text-2xl font-black text-white tracking-widest uppercase pb-4 sm:pb-12">DAFTARKRU STUDIO</p>
-                 <h4 className="text-[6px] sm:text-[10px] font-bold text-white/40 tracking-[0.4em] uppercase">DIRECTOR OF PHOTOGRAPHY</h4>
-                 <p className="text-xs sm:text-2xl font-black text-white tracking-widest uppercase pb-4 sm:pb-12">OPTICAL FLOW</p>
-                 <h4 className="text-[6px] sm:text-[10px] font-bold text-white/40 tracking-[0.4em] uppercase">VISUAL EFFECTS</h4>
-                 <p className="text-xs sm:text-2xl font-black text-white tracking-widest uppercase pb-4 sm:pb-12">PARTICLE LABS</p>
-                 <h4 className="text-[6px] sm:text-[10px] font-bold text-white/40 tracking-[0.4em] uppercase">EDITOR</h4>
-                 <p className="text-xs sm:text-2xl font-black text-white tracking-widest uppercase pb-4 sm:pb-12">CHRONOS ENGINE</p>
-                 <h4 className="text-[6px] sm:text-[10px] font-bold text-white/40 tracking-[0.4em] uppercase">SOUND DESIGN</h4>
-                 <p className="text-xs sm:text-2xl font-black text-white tracking-widest uppercase pb-4 sm:pb-12">ACOUSTIC CORE</p>
-                 <h4 className="text-[6px] sm:text-[10px] font-bold text-white/40 tracking-[0.4em] uppercase">MUSIC BY</h4>
-                 <p className="text-xs sm:text-2xl font-black text-white tracking-widest uppercase pb-4 sm:pb-12">SONIC WAVE</p>
-                 <h4 className="text-[6px] sm:text-[10px] font-bold text-white/40 tracking-[0.4em] uppercase">CASTING BY</h4>
-                 <p className="text-xs sm:text-2xl font-black text-white tracking-widest uppercase pb-4 sm:pb-12">PEOPLE ENGINE</p>
-                 <h4 className="text-[6px] sm:text-[10px] font-bold text-white/40 tracking-[0.4em] uppercase">COSTUME DESIGN</h4>
-                 <p className="text-xs sm:text-2xl font-black text-white tracking-widest uppercase pb-4 sm:pb-12">STYLE MATRIX</p>
-                 <h4 className="text-[6px] sm:text-[10px] font-bold text-white/40 tracking-[0.4em] uppercase">ART DIRECTION</h4>
-                 <p className="text-xs sm:text-2xl font-black text-white tracking-widest uppercase pb-4 sm:pb-12">GRID SYSTEM</p>
-                 <h4 className="text-[6px] sm:text-[10px] font-bold text-white/40 tracking-[0.4em] uppercase">COLORIST</h4>
-                 <p className="text-xs sm:text-2xl font-black text-white tracking-widest uppercase pb-4 sm:pb-12">CHROMA CORE</p>
-                 <h4 className="text-[6px] sm:text-[10px] font-bold text-white/40 tracking-[0.4em] uppercase">PRODUCTION DESIGN</h4>
-                 <p className="text-xs sm:text-2xl font-black text-white tracking-widest uppercase pb-4 sm:pb-12">CREATIVE SPACE</p>
-                 <h4 className="text-[6px] sm:text-[10px] font-bold text-white/40 tracking-[0.4em] uppercase">STUNT COORDINATOR</h4>
-                 <p className="text-xs sm:text-2xl font-black text-white tracking-widest uppercase">KINETIC FLOW</p>
-               </div>
-               
-               {/* Film grain / noise overlay */}
-               <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMSIvPgo8L3N2Zz4=')]" />
-               
-               {/* Scanlines element */}
-               <div className="absolute inset-0 pointer-events-none opacity-[0.15] bg-[linear-gradient(transparent_50%,rgba(0,0,0,1)_50%)] bg-[length:100%_4px]" />
-               
-               <div className="absolute bottom-2 right-2 sm:bottom-4 sm:right-4 flex gap-1 sm:gap-2 z-20 items-center">
-                 <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-zinc-500 animate-pulse" />
-                 <div className="text-[5px] sm:text-[8px] font-mono text-zinc-500 tracking-tighter uppercase">REC</div>
-               </div>
-            </div>
-         </div>
+          
+          {/* Edge crosshair markings (Technical viewfinder aesthetic) */}
+          <div className="absolute -top-3 -left-3 text-zinc-600 font-mono text-[9px] select-none select-none pointer-events-none font-bold">┌ &nbsp; ┐</div>
+          <div className="absolute -top-3 -right-3 text-zinc-600 font-mono text-[9px] select-none select-none pointer-events-none font-bold">┌ &nbsp; ┐</div>
+          <div className="absolute -bottom-3 -left-3 text-zinc-600 font-mono text-[9px] select-none select-none pointer-events-none font-bold">└ &nbsp; ┘</div>
+          <div className="absolute -bottom-3 -right-3 text-zinc-600 font-mono text-[9px] select-none select-none pointer-events-none font-bold">└ &nbsp; ┘</div>
 
-         {/* Control Panel Mock */}
-         <div className="absolute bottom-[80px] md:bottom-[150px] lg:-bottom-12 left-1/2 -translate-x-1/2 w-[95%] lg:w-[110%] h-24 md:h-40 lg:h-48 bg-zinc-900/90 backdrop-blur-md border border-white/10 shadow-[4px_4px_0px_rgba(255,255,255,0.02)] z-20 flex flex-col rounded sm:rounded-none">
-            <div className="h-5 sm:h-8 border-b border-white/5 flex items-center px-3 sm:px-4 justify-between bg-black/40">
-               <div className="text-[5px] sm:text-[8px] font-bold tracking-[0.3em] text-white/40 truncate pr-2">VERSION 1.0 DAFTARKRU</div>
-               <Settings2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white/40" />
-            </div>
-            <div className="flex-1 p-3 sm:p-6 flex flex-col justify-center gap-2 sm:gap-6">
-               <div className="space-y-3">
-                 <div className="flex justify-between items-center text-[6px] sm:text-[8px] text-zinc-500 tracking-widest font-mono">
-                    <span>00:00:00:00</span>
-                    <span className="text-white/60 text-[8px] sm:text-[10px]">SCROLL_VELOCITY</span>
-                    <span>00:05:00:00</span>
-                 </div>
-                 <div className="h-1.5 sm:h-2 w-full bg-black rounded-full overflow-hidden relative shadow-inner">
-                   <div ref={playheadRef} className="absolute top-0 left-0 h-full w-full bg-white origin-left -translate-x-full" />
-                 </div>
-               </div>
-               <div className="grid grid-cols-3 gap-2 sm:gap-4 flex-1">
-                 <div className="bg-black/40 rounded flex flex-col items-center justify-center gap-1 border border-white/5">
-                    <span className="text-[6px] sm:text-[8px] text-white/30 uppercase tracking-widest">Developed by</span>
-                    <span className="text-[8px] sm:text-[10px] text-white/80 font-bold font-mono">AFGAN AL-FANANY</span>
-                 </div>
-                 <div className="bg-black/40 rounded flex flex-col items-center justify-center gap-1 border border-white/5 relative overflow-hidden group">
-                    <span className="text-[6px] sm:text-[8px] text-white/30 uppercase tracking-widest">FPS</span>
-                    <span className="text-[8px] sm:text-[10px] text-white/50 font-bold font-mono group-hover:text-white transition-colors">60.0</span>
-                 </div>
-                 <div 
-                   onClick={onPlay}
-                   className="bg-white/5 rounded flex items-center justify-center gap-2 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer group"
-                 >
-                    <Play className="w-3 h-3 sm:w-4 sm:h-4 text-white fill-white group-hover:scale-110 transition-transform" />
-                 </div>
-               </div>
-            </div>
-         </div>
+          {/* Main Unified Workspace Card */}
+          <div className="relative w-full bg-black border border-zinc-800 rounded-none shadow-[20px_20px_0px_rgba(0,0,0,0.9)] flex flex-col z-10 overflow-hidden transform-origin-bottom max-w-[100vw] lg:max-w-none">
+             
+             {/* Window Title Bar */}
+             <div className="h-10 border-b border-zinc-800 flex items-center px-4 justify-between bg-zinc-950 select-none rounded-none">
+                <div className="flex items-center gap-2">
+                   {/* Razor-sharp technical monochrome squares instead of colored dots */}
+                   <div className="w-2.5 h-2.5 border border-zinc-800 bg-zinc-900" />
+                   <div className="w-2.5 h-2.5 border border-zinc-750 bg-zinc-800" />
+                   <div className="w-2.5 h-2.5 border border-zinc-700 bg-zinc-700" />
+                </div>
+                <div className="text-[7.5px] sm:text-[9.5px] font-mono text-zinc-400 tracking-[0.3em] font-black uppercase truncate px-2">
+                   {lang === 'id' ? 'KONSOL WORKSPACE DAFTARKRU' : 'DAFTARKRU WORKSPACE CONSOLE'}
+                </div>
+                <div className="flex items-center gap-2">
+                   <div className="w-1.5 h-1.5 bg-zinc-400 animate-pulse rounded-none" />
+                   <span className="text-[6px] sm:text-[8px] font-mono text-zinc-400 font-bold uppercase tracking-widest hidden xs:block">ONLINE</span>
+                </div>
+             </div>
+             
+             {/* Preview Screen Section (Upper half of the unified card) */}
+             <div className="relative w-full aspect-video bg-[#030304] flex flex-col overflow-hidden border-b border-zinc-800">
+                <div className="flex-1 relative flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.03)_0%,transparent_75%)] overflow-hidden">
+                   
+                   {/* Technical grid crosshair centering line */}
+                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-5">
+                      <div className="w-10 h-[1px] bg-white absolute" />
+                      <div className="h-10 w-[1px] bg-white absolute" />
+                   </div>
+
+                   {/* Animated scrolling credit text */}
+                   <div ref={textRef} className="text-center space-y-2 sm:space-y-4 absolute w-full px-4">
+                     <h4 className="text-[6px] sm:text-[10px] font-bold text-white/30 tracking-[0.5em] uppercase">DIRECTED BY</h4>
+                     <p className="text-xs sm:text-2xl font-black text-white tracking-[0.15em] uppercase pb-4 sm:pb-12">THE CREATOR</p>
+                     <h4 className="text-[6px] sm:text-[10px] font-bold text-white/30 tracking-[0.5em] uppercase">PRODUCED BY</h4>
+                     <p className="text-xs sm:text-2xl font-black text-white tracking-[0.15em] uppercase pb-4 sm:pb-12">DAFTARKRU ENGINE</p>
+                     <h4 className="text-[6px] sm:text-[10px] font-bold text-white/30 tracking-[0.5em] uppercase">WRITTEN BY</h4>
+                     <p className="text-xs sm:text-2xl font-black text-white tracking-[0.15em] uppercase pb-4 sm:pb-12">THE ARCHITECT</p>
+                     <h4 className="text-[6px] sm:text-[10px] font-bold text-white/30 tracking-[0.5em] uppercase">EXECUTIVE PRODUCER</h4>
+                     <p className="text-xs sm:text-2xl font-black text-white tracking-[0.15em] uppercase pb-4 sm:pb-12">DAFTARKRU STUDIO</p>
+                     <h4 className="text-[6px] sm:text-[10px] font-bold text-white/30 tracking-[0.5em] uppercase">DIRECTOR OF PHOTOGRAPHY</h4>
+                     <p className="text-xs sm:text-2xl font-black text-white tracking-[0.15em] uppercase pb-4 sm:pb-12">OPTICAL FLOW</p>
+                     <h4 className="text-[6px] sm:text-[10px] font-bold text-white/30 tracking-[0.5em] uppercase">VISUAL EFFECTS</h4>
+                     <p className="text-xs sm:text-2xl font-black text-white tracking-[0.15em] uppercase pb-4 sm:pb-12">PARTICLE LABS</p>
+                     <h4 className="text-[6px] sm:text-[10px] font-bold text-white/30 tracking-[0.5em] uppercase">EDITOR</h4>
+                     <p className="text-xs sm:text-2xl font-black text-white tracking-[0.15em] uppercase pb-4 sm:pb-12">CHRONOS ENGINE</p>
+                     <h4 className="text-[6px] sm:text-[10px] font-bold text-white/30 tracking-[0.5em] uppercase">SOUND DESIGN</h4>
+                     <p className="text-xs sm:text-2xl font-black text-white tracking-[0.15em] uppercase pb-4 sm:pb-12">ACOUSTIC CORE</p>
+                     <h4 className="text-[6px] sm:text-[10px] font-bold text-white/30 tracking-[0.5em] uppercase">MUSIC BY</h4>
+                     <p className="text-xs sm:text-2xl font-black text-white tracking-[0.15em] uppercase pb-4 sm:pb-12">SONIC WAVE</p>
+                     <h4 className="text-[6px] sm:text-[10px] font-bold text-white/30 tracking-[0.5em] uppercase">CASTING BY</h4>
+                     <p className="text-xs sm:text-2xl font-black text-white tracking-[0.15em] uppercase pb-4 sm:pb-12">PEOPLE ENGINE</p>
+                     <h4 className="text-[6px] sm:text-[10px] font-bold text-white/30 tracking-[0.5em] uppercase">COSTUME DESIGN</h4>
+                     <p className="text-xs sm:text-2xl font-black text-white tracking-[0.15em] uppercase pb-4 sm:pb-12">STYLE MATRIX</p>
+                     <h4 className="text-[6px] sm:text-[10px] font-bold text-white/30 tracking-[0.5em] uppercase">ART DIRECTION</h4>
+                     <p className="text-xs sm:text-2xl font-black text-white tracking-[0.15em] uppercase pb-4 sm:pb-12">GRID SYSTEM</p>
+                     <h4 className="text-[6px] sm:text-[10px] font-bold text-white/30 tracking-[0.5em] uppercase">COLORIST</h4>
+                     <p className="text-xs sm:text-2xl font-black text-white tracking-[0.15em] uppercase pb-4 sm:pb-12">CHROMA CORE</p>
+                     <h4 className="text-[6px] sm:text-[10px] font-bold text-white/30 tracking-[0.5em] uppercase">PRODUCTION DESIGN</h4>
+                     <p className="text-xs sm:text-2xl font-black text-white tracking-[0.15em] uppercase pb-4 sm:pb-12">CREATIVE SPACE</p>
+                     <h4 className="text-[6px] sm:text-[10px] font-bold text-white/30 tracking-[0.5em] uppercase">STUNT COORDINATOR</h4>
+                     <p className="text-xs sm:text-2xl font-black text-white tracking-[0.15em] uppercase">KINETIC FLOW</p>
+                   </div>
+                   
+                   {/* Film grain / noise overlay */}
+                   <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMSIvPgo8L3N2Zz4=')]" />
+                   
+                   {/* Scanlines element */}
+                   <div className="absolute inset-0 pointer-events-none opacity-[0.1] bg-[linear-gradient(transparent_50%,rgba(0,0,0,1)_50%)] bg-[length:100%_4px]" />
+                   
+                   {/* REC Action Indicator */}
+                   <div className="absolute bottom-3 right-3 flex gap-1.5 items-center z-20 bg-black border border-zinc-800 px-2.5 py-1 rounded-none shadow-none">
+                      <div className="w-1.5 h-1.5 bg-zinc-300 animate-pulse rounded-none" />
+                      <div className="text-[6px] sm:text-[8px] font-mono text-zinc-400 font-bold tracking-widest uppercase ml-1 select-none">REC</div>
+                   </div>
+                </div>
+             </div>
+             
+             {/* Integrated Deck / Control Panel (Lower half of the unified card) */}
+             <div className="bg-black p-4 sm:p-6 flex flex-col gap-4 sm:gap-5 border-t border-zinc-800">
+                
+                {/* Timeline Progress Track */}
+                <div className="space-y-2">
+                   <div className="flex justify-between items-center text-[6px] sm:text-[8px] text-zinc-500 tracking-widest font-mono">
+                      <span>00:00:00:00</span>
+                      <span className="text-white/50 text-[8px] sm:text-[10px] font-black font-mono tracking-widest">SCROLL_DENSITY / 1.2s</span>
+                      <span>00:05:00:00</span>
+                   </div>
+                   <div className="h-2 w-full bg-zinc-950 border border-zinc-800/80 rounded-none relative overflow-hidden">
+                      <div ref={playheadRef} className="absolute top-0 left-0 h-full w-full bg-white origin-left -translate-x-full rounded-none" />
+                   </div>
+                </div>
+                
+                {/* Controls Grid block */}
+                <div className="grid grid-cols-3 gap-3">
+                   
+                   {/* Left box: Developer stamp */}
+                   <div className="bg-zinc-950 border border-zinc-800 p-2.5 sm:p-3.5 flex flex-col justify-center gap-0.5 rounded-none">
+                      <span className="text-[5px] sm:text-[7px] text-zinc-500 uppercase tracking-wider font-mono">DEVELOPED_BY</span>
+                      <span className="text-[8px] sm:text-[10px] text-white font-bold font-mono truncate uppercase">AFGAN AL-FANANY</span>
+                   </div>
+                   
+                   {/* Middle box: Refresh rate metrics */}
+                   <div className="bg-zinc-950 border border-zinc-800 p-2.5 sm:p-3.5 flex flex-col justify-center gap-0.5 rounded-none relative overflow-hidden group">
+                      <span className="text-[5px] sm:text-[7px] text-zinc-500 uppercase tracking-wider font-mono">RENDER_STATUS</span>
+                      <span className="text-[8px] sm:text-[10px] text-zinc-300 font-bold font-mono transition-colors flex items-center gap-1.5">
+                         <span className="w-1.5 h-1.5 bg-zinc-400 animate-pulse rounded-none" />
+                         60.0 FPS
+                      </span>
+                   </div>
+                   
+                   {/* Right box: Instantly launch credits editor trigger */}
+                   <button 
+                     onClick={onPlay}
+                     className="bg-white text-black hover:bg-black hover:text-white hover:border-white active:translate-x-0.5 active:translate-y-0.5 transition-all rounded-none p-2.5 sm:p-3.5 flex items-center justify-center gap-2 font-mono font-black text-[7px] sm:text-[10.5px] uppercase tracking-wider cursor-pointer border border-white group shadow-[4px_4px_0px_#27272a] hover:shadow-none"
+                   >
+                      <Play className="w-3.5 h-3.5 text-current fill-current transition-transform group-hover:scale-105" />
+                      <span className="truncate">{lang === 'id' ? 'MULAI' : 'PLAY'}</span>
+                   </button>
+                </div>
+             </div>
+
+          </div>
 
        </div>
     </div>
-  )
+  );
 }
 
 const AboutSection = ({ lang, onStart }: { lang: Lang, onStart: () => void }) => {
@@ -1390,7 +1427,7 @@ const AboutSection = ({ lang, onStart }: { lang: Lang, onStart: () => void }) =>
     ScrollTrigger.create({
       trigger: sectionRef.current,
       start: "top top",
-      end: "+=700%",
+      end: "+=250%",
       pin: true,
       scrub: 1.2,
       pinSpacing: true,
@@ -1446,7 +1483,7 @@ const AboutSection = ({ lang, onStart }: { lang: Lang, onStart: () => void }) =>
         </div>
       </motion.div>
 
-      <GsapAnimatedConsole onPlay={onStart} />
+      <GsapAnimatedConsole onPlay={onStart} lang={lang} />
     </section>
   );
 };
@@ -3132,13 +3169,13 @@ export default function App() {
   useEffect(() => {
     if (view === 'hero') {
       const lenis = new Lenis({
-        duration: 2.0,
+        duration: 0.9,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         orientation: 'vertical',
         gestureOrientation: 'vertical',
         smoothWheel: true,
-        wheelMultiplier: 1,
-        touchMultiplier: 0.8,
+        wheelMultiplier: 0.8,
+        touchMultiplier: 1.0,
         syncTouch: true,
       });
 
