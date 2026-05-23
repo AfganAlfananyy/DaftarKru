@@ -1,5 +1,0 @@
-485:const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSection, isHidden, isScrolled }: { 
-492:  isScrolled: boolean
-516:          isScrolled 
-2129:  const [isScrolled, setIsScrolled] = useState(false);
-3104:          isScrolled={isScrolled}

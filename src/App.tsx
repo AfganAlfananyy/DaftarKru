@@ -32,7 +32,8 @@ import {
   Keyboard,
   Undo,
   Redo,
-  History
+  History,
+  Clock
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder, useDragControls } from 'motion/react';
 import Lenis from 'lenis';
@@ -103,7 +104,6 @@ interface ProjectSettings {
   textOutlineWidth: number;
   textOutlineColor: string;
   letterSpacing: number;
-  lut: string;
 }
 
 type Direction = 'bottomToTop' | 'topToBottom' | 'leftToRight' | 'rightToLeft';
@@ -327,11 +327,10 @@ const translations = {
       textOutline: "Outline Teks",
       textOutlineWidth: "Ketebalan Outline",
       letterSpacing: "Jarak Antar Huruf",
-      colorLut: "Color Mood / LUT",
       filmGrainIntensity: "Intensitas Grain",
       transparent: "Transparan",
-      sceneSpeed: "KECEPATAN SCENE",
-      scrollModes: "Hanya berpengaruh pada mode non-scroll",
+      sceneSpeed: "DURASI SCENE (DETIK) / KECEPATAN SCROLL",
+      scrollModes: "Untuk mode scene, ini mengatur durasi per teks. Untuk scroll, ini mengatur kecepatan (1 lambat - 10 cepat).",
       recordingProgress: "REKAMAN_SEDANG_BERJALAN",
       rawFormat: "4K_RAW_60FPS",
       designBase: "NO_SUMBER_DATA",
@@ -460,11 +459,10 @@ const translations = {
       textOutline: "Text Outline",
       textOutlineWidth: "Outline Width",
       letterSpacing: "Letter Spacing",
-      colorLut: "Color Mood / LUT",
       filmGrainIntensity: "Grain Intensity",
       transparent: "Transparent",
-      sceneSpeed: "SCENE SPEED",
-      scrollModes: "Only affects non-scroll modes",
+      sceneSpeed: "SCENE DURATION (SEC) / SCROLL SPEED",
+      scrollModes: "For scene modes, sets the duration per text. For scroll, sets speed (1 slow - 10 fast).",
       recordingProgress: "RECORDING_IN_PROGRESS",
       rawFormat: "4K_RAW_60FPS",
       designBase: "NO_DATA_SOURCE",
@@ -948,245 +946,168 @@ const ClapperboardTransition = ({ isOpen }: { isOpen: boolean }) => {
   );
 };
 
-const FilmReelToFolderAnimation = ({ progress, lang }: { progress: number; lang: Lang }) => {
-  const isFinished = progress === 100;
 
+const FilmGrainPreview = ({ opacity }: { opacity: number }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const framesRef = useRef<ImageData[]>([]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d', { alpha: true });
+    if (!ctx) return;
+
+    let active = true;
+    let lastTime = performance.now();
+    let frameIndex = 0;
+    
+    const render = (time: number) => {
+      if (!active) return;
+      
+      // Update at roughly 24fps
+      if (time - lastTime > 41) {
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+        
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+          framesRef.current = []; // Clear cached frames if size changes
+        }
+
+        if (framesRef.current.length < 5) {
+          // generate frame
+          ctx.clearRect(0, 0, w, h);
+          ctx.fillStyle = `rgba(255,255,255,${opacity * 0.8})`;
+          
+          const density = (w * h) / (1920 * 1080);
+          const dots = Math.floor(10000 * density) + 1000;
+          
+          ctx.beginPath();
+          for (let i = 0; i < dots; i++) {
+            ctx.rect(Math.random() * w, Math.random() * h, 1.5, 1.5);
+          }
+          ctx.fill();
+          
+          framesRef.current.push(ctx.getImageData(0, 0, w, h));
+        } else {
+          // Play cached frames
+          ctx.putImageData(framesRef.current[frameIndex], 0, 0);
+          frameIndex = (frameIndex + 1) % framesRef.current.length;
+        }
+        
+        lastTime = time;
+      }
+      
+      requestAnimationFrame(render);
+    };
+    
+    render(performance.now());
+    return () => { active = false; };
+  }, [opacity]);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none mix-blend-screen" />;
+};
+
+interface PresetThumbnailProps {
+  preset: any;
+  active: boolean;
+  onClick: () => void;
+}
+
+const PresetThumbnail: React.FC<PresetThumbnailProps> = ({ preset, active, onClick }) => {
   return (
-    <div className="relative w-64 h-64 flex flex-col items-center justify-center scale-50 sm:scale-75 lg:scale-100 origin-center -my-16 sm:-my-12 lg:my-0">
-      {/* Container for the reel and the folder */}
-      <div className="relative w-full h-40 flex items-center justify-center translate-y-[-20px] sm:translate-y-0">
-        {/* Film Reel */}
-        <motion.div
-          animate={
-            isFinished
-              ? {
-                  rotate: [0, 1080, 2160, 2520, 2520],
-                  y: [0, 0, 0, 85, 85],
-                  scale: [1, 1, 0.7, 0, 0],
-                  opacity: [1, 1, 1, 0, 0],
-                }
-              : {
-                  rotate: [0, 360],
-                }
-          }
-          style={{ originX: 0.5, originY: 0.5 }}
-          transition={
-            isFinished
-              ? {
-                  duration: 2.2,
-                  times: [0, 0.3, 0.6, 0.9, 1],
-                  ease: "easeInOut",
-                }
-              : {
-                  repeat: Infinity,
-                  duration: 1.2,
-                  ease: "linear",
-                }
-          }
-          className="absolute z-20 flex items-center justify-center w-28 h-28 cursor-default"
+    <button 
+      onClick={onClick}
+      className={cn(
+        "group relative aspect-video w-full overflow-hidden border transition-all duration-300",
+        active ? "border-white bg-white/10 ring-1 ring-white" : "border-white/5 bg-black hover:border-white/20"
+      )}
+    >
+      {/* Background color of preset if exists, default black */}
+      <div className="absolute inset-0 z-0 bg-black" />
+      
+      {/* Visual Content Sample */}
+      <div className="relative z-10 w-full h-full flex flex-col items-center justify-center p-2">
+        <div 
+          className="text-center space-y-1 w-full"
+          style={{ 
+            fontFamily: `'${preset.fontFamily}', sans-serif`,
+            opacity: active ? 1 : 0.6
+          }}
         >
-          {/* Film Reel Detailed SVG representation with high fidelity styling */}
-          <svg
-            viewBox="0 0 100 100"
-            className="w-full h-full text-zinc-100 filter drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]"
-          >
-            {/* Outer reel ring */}
-            <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="5" />
-            <circle cx="50" cy="50" r="41" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="2 3" opacity="0.4" />
-            
-            {/* Reel spokes/cells */}
-            <circle cx="50" cy="50" r="16" fill="currentColor" opacity="0.1" />
-            <circle cx="50" cy="50" r="12" fill="none" stroke="currentColor" strokeWidth="4" />
-            
-            {/* Sprocket holes around the reel rim */}
-            <g opacity="0.8">
-              {[...Array(12)].map((_, i) => (
-                <circle
-                  key={i}
-                  cx={50 + 36 * Math.cos((i * 2 * Math.PI) / 12)}
-                  cy={50 + 36 * Math.sin((i * 2 * Math.PI) / 12)}
-                  r="3.5"
-                  fill="currentColor"
-                />
-              ))}
-            </g>
-
-            {/* Empty interior spokes for high value 3D reel look */}
-            <g opacity="0.9">
-              {[...Array(5)].map((_, i) => (
-                <circle
-                  key={i}
-                  cx={50 + 23 * Math.cos((i * 2 * Math.PI) / 5)}
-                  cy={50 + 23 * Math.sin((i * 2 * Math.PI) / 5)}
-                  r="6.5"
-                  fill="black"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                />
-              ))}
-            </g>
-
-            {/* Center core spindle */}
-            <circle cx="50" cy="50" r="4" fill="currentColor" />
-            <polygon points="48,46 52,46 50,54" fill="black" />
-          </svg>
-        </motion.div>
-
-        {/* Target Folder / Tray at the bottom - ONLY SHOW WHEN FINISHED to prevent flashing */}
-        {isFinished && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.6, y: 120 }}
-            animate={{
-              opacity: 1,
-              scale: [0.6, 1, 0.9, 1.25, 0.95, 1.05, 1],
-              y: [120, 60, 60, 63, 52, 61, 60],
-              borderColor: "#ffffff",
-              color: "#ffffff"
+          <div 
+            className="text-[6px] uppercase tracking-[0.4em]"
+            style={{ 
+              opacity: preset.roleOpacity,
+              fontWeight: preset.roleBold ? 'bold' : 'normal',
+              color: preset.roleColor || '#ffffff'
             }}
-            transition={{
-              duration: 1.8,
-              times: [0, 0.2, 0.4, 0.5, 0.65, 0.82, 1],
-              ease: "easeOut",
-              delay: 0.2 // Small delay for the reel to start its final rotation
-            }}
-            className="absolute z-10 w-32 h-20 border-2 border-white bg-zinc-950/90 rounded-xl flex flex-col items-center justify-center text-white shadow-[0_10px_40px_rgba(255,255,255,0.15)]"
           >
-            {/* Folder tabs or Tray indicators */}
-            <div className="absolute -top-3 left-4 w-10 h-3 bg-zinc-900 border-t-2 border-x-2 border-inherit rounded-t-md" />
-            
-            <div className="flex flex-col items-center justify-center space-y-1 relative">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.8, type: "spring" }}
-              >
-                <svg viewBox="0 0 24 24" className="w-8 h-8 text-white fill-none stroke-current stroke-[2.5]" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              </motion.div>
-              <span className="text-[8px] font-extrabold uppercase tracking-widest text-white/60">
-                {lang === 'id' ? "TERSIMPAN!" : "SAVED!"}
-              </span>
-            </div>
-
-            {/* Film ribbon emerging back left/right */}
-            <div className="absolute -bottom-2 w-28 h-1 bg-white/20 rounded-full" />
-          </motion.div>
-        )}
-
-        {/* Dynamic Glow Particles on Snap/Save - ONLY SHOW WHEN FINISHED */}
-        {isFinished && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: [0, 1, 1, 0], scale: [0.5, 2, 2, 2.2] }}
-            transition={{ delay: 0.6, duration: 1.4 }}
-            className="absolute bottom-[-15px] w-24 h-24 bg-white/10 blur-2xl rounded-full pointer-events-none"
-          />
-        )}
+            Director
+          </div>
+          <div 
+            className="text-[8px] uppercase tracking-[0.2em] font-black"
+            style={{ 
+              opacity: preset.namesOpacity,
+              fontWeight: preset.namesBold ? 'bold' : 'normal',
+              color: preset.namesColor || '#ffffff'
+            }}
+          >
+            QUENTIN T.
+          </div>
+        </div>
       </div>
-    </div>
+
+      {/* Label Overlay */}
+      <div className="absolute bottom-0 left-0 right-0 p-1.5 bg-gradient-to-t from-black to-transparent">
+        <span className="text-[7px] font-bold uppercase tracking-widest text-white/50 group-hover:text-white transition-colors">
+          {preset.activePreset.toUpperCase()}
+        </span>
+      </div>
+
+      {/* Active Indicator */}
+      {active && (
+        <div className="absolute top-1 right-1">
+          <div className="w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_8px_white]" />
+        </div>
+      )}
+    </button>
   );
 };
 
-const FilmStripProgressBar = ({ progress, lang }: { progress: number; lang: Lang }) => {
-  const sprocketCount = 14;
-
+const SaveIndicator = ({ isSaving, lastSaved, lang }: { isSaving: boolean, lastSaved: Date | null, lang: Lang }) => {
   return (
-    <div className="w-full space-y-4 font-mono select-none">
-      <div className="flex justify-between items-end text-xs">
-        <div className="flex items-center gap-2">
-          {/* Pulsing indicator */}
-          <div className={cn("w-2.5 h-2.5 rounded-full transition-colors", progress >= 100 ? "bg-white shadow-[0_0_8px_#ffffff]" : "bg-zinc-700 animate-pulse")} />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-            {progress >= 100 
-              ? (lang === 'id' ? "PENCETAKAN SELESAI" : "PRINT COMPLETED") 
-              : (lang === 'id' ? "SEDANG MENCETAK EMULSI..." : "PRINTING EMULSION...")}
+    <div className="px-6 py-4 border-t border-white/5 mt-auto bg-black/40 relative z-10">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-3">
+          {isSaving ? (
+            <motion.div 
+              animate={{ rotate: 360 }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+              className="w-3 h-3 border-t-2 border-white/60 rounded-full"
+            />
+          ) : (
+            <div className="w-2 h-2 rounded-full bg-white/40" />
+          )}
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/90">
+            {isSaving ? (lang === 'id' ? 'MENYIMPAN DATA...' : 'SAVING DATA...') : (lang === 'id' ? 'PERUBAHAN TERSIMPAN' : 'CHANGES SAVED')}
           </span>
         </div>
-        <div className="text-2xl font-black font-mono tracking-tight text-white flex items-baseline gap-1">
-          <span className="text-xs text-zinc-600 font-extrabold">EMULS.</span>
-          <span className="text-white">{progress}%</span>
-        </div>
-      </div>
-
-      {/* The Celluloid film strip container */}
-      <div className="relative w-full h-[52px] bg-zinc-950 border border-zinc-800/80 rounded-sm overflow-hidden flex flex-col justify-between py-1.5 px-2 shadow-[inset_0_4px_8px_rgba(0,0,0,0.9)]">
         
-        {/* Top Sprocket Perforations */}
-        <div className="flex justify-between w-full h-2">
-          {[...Array(sprocketCount)].map((_, i) => {
-            const stepThreshold = (i / sprocketCount) * 100;
-            const isFilled = progress >= stepThreshold;
-            return (
-              <motion.div
-                key={`top-${i}`}
-                animate={{
-                  backgroundColor: isFilled ? "#ffffff" : "#18181b",
-                  boxShadow: isFilled ? "0 0 6px #ffffff, 0 0 10px #ffffff" : "none",
-                }}
-                transition={{ duration: 0.15 }}
-                className="w-3 h-2 rounded-[2px] transition-all duration-300"
-              />
-            );
-          })}
-        </div>
-
-        {/* Central Film Negative Core (the frames showing light or progress bar) */}
-        <div className="relative flex-1 my-1.5 bg-zinc-900 overflow-hidden rounded-sm flex items-center">
-          {/* Real progress bar inside film track - Hardware accelerated using scaleX */}
-          <motion.div
-            className="absolute inset-y-0 left-0 bg-gradient-to-r from-zinc-800 via-zinc-400 to-white w-full origin-left"
-            style={{ 
-              boxShadow: "0 0 20px rgba(255, 255, 255, 0.4)",
-              borderRight: "2px solid #fff",
-              willChange: 'transform'
-            }}
-            animate={{ scaleX: progress / 100 }}
-            transition={{ type: "spring", stiffness: 80, damping: 25 }}
-          />
-
-          {/* Thin vertical frame separators to divide film into frames */}
-          <div className="absolute inset-x-0 inset-y-0 flex justify-between pointer-events-none opacity-45">
-            {[...Array(10)].map((_, i) => (
-              <div key={i} className="w-[1.5px] h-full bg-zinc-950" />
-            ))}
+        {!isSaving && lastSaved && (
+          <div className="flex items-center gap-2 text-zinc-500 text-[9px] uppercase tracking-widest pl-6">
+            <Clock className="w-3 h-3 opacity-50" />
+            <span>
+              {lang === 'id' ? 'TERAKHIR: ' : 'LAST: '}
+              {lastSaved.toLocaleTimeString(lang === 'id' ? 'id-ID' : 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
           </div>
-
-          {/* Glare/Grain overlay inside film track */}
-          <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/35 pointer-events-none" />
-          
-          {/* Mini timecodes overlay */}
-          <div className="absolute inset-0 flex justify-between px-4 items-center pointer-events-none text-[8px] text-zinc-500 font-extrabold select-none tracking-widest">
-            <span className="opacity-75">TC 00:00:{Math.floor(progress * 0.24).toString().padStart(2, '0')}</span>
-            <span className="opacity-95 text-white/40 font-black">EMULSION Kodak Tri-X</span>
-            <span className="opacity-75">FRAME {Math.floor(progress * 1.2).toString().padStart(3, '0')}</span>
-          </div>
-        </div>
-
-        {/* Bottom Sprocket Perforations */}
-        <div className="flex justify-between w-full h-2">
-          {[...Array(sprocketCount)].map((_, i) => {
-            const stepThreshold = (i / sprocketCount) * 100;
-            const isFilled = progress >= stepThreshold;
-            return (
-              <motion.div
-                key={`bottom-${i}`}
-                animate={{
-                  backgroundColor: isFilled ? "#ffffff" : "#18181b",
-                  boxShadow: isFilled ? "0 0 6px #ffffff, 0 0 10px #ffffff" : "none",
-                }}
-                transition={{ duration: 0.15 }}
-                className="w-3 h-2 rounded-[2px] transition-all duration-300"
-              />
-            );
-          })}
-        </div>
-
+        )}
       </div>
     </div>
   );
 };
-
 const Marquee = ({ text, reverse = false, speed = 30 }: { text: string, reverse?: boolean, speed?: number }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -1465,7 +1386,7 @@ const AboutSection = ({ lang, onStart }: { lang: Lang, onStart: () => void }) =>
         className="w-full lg:flex-1 space-y-6 lg:space-y-12 z-10"
       >
         <div className="space-y-4">
-          <h2 className="text-4xl sm:text-6xl lg:text-8xl font-bold tracking-tighter uppercase leading-[0.85] break-words">
+          <h2 className="text-4xl sm:text-6xl lg:text-8xl font-black italic tracking-tighter uppercase leading-[0.85] break-words">
             {displayedTitle}
             <span className="inline-block w-1.5 h-8 sm:h-12 lg:h-20 bg-white ml-2 animate-pulse align-middle" />
           </h2>
@@ -1552,7 +1473,7 @@ const DocumentationSection = ({ lang }: { lang: Lang }) => {
           <div className="space-y-10">
             <div className="space-y-4">
               <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-white flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" />
+                <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
                 {translations[lang].documentation.videoTitle}
               </h3>
               
@@ -1852,6 +1773,33 @@ const BackgroundCreditsAnimation = () => {
 const GetStartedSection = ({ lang, onStart }: { lang: Lang, onStart: () => void }) => {
   return (
     <section id="get-started" className="min-h-screen w-full bg-[#000000] flex flex-col items-center justify-between p-6 py-12 sm:p-24 relative overflow-hidden border-t border-white/5">
+      {/* Sidebar Elements - Absolute positioned to stick to this section only */}
+      <div className="hidden lg:block">
+        {/* Left Sidebar: Copyright */}
+        <div className="absolute left-0 top-0 bottom-0 w-24 flex items-center justify-center mix-blend-difference z-[10] pointer-events-none">
+            <div className="-rotate-90 text-[10px] sm:text-[12px] font-medium tracking-[1.2em] text-white/40 whitespace-nowrap uppercase">
+              © 2026 DAFTARKRU. ALL RIGHT RESERVED
+            </div>
+        </div>
+
+        {/* Right Sidebar: Socials */}
+        <div className="absolute right-0 top-0 bottom-0 w-24 flex items-center justify-center z-[10]">
+            <div className="flex flex-col gap-10 items-center">
+              <div className="h-32 w-[1px] bg-white/10" />
+              <a href="https://daftarkru.netlify.app" target="_blank" rel="noopener noreferrer" className="group p-2" title="Website">
+                <Globe className="w-4 h-4 text-white/30 group-hover:text-white group-hover:scale-125 transition-all" />
+              </a>
+              <a href="https://instagram.com/afganalfananyy" target="_blank" rel="noopener noreferrer" className="group p-2">
+                <Instagram className="w-4 h-4 text-white/30 group-hover:text-white group-hover:scale-125 transition-all" />
+              </a>
+              <a href="https://github.com/afganalfananyy" target="_blank" rel="noopener noreferrer" className="group p-2">
+                <Github className="w-4 h-4 text-white/30 group-hover:text-white group-hover:scale-125 transition-all" />
+              </a>
+              <div className="h-32 w-[1px] bg-white/10" />
+            </div>
+        </div>
+      </div>
+
       {/* Background Animated Credits Column Rolling */}
       <BackgroundCreditsAnimation />
       
@@ -1884,7 +1832,7 @@ const GetStartedSection = ({ lang, onStart }: { lang: Lang, onStart: () => void 
              DAFTARKRU_ENGINE
              <div className="h-[1px] w-8 bg-white/20" />
           </div>
-          <h2 className="text-5xl sm:text-7xl md:text-9xl font-black tracking-tighter uppercase leading-none italic">
+          <h2 className="text-5xl sm:text-7xl md:text-9xl font-black tracking-tighter uppercase leading-[0.75] italic">
             {translations[lang].getStarted.title}
           </h2>
           <p className="text-xs sm:text-sm text-zinc-400 tracking-normal max-w-xl mx-auto leading-normal">
@@ -2107,7 +2055,6 @@ const TuningControls = React.memo(({ settings, setSettings, lang }: any) => {
               textOutlineWidth: 1,
               textOutlineColor: '#000000',
               letterSpacing: 0,
-              lut: 'none',
             };
             const activePresetKey = settings.activePreset || 'default';
             const presetData = PRESETS[activePresetKey as keyof typeof PRESETS] || PRESETS.default;
@@ -2439,7 +2386,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
                     label={translations[lang].editor.sceneSpeed}
                     value={settings.animationDuration}
                     onChange={(val) => setSettings({...settings, animationDuration: val})}
-                    min={1}
+                    min={0.5}
                     max={10}
                     step={0.5}
                     precision={1}
@@ -2654,16 +2601,38 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
                 {/* FX Effects */}
                 <div className="space-y-4 pt-4 border-t border-white/5">
                   <span className="text-[8px] font-bold uppercase tracking-widest text-zinc-500">{translations[lang].editor.overlayEffects}</span>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2">
                     <button 
                       onClick={() => setSettings({...settings, showNoise: !settings.showNoise})}
                       className={cn(
-                        "p-4 sm:p-6 flex flex-col gap-2 items-center transition-all border",
-                        settings.showNoise ? "bg-white text-black border-white" : "bg-white/5 text-white border-white/10 hover:border-white/30"
+                        "relative h-20 sm:h-24 flex flex-col items-center justify-center transition-all border overflow-hidden rounded-none",
+                        settings.showNoise ? "border-white ring-1 ring-white" : "bg-white/5 text-white border-white/10 hover:border-white/30"
                       )}
                     >
-                      <span className="text-[9px] font-bold uppercase tracking-widest">Film Grain</span>
-                      <span className="text-[7px] opacity-40 uppercase tracking-tighter">{settings.showNoise ? 'Active' : 'Off'}</span>
+                      <div className="absolute inset-0 z-0">
+                        {settings.showNoise && <FilmGrainPreview opacity={0.3} />}
+                      </div>
+                      <div className={cn("relative z-10 flex flex-col items-center gap-1", settings.showNoise ? "text-white" : "text-zinc-500")}>
+                        <span className="text-[9px] font-bold uppercase tracking-widest">Film Grain</span>
+                        <span className="text-[7px] opacity-40 uppercase tracking-tighter">{settings.showNoise ? 'Active' : 'Off'}</span>
+                      </div>
+                    </button>
+                    <button 
+                      onClick={() => setSettings({...settings, showScanlines: !settings.showScanlines})}
+                      className={cn(
+                        "relative h-20 sm:h-24 flex flex-col items-center justify-center transition-all border overflow-hidden rounded-none",
+                        settings.showScanlines ? "border-white ring-1 ring-white" : "bg-white/5 text-white border-white/10 hover:border-white/30"
+                      )}
+                    >
+                      <div className="absolute inset-0 z-0">
+                        {settings.showScanlines && (
+                          <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.3)_50%)] bg-[length:100%_2px]" />
+                        )}
+                      </div>
+                      <div className={cn("relative z-10 flex flex-col items-center gap-1", settings.showScanlines ? "text-white" : "text-zinc-500")}>
+                        <span className="text-[9px] font-bold uppercase tracking-widest">Scanlines</span>
+                        <span className="text-[7px] opacity-40 uppercase tracking-tighter">{settings.showScanlines ? 'Active' : 'Off'}</span>
+                      </div>
                     </button>
                     {settings.showNoise && (
                       <div className="col-span-2 bg-black/40 p-4 border border-white/5">
@@ -2678,42 +2647,6 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
                         />
                       </div>
                     )}
-                    <button 
-                      onClick={() => setSettings({...settings, showScanlines: !settings.showScanlines})}
-                      className={cn(
-                        "p-4 sm:p-6 flex flex-col gap-2 items-center transition-all border",
-                        settings.showScanlines ? "bg-white text-black border-white" : "bg-white/5 text-white border-white/10 hover:border-white/30"
-                      )}
-                    >
-                      <span className="text-[9px] font-bold uppercase tracking-widest">Scanlines</span>
-                      <span className="text-[7px] opacity-40 uppercase tracking-tighter">{settings.showScanlines ? 'Active' : 'Off'}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Color Mood / LUT */}
-                <div className="space-y-4 pt-4 border-t border-white/5">
-                  <span className="text-[8px] font-bold uppercase tracking-widest text-zinc-500">{translations[lang].editor.colorLut}</span>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { name: 'NONE', value: 'none' },
-                      { name: 'NOIR', value: 'noir' },
-                      { name: 'SEPIA', value: 'sepia' },
-                      { name: 'COLD', value: 'cold' },
-                      { name: 'WARM', value: 'warm' },
-                      { name: 'MUTE', value: 'mute' },
-                    ].map((l) => (
-                      <button
-                        key={l.value}
-                        onClick={() => setSettings({...settings, lut: l.value})}
-                        className={cn(
-                          "py-3 text-[8px] font-bold uppercase tracking-widest border transition-all",
-                          settings.lut === l.value ? "bg-white text-black border-white" : "bg-white/5 text-zinc-500 border-white/5 hover:border-white/20"
-                        )}
-                      >
-                        {l.name}
-                      </button>
-                    ))}
                   </div>
                 </div>
 
@@ -2814,21 +2747,17 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
               <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", activeConsole === 'preset' && "rotate-90")} />
             </button>
             <CategoryPopover id="preset" title={translations[lang].editor.presets} activeConsole={activeConsole} closeConsole={closeConsole} lang={lang}>
-              <div className="grid grid-cols-1 gap-1">
+              <div className="grid grid-cols-2 gap-2 p-2 sm:p-4 bg-black/40">
                 {Object.keys(PRESETS).map((presetKey) => (
-                  <button 
+                  <PresetThumbnail 
                     key={presetKey}
+                    preset={PRESETS[presetKey as keyof typeof PRESETS]}
+                    active={settings.activePreset === presetKey}
                     onClick={() => {
                       setSettings({...settings, ...PRESETS[presetKey as keyof typeof PRESETS]});
                       closeConsole();
                     }}
-                    className={cn(
-                      "w-full text-left px-5 py-4 text-[10px] font-bold uppercase tracking-[0.3em] transition-all border-b border-white/5 last:border-0",
-                      settings.activePreset === presetKey ? "bg-white text-black" : "hover:bg-white hover:text-black opacity-60 hover:opacity-100"
-                    )}
-                  >
-                    {translations[lang].editor[`preset${presetKey.charAt(0).toUpperCase() + presetKey.slice(1)}` as keyof typeof translations.id.editor] || presetKey.toUpperCase()}
-                  </button>
+                  />
                 ))}
               </div>
             </CategoryPopover>
@@ -2979,6 +2908,18 @@ const safeParse = (value: string | null, defaultValue: any) => {
 export default function App() {
   const lenisRef = useRef<Lenis | null>(null);
   const [view, setView] = useState<View>('hero');
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleSaveIndicator = () => {
+    setIsSaving(true);
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      setIsSaving(false);
+      setLastSaved(new Date());
+    }, 1200);
+  };
   const [isClapping, setIsClapping] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
   const [isScrolled, setIsScrolled] = useState(false);
@@ -3062,7 +3003,7 @@ export default function App() {
       const saved = localStorage.getItem('daftarkru_lang');
       const langVal = (saved && saved.trim().toLowerCase() !== 'undefined' ? saved.trim() : 'id') as Lang;
       return (langVal === 'en' || langVal === 'id') ? langVal : 'id';
-    } catch (e) {
+    } catch {
       return 'id';
     }
   });
@@ -3112,11 +3053,11 @@ export default function App() {
     try {
       const saved = localStorage.getItem('daftarkru_projectName');
       return (saved && saved.trim().toLowerCase() !== 'undefined' && saved.trim() !== '') ? saved : 'UNTITLED_PROJECT';
-    } catch (e) {
+    } catch {
       return 'UNTITLED_PROJECT';
     }
   });
-  const [initialProjectName] = useState(projectName);
+  const [initialProjectName, setInitialProjectName] = useState(projectName);
   const [showInfo, setShowInfo] = useState(true);
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -3167,7 +3108,6 @@ export default function App() {
       textOutlineWidth: 1,
       textOutlineColor: '#000000',
       letterSpacing: 0,
-      lut: 'none',
     };
     const saved = localStorage.getItem('daftarkru_settings');
     const parsed = safeParse(saved, defaultSettings);
@@ -3194,8 +3134,8 @@ export default function App() {
   useEffect(() => {
     if (history.length === 0 && credits && settings) {
       try {
-        const creditsClone = JSON.parse(JSON.stringify(credits || []));
-        const settingsClone = JSON.parse(JSON.stringify(settings || {}));
+        const creditsClone = JSON.parse(JSON.stringify(credits || []) || '[]');
+        const settingsClone = JSON.parse(JSON.stringify(settings || {}) || '{}');
         setHistory([{ 
           credits: creditsClone, 
           settings: settingsClone,
@@ -3234,8 +3174,8 @@ export default function App() {
             return prev;
           }
           
-          const creditsClone = JSON.parse(JSON.stringify(credits || []));
-          const settingsClone = JSON.parse(JSON.stringify(settings || {}));
+          const creditsClone = JSON.parse(JSON.stringify(credits || []) || '[]');
+          const settingsClone = JSON.parse(JSON.stringify(settings || {}) || '{}');
           
           let labelId = 'Ubah Konfigurasi';
           let labelEn = 'Modify Configuration';
@@ -3410,14 +3350,17 @@ export default function App() {
   // Persistence Effects
   useEffect(() => {
     localStorage.setItem('daftarkru_credits_v2', JSON.stringify(credits));
+    handleSaveIndicator();
   }, [credits]);
 
   useEffect(() => {
     localStorage.setItem('daftarkru_settings', JSON.stringify(settings));
+    handleSaveIndicator();
   }, [settings]);
 
   useEffect(() => {
     localStorage.setItem('daftarkru_projectName', projectName);
+    handleSaveIndicator();
   }, [projectName]);
 
   const [isExporting, setIsExporting] = useState(false);
@@ -3491,9 +3434,23 @@ export default function App() {
       return;
     }
 
-    // Filter by type
-    if (!file.name.match(/\.(ttf|otf|woff|woff2)$/i)) {
-      alert("Format font tidak didukung. Gunakan .ttf, .otf, atau .woff");
+    // Filter by type and MIME
+    const allowedExtensions = /\.(ttf|otf|woff|woff2)$/i;
+    const allowedMimeTypes = [
+      'font/ttf',
+      'font/otf',
+      'font/woff',
+      'font/woff2',
+      'application/font-ttf',
+      'application/x-font-ttf',
+      'application/font-otf',
+      'application/x-font-otf',
+      'application/font-woff',
+      'application/font-woff2',
+    ];
+
+    if (!file.name.match(allowedExtensions) || !allowedMimeTypes.includes(file.type)) {
+      alert("Format font tidak didukung atau file tidak valid. Gunakan .ttf, .otf, atau .woff/.woff2");
       return;
     }
 
@@ -3536,7 +3493,7 @@ export default function App() {
             const fontFace = new FontFace(fontNameValue, `url(${result})`);
             await fontFace.load();
             document.fonts.add(fontFace);
-          } catch (ffErr) {
+          } catch {
             // Fallback handled
           }
         }
@@ -3556,7 +3513,7 @@ export default function App() {
         setSettings((prev: any) => ({ ...prev, fontFamily: fontNameValue }));
         
         alert(`Berhasil! Font "${fontDisplayName}" telah ditambahkan dan diaplikasikan.`);
-      } catch (err) {
+      } catch {
         alert("Gagal memproses font. Silakan coba file lain.");
       }
       
@@ -3571,13 +3528,34 @@ export default function App() {
     reader.readAsDataURL(file);
   };
 
+  const getAnimationTotalDuration = () => {
+    if (credits.length === 0) return 5;
+    
+    const scrollEl = scrollRef.current;
+    const contentHeight = scrollEl ? scrollEl.scrollHeight : (credits.length * 160 + 400);
+    
+    if (settings.animationType === 'scroll') {
+      const travelDistance = contentHeight + 900; 
+      // 1=40px/s, 5=120px/s, 10=300px/s
+      const pps = 40 + (settings.animationDuration - 1) * 28.8;
+      return travelDistance / pps;
+    } else {
+      // Use animationDuration directly as seconds per scene (e.g. 2.0 = 2 seconds)
+      const timePerTape = settings.animationDuration;
+      return credits.length * timePerTape;
+    }
+  };
+
   // Timer for fade/zoom/blur/slide/glitch in preview
   useEffect(() => {
     if (settings.animationType === 'scroll' || credits.length === 0 || !isAutoPlay) return;
 
+    // Use animationDuration directly as seconds per scene
+    const timePerTape = settings.animationDuration;
+    
     const interval = setInterval(() => {
       setFadeIndex(prev => (prev + 1) % credits.length);
-    }, settings.animationDuration * 1000); 
+    }, timePerTape * 1000); 
 
     return () => clearInterval(interval);
   }, [settings.animationType, settings.animationDuration, credits.length, isAutoPlay]);
@@ -3586,13 +3564,14 @@ export default function App() {
   useEffect(() => {
     if (settings.animationType !== 'scroll' || !isAutoPlay) return;
 
-    const duration = Math.max(5, settings.animationDuration * 4);
+    const duration = getAnimationTotalDuration();
+    const intervalTime = (duration * 1000) / 250; 
     const interval = setInterval(() => {
-      setFadeIndex(prev => (prev + 2) % 1000);
-    }, (duration * 1000) / 500); // Approximate sync
+      setFadeIndex(prev => (prev + 4) % 1000);
+    }, intervalTime); 
 
     return () => clearInterval(interval);
-  }, [settings.animationType, settings.animationDuration, isAutoPlay]);
+  }, [settings.animationType, settings.animationDuration, isAutoPlay, credits.length]);
 
   const isMobileDevice = typeof navigator !== 'undefined' ? /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) : false;
   
@@ -3696,12 +3675,12 @@ export default function App() {
     if (!previewRef.current) return;
     
     const observer = new ResizeObserver((entries) => {
-      for (let entry of entries) {
+      for (const entry of entries) {
         const width = entry.contentRect.width;
-        if (width === 0) return;
-        // Scale everything proportionally compared to our design base of 1920
-        const scale = width / 1920;
-        setPreviewScale(scale);
+        const height = entry.contentRect.height;
+        if (width === 0 || height === 0) return;
+        // Set scale to 1 for 1:1 preview matching export
+        setPreviewScale(1);
       }
     });
 
@@ -3723,8 +3702,8 @@ export default function App() {
     setExportProgress(0);
     setIsExporting(true);
 
-    // Initial stabilization wait
-    await new Promise(resolve => setTimeout(resolve, 50));
+    // Initial stabilization wait - expanded to ensure full logic/style application
+    await new Promise(resolve => setTimeout(resolve, 400));
 
     const scroll = scrollRef.current;
     if (!scroll) return;
@@ -3734,7 +3713,9 @@ export default function App() {
 
     const canvasWidth = 1920; 
     const canvasHeight = 1080;
-    const duration = 20; 
+    
+    // Recalculate duration NOW that isExporting is true and layout has expanded
+    const duration = getAnimationTotalDuration();
     const fps = isMobile ? 30 : 60;
     const totalFrames = Math.floor(duration * fps);
     
@@ -3771,7 +3752,7 @@ export default function App() {
     await document.fonts.ready;
     try {
       await document.fonts.load(`1em ${settings.fontFamily}`);
-    } catch (e) {
+    } catch {
       console.warn("Failed to specifically load font:", settings.fontFamily);
     }
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -3792,7 +3773,6 @@ export default function App() {
         width: canvasWidth,
         height: canvasHeight,
         frameRate: fps,
-        alpha: settings.transparentBg
       }
     });
 
@@ -3806,20 +3786,28 @@ export default function App() {
       }
     });
 
-    videoEncoder.configure({
-      codec: 'vp09.00.10.08',
-      width: canvasWidth,
-      height: canvasHeight,
-      bitrate: isMobile ? 5_000_000 : 12_000_000, // Balanced for speed and quality
-      latencyMode: 'realtime' // Optimize for speed
-    });
-
     try {
+      videoEncoder.configure({
+        codec: 'vp09.00.10.08',
+        //@ts-ignore - alpha is supported in some environments/codecs
+        alpha: settings.transparentBg ? 'keep' : 'discard',
+        width: canvasWidth,
+        height: canvasHeight,
+        bitrate: isMobile ? 5_000_000 : 12_000_000, 
+        latencyMode: 'realtime'
+      });
+
       // Re-measure after ensuring DOM update and style application
       await new Promise(resolve => setTimeout(resolve, 100)); 
       
       let scrollHeight = scroll.scrollHeight; 
       if (scrollHeight === 0) scrollHeight = 2000;
+      
+      // Memory safeguard for very long credit lists
+      if (scrollHeight > 15000) {
+        alert("Daftar kredit terlalu panjang untuk satu render (melebihi 15000px). Hasil mungkin terpotong atau gagal. Pertimbangkan untuk membagi kredit menjadi beberapa bagian.");
+        scrollHeight = 15000;
+      }
       
       if (scrollHeight < canvasHeight) {
         scrollHeight = canvasHeight;
@@ -3837,8 +3825,7 @@ export default function App() {
 
       const { toPng } = await import('html-to-image');
       
-      const commonOptions = {
-        backgroundColor: settings.transparentBg ? null : settings.bgColor,
+      const commonOptions: any = {
         pixelRatio: 1,
         width: canvasWidth,
         height: scrollHeight,
@@ -3887,11 +3874,11 @@ export default function App() {
               try {
                 const rules = sheet.cssRules;
                 return !!rules;
-              } catch (e) {
+              } catch {
                 // Ignore cross-origin stylesheet errors
                 return false;
               }
-            } catch (e) {
+            } catch {
               return false;
             }
           }
@@ -3899,10 +3886,14 @@ export default function App() {
         }
       };
 
+      if (!settings.transparentBg) {
+        commonOptions.backgroundColor = settings.bgColor;
+      }
+
       let bigImage;
       try {
         bigImage = await toPng(scroll, commonOptions);
-      } catch (err) {
+      } catch {
         bigImage = await toPng(scroll, { ...commonOptions, skipFonts: true });
       }
 
@@ -4113,6 +4104,7 @@ export default function App() {
       } else if (e.key.toLowerCase() === 'q') {
         setIsSidebarCollapsed(prev => !prev);
       } else if (e.key.toLowerCase() === 's' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
         setIsConsoleCollapsed(prev => !prev);
       } else if (e.key === 'Escape') {
         setActiveConsole('none');
@@ -4214,15 +4206,7 @@ export default function App() {
                     </AnimatePresence>
                   </motion.div>
                   
-                  <motion.h1 
-                    initial={{ y: 30, opacity: 0, skewX: -5 }}
-                    whileInView={{ y: 0, opacity: 1, skewX: -5 }}
-                    viewport={{ once: false }}
-                    animate={{ x: [0, 2, -2, 0], y: [0, -4, 0], skewX: -5 }}
-                    transition={{ 
-                      y: { duration: 1, ease: [0.16, 1, 0.3, 1] },
-                      x: { duration: 5, repeat: Infinity, ease: "easeInOut" }
-                    }}
+                  <h1 
                     className="text-5xl sm:text-8xl md:text-9xl lg:text-[12rem] font-black tracking-tighter uppercase leading-[0.75] whitespace-normal cursor-default select-none italic"
                   >
                     Daftar<span 
@@ -4235,7 +4219,7 @@ export default function App() {
                     >
                       Kru
                     </span><br /> Engine
-                  </motion.h1>
+                  </h1>
                   
                   <motion.div 
                     initial={{ opacity: 0 }}
@@ -4264,10 +4248,9 @@ export default function App() {
                     {/* Pulsing Core */}
                     <motion.div 
                       animate={{ 
-                        opacity: [0.1, 0.3, 0.1],
-                        scale: [1, 1.1, 1]
+                        opacity: [0.2, 0.5, 0.2]
                       }}
-                      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                       className="absolute inset-0 bg-white/5 z-0"
                     />
 
@@ -4322,43 +4305,6 @@ export default function App() {
             <FAQSection lang={lang} />
             <GetStartedSection lang={lang} onStart={triggerClapperTransition} />
 
-            {/* Persistent Desktop Sidebar Navigation - Only shown on Get Started section */}
-            <AnimatePresence>
-              {activeSection === 'get-started' && (
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="hidden lg:block"
-                >
-                  {/* Left Sidebar: Copyright */}
-                  <div className="fixed left-0 top-0 bottom-0 w-24 flex items-center justify-center mix-blend-difference z-[100] pointer-events-none">
-                      <div className="-rotate-90 text-[10px] sm:text-[12px] font-medium tracking-[1.2em] text-white/40 whitespace-nowrap uppercase">
-                        © 2026 DAFTARKRU. ALL RIGHT RESERVED
-                      </div>
-                  </div>
-
-                  {/* Right Sidebar: Socials */}
-                  <div className="fixed right-0 top-0 bottom-0 w-24 flex items-center justify-center z-[100]">
-                      <div className="flex flex-col gap-10 items-center">
-                        <div className="h-32 w-[1px] bg-white/10" />
-                        <a href="https://daftarkru.netlify.app" target="_blank" rel="noopener noreferrer" className="group p-2" title="Website">
-                          <Globe className="w-4 h-4 text-white/30 group-hover:text-white group-hover:scale-125 transition-all" />
-                        </a>
-                        <a href="https://instagram.com/afganalfananyy" target="_blank" rel="noopener noreferrer" className="group p-2">
-                          <Instagram className="w-4 h-4 text-white/30 group-hover:text-white group-hover:scale-125 transition-all" />
-                        </a>
-                        <a href="https://github.com/afganalfananyy" target="_blank" rel="noopener noreferrer" className="group p-2">
-                          <Github className="w-4 h-4 text-white/30 group-hover:text-white group-hover:scale-125 transition-all" />
-                        </a>
-                        <div className="h-32 w-[1px] bg-white/10" />
-                      </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-
           </main>
         ) : (
           <motion.div 
@@ -4373,7 +4319,7 @@ export default function App() {
                 className="flex items-center gap-4 cursor-pointer group"
                 onClick={() => setView('hero')}
               >
-                <img src="/daftarkru.png" alt="DaftarKru" className="h-7 w-auto" />
+                <img src="/daftarkru.png" alt="DaftarKru" className="h-5 md:h-10 w-auto" />
               </div>
               
               <div className="flex items-center gap-2 md:gap-4 relative">
@@ -4558,7 +4504,6 @@ export default function App() {
                                   { key: 'showScanlines' as keyof ProjectSettings, labelId: 'Scanlines', labelEn: 'Scanlines Overlay', value: settings.showScanlines ? 'ON' : 'OFF' },
                                   { key: 'vignette' as keyof ProjectSettings, labelId: 'Vignette', labelEn: 'Vignette Amount', value: settings.vignette },
                                   { key: 'letterSpacing' as keyof ProjectSettings, labelId: 'Jarak Huruf', labelEn: 'Letter Spacing', value: `${settings.letterSpacing}px` },
-                                  { key: 'lut' as keyof ProjectSettings, labelId: 'LUT / Mood Warna', labelEn: 'Color LUT Mode', value: settings.lut },
                                 ];
 
                                 const modifiedFeaturesList = selectiveFeaturesList.filter(f => settings[f.key] !== originalSettings[f.key]);
@@ -4644,7 +4589,7 @@ export default function App() {
                   animate={{ opacity: 1, clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)' }}
                   exit={{ opacity: 0, transition: { duration: 0 } }}
                   transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
-                  className="fixed inset-0 z-[2100] bg-black/98 backdrop-blur-3xl flex flex-col justify-between p-6 sm:p-12 md:p-16 lg:p-24"
+                  className="fixed inset-0 z-[12000] bg-black/98 backdrop-blur-3xl flex flex-col justify-between p-6 sm:p-12 md:p-16 lg:p-24"
                 >
                   {/* Top glowing laser line during opening */}
                   <motion.div 
@@ -4787,6 +4732,7 @@ export default function App() {
                               <button
                                 type="button"
                                 onClick={() => {
+                                  setInitialProjectName(projectName);
                                   setShowSaveToast(true);
                                   setTimeout(() => setShowSaveToast(false), 1500);
                                   // Add logic to save to localStorage
@@ -4857,7 +4803,7 @@ export default function App() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.36, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                    className="border-t border-white/10 pt-6 relative z-10 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4 max-w-md w-full mx-auto"
+                    className="border-t border-white/10 pt-6 relative z-10 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4 max-w-md w-full mx-auto pb-6"
                   >
                     <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">ACTIVE_ENGINE_LANGUAGE //</span>
                     <div className="flex gap-2 w-full sm:w-auto">
@@ -4877,6 +4823,9 @@ export default function App() {
                       ))}
                     </div>
                   </motion.div>
+
+                  {/* SAVING INDICATOR INTEGRATED IN MENU */}
+                  <SaveIndicator isSaving={isSaving} lastSaved={lastSaved} lang={lang} />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -4949,54 +4898,87 @@ export default function App() {
             </AnimatePresence>
 
             <div className="flex-1 flex flex-col lg:flex-row lg:overflow-hidden relative">
-              {/* Export Overlay for Desktop Layout */}
+              {/* Export Overlay */}
               <AnimatePresence>
                 {isExporting && (
                   <motion.div 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[1000] bg-black flex flex-col items-center justify-center p-4 sm:p-8 text-center overscroll-contain overflow-y-auto"
+                    className="fixed inset-0 z-[1000] bg-black flex flex-col items-center justify-center p-4 sm:p-8 overscroll-contain overflow-y-auto"
                   >
+                    {/* Brutalist Grid Texture */}
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:64px_64px] pointer-events-none" />
+
                     <motion.div 
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="max-w-xl w-full space-y-6 sm:space-y-10 lg:space-y-12 relative z-10 py-4"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="max-w-2xl w-full border-t border-white/20 pt-8 relative z-10 font-mono"
                     >
-                      <div className="space-y-1 sm:space-y-4">
-                        <h2 className="text-xl sm:text-4xl lg:text-5xl font-bold uppercase tracking-[0.4em] text-white">
-                          {translations[lang].editor.rendering}
-                        </h2>
-                        <p className="text-[8px] sm:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.5em] text-zinc-500 font-medium max-w-[240px] sm:max-w-sm mx-auto leading-relaxed">
-                          {translations[lang].editor.generatingFrames} <span className="text-white">{projectName}</span>
-                        </p>
-                      </div>
+                      <div className="flex flex-col gap-6 sm:gap-12">
+                        {/* Header & Status */}
+                        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
+                          <div className="space-y-2">
+                            <h2 className="text-3xl sm:text-5xl lg:text-7xl font-black uppercase text-white tracking-tighter">
+                              {translations[lang].editor.rendering}
+                            </h2>
+                            <p className="text-xs sm:text-sm uppercase tracking-widest text-zinc-500 font-bold">
+                              {translations[lang].editor.generatingFrames} <span className="text-white">{projectName}</span>
+                            </p>
+                          </div>
+                          
+                          <div className="text-right">
+                            <div className="text-5xl sm:text-7xl lg:text-8xl font-black text-white tracking-tighter">
+                              {exportProgress}%
+                            </div>
+                          </div>
+                        </div>
 
-                      <div className="flex flex-col items-center justify-center -my-4 sm:py-6">
-                        {/* Film Reel into Folder Animation */}
-                        <FilmReelToFolderAnimation progress={exportProgress} lang={lang} />
-                        
-                        {/* Real-time Film Strip Sprocket Progress Bar */}
-                        <div className="w-full max-w-md mt-0 sm:mt-6 px-4 sm:px-0">
-                          <FilmStripProgressBar progress={exportProgress} lang={lang} />
+                        {/* Minimalist Progress Bar */}
+                        <div className="w-full h-1 sm:h-2 bg-zinc-900 overflow-hidden relative">
+                          <motion.div 
+                            className="absolute inset-y-0 left-0 bg-white"
+                            style={{ width: `${exportProgress}%` }}
+                            transition={{ type: "tween", ease: "linear", duration: 0.1 }}
+                          />
                         </div>
-                      </div>
 
-                      <div className="grid grid-cols-3 gap-2 sm:gap-8 pt-6 sm:pt-12 border-t border-white/5">
-                        <div className="space-y-1 sm:space-y-2">
-                          <div className="text-[7px] sm:text-[8px] uppercase tracking-widest text-zinc-600 font-bold">Resolution</div>
-                          <div className="text-[9px] sm:text-[10px] font-mono font-medium">1920 X 1080</div>
-                        </div>
-                        <div className="space-y-1 sm:space-y-2">
-                          <div className="text-[7px] sm:text-[8px] uppercase tracking-widest text-zinc-600 font-bold">Framerate</div>
-                          <div className="text-[9px] sm:text-[10px] font-mono font-medium">60 FPS</div>
-                        </div>
-                        <div className="space-y-1 sm:space-y-2">
-                          <div className="text-[7px] sm:text-[8px] uppercase tracking-widest text-zinc-600 font-bold">Format</div>
-                          <div className="text-[9px] sm:text-[10px] font-mono font-medium">WEBM / VP9</div>
+                        {/* Metadata Grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8 pt-4 sm:pt-8 border-t border-white/10 uppercase tracking-widest">
+                          <div className="space-y-2">
+                            <div className="text-[10px] text-zinc-600 font-bold">Resolution</div>
+                            <div className="text-xs sm:text-sm font-bold text-white">1920 X 1080</div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="text-[10px] text-zinc-600 font-bold">Framerate</div>
+                            <div className="text-xs sm:text-sm font-bold text-white">60 FPS</div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="text-[10px] text-zinc-600 font-bold">Format</div>
+                            <div className="text-xs sm:text-sm font-bold text-white">WEBM / VP9</div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="text-[10px] text-zinc-600 font-bold">Status</div>
+                            <div className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
+                              {exportProgress >= 100 ? "DONE" : "RENDERING"}
+                              {exportProgress < 100 && (
+                                <motion.div 
+                                  animate={{ opacity: [1, 0, 1] }} 
+                                  transition={{ repeat: Infinity, duration: 1 }}
+                                  className="w-2 h-2 bg-white"
+                                />
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </motion.div>
+
+                    {/* Footer decoration */}
+                    <div className="absolute bottom-8 left-8 right-8 flex justify-between items-end border-t border-white/10 pt-4 pointer-events-none text-zinc-600 font-mono text-[10px] sm:text-xs uppercase tracking-widest hidden sm:flex">
+                      <div>// OFFLINE RENDER ENGINE</div>
+                      <div>DAFTARKRU.STUDIO</div>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -5304,14 +5286,14 @@ export default function App() {
                             left: `50%`,
                             top: 0,
                             animationName: settings.animationType === 'scroll' ? `scroll-${settings.direction}` : 'none',
-                            animationDuration: `${Math.max(5, settings.animationDuration * 4)}s`,
+                            animationDuration: `${getAnimationTotalDuration()}s`,
                             animationTimingFunction: 'linear',
                             animationIterationCount: 'infinite',
                             animationPlayState: isAutoPlay ? 'running' : 'paused',
-                            animationDelay: settings.animationType === 'scroll' && !isAutoPlay ? `-${(fadeIndex / 1000) * Math.max(5, settings.animationDuration * 4)}s` : '0s',
+                            animationDelay: settings.animationType === 'scroll' && !isAutoPlay ? `-${(fadeIndex / 1000) * getAnimationTotalDuration()}s` : '0s',
                             width: `100%`,
                             maxWidth: `${DESIGN_BASE_WIDTH}px`,
-                            transform: `translate(-50%, 500px)`,
+                            transform: `translate(-50%, 900px)`,
                             fontSize: `${settings.fontSize}px`,
                           }}
                         >
@@ -5586,18 +5568,10 @@ export default function App() {
                         {/* Effects Layer - ensuring they are over everything */}
                         <div className="absolute inset-0 z-[100] pointer-events-none">
                           {settings.showNoise && (
-                            <div className="absolute inset-0 overflow-hidden mix-blend-screen">
-                               <div 
-                                 className="absolute inset-[-100%] animate-grain"
-                                 style={{ 
-                                   opacity: settings.noiseOpacity,
-                                   backgroundImage: `url("https://www.transparenttextures.com/patterns/p6.png")` 
-                                 }} 
-                               />
-                            </div>
+                            <FilmGrainPreview opacity={settings.noiseOpacity} />
                           )}
                           {settings.showScanlines && (
-                             <div className="absolute inset-0 opacity-20 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%]" />
+                             <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.3)_50%)] bg-[length:100%_2px]" />
                           )}
                           {settings.vignette > 0 && (
                             <div 
@@ -5647,7 +5621,7 @@ export default function App() {
                       animate={{ height: isConsoleCollapsed ? 64 : 'auto' }}
                       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                       className={cn(
-                        "hidden lg:block border-t border-white bg-black flex-shrink-0 relative z-[200] visual-console transition-all duration-300",
+                        "hidden lg:block border-t border-white bg-black flex-shrink-0 relative z-[200] visual-console",
                         isConsoleCollapsed ? "overflow-hidden" : "overflow-visible"
                       )}
                     >
@@ -5805,14 +5779,14 @@ export default function App() {
                         left: `50%`,
                         top: 0,
                         animationName: settings.animationType === 'scroll' ? `scroll-${settings.direction}` : 'none',
-                        animationDuration: `${Math.max(5, settings.animationDuration * 4)}s`,
+                        animationDuration: `${getAnimationTotalDuration()}s`,
                         animationTimingFunction: 'linear',
                         animationIterationCount: 'infinite',
                         animationPlayState: isAutoPlay ? 'running' : 'paused',
-                        animationDelay: settings.animationType === 'scroll' && !isAutoPlay ? `-${(fadeIndex / 1000) * Math.max(5, settings.animationDuration * 4)}s` : '0s',
+                        animationDelay: settings.animationType === 'scroll' && !isAutoPlay ? `-${(fadeIndex / 1000) * getAnimationTotalDuration()}s` : '0s',
                         width: `100%`,
                         maxWidth: `${DESIGN_BASE_WIDTH}px`,
-                        transform: `translate(-50%, 500px)`,
+                        transform: `translate(-50%, 900px)`,
                         fontSize: `${settings.fontSize}px`,
                       }}
                     >
@@ -6036,18 +6010,10 @@ export default function App() {
                     {/* Effects Layer */}
                     <div className="absolute inset-0 z-[100] pointer-events-none">
                       {settings.showNoise && (
-                        <div className="absolute inset-0 overflow-hidden mix-blend-screen">
-                           <div 
-                             className="absolute inset-[-100%] animate-grain"
-                             style={{ 
-                               opacity: settings.noiseOpacity,
-                               backgroundImage: `url("https://www.transparenttextures.com/patterns/p6.png")` 
-                             }} 
-                           />
-                        </div>
+                        <FilmGrainPreview opacity={settings.noiseOpacity} />
                       )}
                       {settings.showScanlines && (
-                         <div className="absolute inset-0 opacity-20 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%]" />
+                         <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.3)_50%)] bg-[length:100%_2px]" />
                       )}
                       {settings.vignette > 0 && (
                         <div 
@@ -6154,13 +6120,13 @@ export default function App() {
         }
 
         @keyframes scroll-bottomToTop {
-          0% { transform: translate(-50%, 500px); }
+          0% { transform: translate(-50%, 900px); }
           100% { transform: translate(-50%, -100%); }
         }
 
         @keyframes scroll-topToBottom {
           0% { transform: translate(-50%, -100%); }
-          100% { transform: translate(-50%, 500px); }
+          100% { transform: translate(-50%, 900px); }
         }
 
         .scrollbar-hide::-webkit-scrollbar {
