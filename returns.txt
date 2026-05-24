@@ -1,0 +1,40 @@
+498:  return (
+547:  return (
+622:                  return (
+710:  return (
+785:  return (
+820:  return (
+1007:    return () => { active = false; };
+1020:  return (
+1081:  return (
+1128:  return (
+1204:  return (
+1370:      return () => clearTimeout(timeout);
+1376:  return (
+1438:  return (
+1576:  return (
+1633:  return (
+1740:  return (
+1752:                  return (
+1775:  return (
+1955:  return (
+2017:  return (
+2230:    return () => document.removeEventListener('mousedown', handleClickOutside);
+2243:  return (
+2785:  return (
+2995:    return () => {
+3006:      return (langVal === 'en' || langVal === 'id') ? langVal : 'id';
+3040:      return () => {
+3056:      return (saved && saved.trim().toLowerCase() !== 'undefined' && saved.trim() !== '') ? saved : 'UNTITLED_PROJECT';
+3288:    return () => clearTimeout(timer);
+3385:    return () => window.removeEventListener('resize', handleResize);
+3561:    return () => clearInterval(interval);
+3574:    return () => clearInterval(interval);
+3689:    return () => observer.disconnect();
+4135:    return () => window.removeEventListener('keydown', handleKeyDown);
+4150:    return () => clearInterval(interval);
+4153:  return (
+4441:                                return (
+4480:                                if (history.length === 0) return (
+4510:                                  return (
+4666:                                return (

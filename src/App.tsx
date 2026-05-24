@@ -5,8 +5,6 @@ import {
   Settings2,
   Film, 
   Loader2,
-  CheckSquare,
-  Square,
   Rocket,
   Menu,
   X,
@@ -33,7 +31,8 @@ import {
   Undo,
   Redo,
   History,
-  Clock
+  Clock,
+  Mouse
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder, useDragControls } from 'motion/react';
 import Lenis from 'lenis';
@@ -77,7 +76,6 @@ interface ProjectSettings {
   namesColor: string;
   namesOpacity: number;
   bgColor: string;
-  transparentBg: boolean;
   direction: Direction;
   animationType: AnimationType;
   paddingText: number;
@@ -235,7 +233,7 @@ const translations = {
       tag4: "Buat credit dimana pun dan kapanpun",
       description: "Alat Profesional untuk membuat kredit film secara otomatis",
       button: "Mulai Produksi",
-      scroll: "SCROLL_UNTUK_EKSPLORASI"
+      scroll: "SCROLL UNTUK EKSPLORASI"
     },
     about: {
       title: "DAFTAR KRU ENGINE",
@@ -257,8 +255,6 @@ const translations = {
       guidesTitle: "Panduan Fitur Utama",
       guide1Title: "1. Pengunggahan Font Kustom",
       guide1Desc: "Unggah file font .ttf, .otf, atau .woff milik Anda sendiri di bagian 'Font Style' untuk menyesuaikan identitas teks film Anda.",
-      guide2Title: "2. Ekspor Latar Transparan (Alpha)",
-      guide2Desc: "Centang opsi 'Transparan' pada panel 'Backdrop' sebelum mengekspor untuk mendapatkan video format WebM dengan transparansi penuh.",
       guide3Title: "3. Mode Grid Pasangan (Pairs)",
       guide3Desc: "Aktifkan mode 'Pairs' di panel tampilan untuk meletakkan Posisi dan Nama berdampingan secara horizontal dengan garis hubung otomatis."
     },
@@ -268,12 +264,14 @@ const translations = {
       subheading: "Semua jawaban yang anda butuhkan untuk memulai produksi kredit film anda hari ini.",
       q1: "Apa itu DaftarKru Engine?",
       a1: "DaftarKru Engine adalah toolkit berbasis web untuk membuat credit film secara otomatis dengan berbagai pilihan desain dan animasi profesional yang siap pakai.",
-      q2: "Apakah hasil ekspor bisa transparan?",
-      a2: "Ya, kami mendukung ekspor format WEBM dengan channel Alpha (transparan). Anda bisa mengaktifkan mode 'Transparent' pada menu Backdrop sebelum melakukan render.",
+      q2: "Apakah saya bisa menggunakan font sendiri?",
+      a2: "Tentu saja! Pada panel 'Font Style', anda dapat mengunggah file font kustom Anda (.ttf, .otf, atau .woff) untuk mendapatkan tampilan yang sesuai dengan keinginan anda.",
       q3: "Berapa resolusi maksimal ekspor?",
       a3: "Standar ekspor kami adalah Full HD (1920x1080) with framerate hingga 60 FPS untuk kualitas video yang sangat halus dan tajam.",
-      q4: "Bagaimana cara memasukkan banyak nama sekaligus?",
-      a4: "Sangat mudah. Anda cukup menyalin (copy) daftar nama dari file dokumen anda, lalu tempel (paste) ke kolom 'Names'. Engine kami akan otomatis memproses setiap baris sebagai satu nama."
+      q4: "Apakah DaftarKru sepenuhnya gratis?",
+      a4: "Ya. DaftarKru hadir untuk mempermudah proses pembuatan Credit Title anda secara otomatis tanpa mengeluarkan biaya sedikitpun.",
+      q5: "Kenapa ukuran teks pada hasil ekspor tidak sama seperti pada pratinjau?",
+      a5: "Karena rasio pada pratinjau dan hasil ekspor berbeda. Kami sarankan anda menginput ukuran teks lebih besar dari yang seharusnya anda inginkan (teks yang terpotong pada pratinjau tidak akan memengaruhi hasil ekspor)."
     },
     getStarted: {
       title: "Siap Untuk Memulai?",
@@ -328,7 +326,6 @@ const translations = {
       textOutlineWidth: "Ketebalan Outline",
       letterSpacing: "Jarak Antar Huruf",
       filmGrainIntensity: "Intensitas Grain",
-      transparent: "Transparan",
       sceneSpeed: "DURASI SCENE (DETIK) / KECEPATAN SCROLL",
       scrollModes: "Untuk mode scene, ini mengatur durasi per teks. Untuk scroll, ini mengatur kecepatan (1 lambat - 10 cepat).",
       recordingProgress: "REKAMAN_SEDANG_BERJALAN",
@@ -367,7 +364,7 @@ const translations = {
       tag4: "Create credits anywhere, anytime",
       description: "Professional tool for automated film credits generation",
       button: "Start Production",
-      scroll: "SCROLL_TO_EXPLORE"
+      scroll: "SCROLL TO EXPLORE"
     },
     about: {
       title: "CREW LIST ENGINE",
@@ -389,23 +386,23 @@ const translations = {
       guidesTitle: "Core Feature Guides",
       guide1Title: "1. Custom Font Upload",
       guide1Desc: "Upload your own .ttf, .otf, or .woff file in the 'Font Style' panel to match your film's typography design.",
-      guide2Title: "2. Transparent Backdrop (Alpha Channel)",
-      guide2Desc: "Check the 'Transparent' option in the 'Backdrop' panel to export WebM files with complete transparency for overlaying.",
       guide3Title: "3. Grid Pairs Layout",
       guide3Desc: "Toggle 'Pairs Mode' inside the appearance panel to align roles and names horizontally with adjustable gaps."
     },
     faq: {
       title: "Support Center",
       heading: "Popular\nQuestions",
-      subheading: "All the answers you need to start producing your film credits today.",
+      subheading: "All the answers you need to start producing your film today.",
       q1: "What is DaftarKru Engine?",
       a1: "DaftarKru Engine is a web-based toolkit for creating film credits automatically with various professional design and animation options ready to use.",
-      q2: "Can export results be transparent?",
-      a2: "Yes, we support WEBM format export with Alpha channel (transparent). You can activate 'Transparent' mode in the Backdrop menu before rendering.",
+      q2: "Can I use my own fonts?",
+      a2: "Absolutely! In the 'Font Style' panel, you can upload your custom font files (.ttf, .otf, or .woff) to get the exact look you want.",
       q3: "What is the maximum export resolution?",
       a3: "Our export standard is Full HD (1920x1080) with a framerate of up to 60 FPS for smooth and sharp video quality.",
-      q4: "How to input many names at once?",
-      a4: "It's very easy. Just copy the list of names from your document, then paste it into the 'Names' column. Our engine will automatically process each line as one name."
+      q4: "Is DaftarKru completely free?",
+      a4: "Yes. DaftarKru is here to simplify your credit title creation process automatically without any cost.",
+      q5: "Why is the text size in the exported result different from the preview?",
+      a5: "Because the ratio between the preview and the export result differs. We suggest you input a larger text size than you actually want (text cut off in the preview will not affect the export result)."
     },
     getStarted: {
       title: "Ready to Start?",
@@ -460,7 +457,6 @@ const translations = {
       textOutlineWidth: "Outline Width",
       letterSpacing: "Letter Spacing",
       filmGrainIntensity: "Grain Intensity",
-      transparent: "Transparent",
       sceneSpeed: "SCENE DURATION (SEC) / SCROLL SPEED",
       scrollModes: "For scene modes, sets the duration per text. For scroll, sets speed (1 slow - 10 fast).",
       recordingProgress: "RECORDING_IN_PROGRESS",
@@ -603,7 +599,7 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSe
             {/* Header Area */}
             <div className="flex items-center justify-between border-b border-white/10 pb-6 relative z-10 shrink-0">
               <div className="flex items-center gap-2">
-                <span className="font-mono text-[9px] sm:text-[11px] font-bold text-zinc-500 uppercase tracking-[0.25em]">// NAV_PIPELINE v1.12</span>
+                <span className="font-mono text-[9px] sm:text-[11px] font-bold text-zinc-500 uppercase tracking-[0.25em]">// NAV_DAFTARKRU</span>
               </div>
               <button 
                 onClick={() => setIsMobileMenuOpen(false)} 
@@ -664,7 +660,7 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSe
 
             {/* Language Selection inside Drawer Menu */}
             <div className="border-t border-white/10 pt-6 relative z-10 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4 max-w-md w-full mx-auto">
-              <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">ACTIVE_ENGINE_LANGUAGE //</span>
+              <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">// SELECT LANGUAGE</span>
               <div className="flex gap-2 w-full sm:w-auto">
                 {(['id', 'en'] as Lang[]).map((l) => (
                   <button
@@ -780,12 +776,16 @@ const FilmStrip = ({ speed = 40, reverse = false, rotate = -4, yOffset = "25%", 
   );
 };
 
-const BackgroundElements = () => {
+const BackgroundElements = ({ hideExtra = false }: { hideExtra?: boolean }) => {
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-[#020202]">
-      {/* Film Strips Scrolling endlessly diagonally */}
-      <FilmStrip speed={45} reverse={false} rotate={-3} yOffset="15%" opacity={0.12} />
-      <FilmStrip speed={55} reverse={true} rotate={4} yOffset="65%" opacity={0.10} />
+      {!hideExtra && (
+        <>
+          {/* Film Strips Scrolling endlessly diagonally */}
+          <FilmStrip speed={45} reverse={false} rotate={-3} yOffset="15%" opacity={0.12} />
+          <FilmStrip speed={55} reverse={true} rotate={4} yOffset="65%" opacity={0.10} />
+        </>
+      )}
 
       {/* Static Tech Grid - Reduced opacity and simplified */}
       <div 
@@ -800,15 +800,17 @@ const BackgroundElements = () => {
       <div className="absolute top-[20%] right-[10%] w-[400px] h-[400px] rounded-full bg-white/[0.03] blur-[100px]" />
       <div className="absolute bottom-[20%] left-[10%] w-[400px] h-[400px] rounded-full bg-white/[0.02] blur-[100px]" />
 
-      {/* Simplified Scanning Bar */}
-      <motion.div 
-        animate={{ 
-          y: ["-10%", "110%"],
-          opacity: [0, 0.1, 0]
-        }}
-        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        className="absolute inset-x-0 h-[100px] bg-gradient-to-b from-transparent via-white/[0.05] to-transparent pointer-events-none"
-      />
+      {!hideExtra && (
+        /* Simplified Scanning Bar */
+        <motion.div 
+          animate={{ 
+            y: ["-10%", "110%"],
+            opacity: [0, 0.1, 0]
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute inset-x-0 h-[100px] bg-gradient-to-b from-transparent via-white/[0.05] to-transparent pointer-events-none"
+        />
+      )}
     </div>
   );
 };
@@ -1295,7 +1297,7 @@ const GsapAnimatedConsole = ({ onPlay, lang }: { onPlay: () => void, lang: Lang 
                 <div className="space-y-2">
                    <div className="flex justify-between items-center text-[6px] sm:text-[8px] text-zinc-500 tracking-widest font-mono">
                       <span>00:00:00:00</span>
-                      <span className="text-white/50 text-[8px] sm:text-[10px] font-black font-mono tracking-widest">SCROLL_DENSITY / 1.2s</span>
+                      <span className="text-white/50 text-[8px] sm:text-[10px] font-black font-mono tracking-widest">KEEP SCROLLING</span>
                       <span>00:05:00:00</span>
                    </div>
                    <div className="h-2 w-full bg-zinc-950 border border-zinc-800/80 rounded-none relative overflow-hidden">
@@ -1374,7 +1376,7 @@ const AboutSection = ({ lang, onStart }: { lang: Lang, onStart: () => void }) =>
 
   return (
     <section ref={sectionRef} id="about" className="min-h-screen w-full bg-[#050505] flex flex-col lg:flex-row items-center justify-start lg:justify-center p-4 sm:p-12 lg:p-24 gap-0 sm:gap-8 lg:gap-24 relative overflow-hidden border-t border-white/5 pt-12 lg:pt-24">
-      <BackgroundElements />
+      <BackgroundElements hideExtra={true} />
 
       <motion.div 
         onViewportEnter={() => setTitleVisible(true)}
@@ -1626,7 +1628,8 @@ const FAQSection = ({ lang }: { lang: Lang }) => {
     { q: translations[lang].faq.q1, a: translations[lang].faq.a1 },
     { q: translations[lang].faq.q2, a: translations[lang].faq.a2 },
     { q: translations[lang].faq.q3, a: translations[lang].faq.a3 },
-    { q: translations[lang].faq.q4, a: translations[lang].faq.a4 }
+    { q: translations[lang].faq.q4, a: translations[lang].faq.a4 },
+    { q: translations[lang].faq.q5, a: translations[lang].faq.a5 }
   ];
 
   return (
@@ -1888,7 +1891,8 @@ const SliderWithControls = ({
   max, 
   step = 1, 
   unit = '', 
-  precision = 0 
+  precision = 0,
+  disabled = false
 }: { 
   label: string, 
   value: number, 
@@ -1897,11 +1901,13 @@ const SliderWithControls = ({
   max: number, 
   step?: number, 
   unit?: string,
-  precision?: number
+  precision?: number,
+  disabled?: boolean
 }) => {
   const ignoreChangeRef = useRef(false);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLInputElement>) => {
+    if (disabled) return;
     const rect = e.currentTarget.getBoundingClientRect();
     if (rect.width === 0) return;
     const clickX = e.clientX;
@@ -1917,6 +1923,7 @@ const SliderWithControls = ({
   };
 
   const handleTouchStart = (e: React.TouchEvent<HTMLInputElement>) => {
+    if (disabled) return;
     if (e.touches && e.touches[0]) {
       const rect = e.currentTarget.getBoundingClientRect();
       if (rect.width === 0) return;
@@ -1937,29 +1944,32 @@ const SliderWithControls = ({
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (ignoreChangeRef.current) {
+    if (disabled || ignoreChangeRef.current) {
       return;
     }
     onChange(Number(e.target.value));
   };
 
   const handleDecrement = () => {
+    if (disabled) return;
     onChange(Math.max(min, Number((value - step).toFixed(precision))));
   };
 
   const handleIncrement = () => {
+    if (disabled) return;
     onChange(Math.min(max, Number((value + step).toFixed(precision))));
   };
 
   return (
-    <div className="space-y-2.5 touch-pan-y">
+    <div className={cn("space-y-2.5 touch-pan-y transition-all duration-300", disabled && "opacity-30 pointer-events-none select-none filter grayscale")}>
       <div className="flex justify-between items-center text-xs sm:text-[13px] font-medium tracking-[0.05em] text-white">
         <span className="text-white/95 font-medium uppercase tracking-wider">{label}</span>
         <div className="flex items-center gap-3">
           <button 
             type="button"
             onClick={handleDecrement}
-            className="w-5 h-5 flex items-center justify-center border border-white/20 hover:bg-white hover:text-black transition-all bg-white/[0.02]"
+            disabled={disabled}
+            className="w-5 h-5 flex items-center justify-center border border-white/20 hover:bg-white hover:text-black transition-all bg-white/[0.02] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Minus className="w-3 h-3 text-white" />
           </button>
@@ -1967,7 +1977,8 @@ const SliderWithControls = ({
           <button 
             type="button"
             onClick={handleIncrement}
-            className="w-5 h-5 flex items-center justify-center border border-white/20 hover:bg-white hover:text-black transition-all bg-white/[0.02]"
+            disabled={disabled}
+            className="w-5 h-5 flex items-center justify-center border border-white/20 hover:bg-white hover:text-black transition-all bg-white/[0.02] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-3 h-3 text-white" />
           </button>
@@ -1979,12 +1990,13 @@ const SliderWithControls = ({
         max={max} 
         step={step} 
         value={value}
+        disabled={disabled}
         onPointerDown={handlePointerDown}
         onTouchStart={handleTouchStart}
         onPointerUp={handlePointerUp}
         onTouchEnd={handlePointerUp}
         onChange={handleChange}
-        className="w-full h-[2px] bg-zinc-800 accent-white appearance-none cursor-pointer touch-none"
+        className="w-full h-[2px] bg-zinc-800 accent-white appearance-none cursor-pointer touch-none disabled:bg-zinc-900 disabled:cursor-not-allowed"
       />
     </div>
   );
@@ -2009,9 +2021,30 @@ const FONT_OPTIONS = [
   { name: 'SYSTEM MONO', value: 'JetBrains Mono' },
 ];
 
-const TuningControls = React.memo(({ settings, setSettings, lang }: any) => {
+const TuningControls = React.memo(({ settings, setSettings, lang, credits }: any) => {
   const pxToPercent = (px: number) => ((px / 1920) * 100).toFixed(1);
   const percentToPx = (pct: number) => Number(((pct / 100) * 1920).toFixed(1));
+
+  const isControlDisabled = (key: string): boolean => {
+    const animationType = settings.animationType;
+    
+    // Check if pairs exist
+    const hasPairs = credits && credits.some((c: any) => c.isPairs);
+    
+    // marginBlock (Block Space) is only valid in 'scroll' mode.
+    // Transition-based modes ('fade', 'zoom', 'blur', 'slide', 'glitch') only render 
+    // one credit block screen-by-screen, rendering block spacing irrelevant.
+    if (key === 'marginBlock') {
+      return animationType !== 'scroll';
+    }
+
+    // Disable pairsGap if no pairs exist in credits
+    if (key === 'pairsGap') {
+      return !hasPairs;
+    }
+
+    return false;
+  };
 
   return (
     <div className="space-y-10">
@@ -2028,7 +2061,6 @@ const TuningControls = React.memo(({ settings, setSettings, lang }: any) => {
               namesColor: '#ffffff',
               namesOpacity: 1,
               bgColor: '#000000',
-              transparentBg: false,
               direction: 'bottomToTop' as Direction,
               animationType: 'scroll' as AnimationType,
               paddingText: 20,
@@ -2081,6 +2113,7 @@ const TuningControls = React.memo(({ settings, setSettings, lang }: any) => {
           step={0.1}
           unit="%"
           precision={1}
+          disabled={isControlDisabled('fontSize')}
         />
         <SliderWithControls 
           label={translations[lang].editor.roleSize}
@@ -2091,6 +2124,7 @@ const TuningControls = React.memo(({ settings, setSettings, lang }: any) => {
           step={0.1}
           unit="%"
           precision={1}
+          disabled={isControlDisabled('roleFontSize')}
         />
         <SliderWithControls 
           label={translations[lang].editor.blockSpace}
@@ -2101,6 +2135,7 @@ const TuningControls = React.memo(({ settings, setSettings, lang }: any) => {
           step={0.1}
           unit="%"
           precision={1}
+          disabled={isControlDisabled('marginBlock')}
         />
         <SliderWithControls 
           label={translations[lang].editor.roleGap}
@@ -2111,6 +2146,7 @@ const TuningControls = React.memo(({ settings, setSettings, lang }: any) => {
           step={0.1}
           unit="%"
           precision={1}
+          disabled={isControlDisabled('roleNameGap')}
         />
         <SliderWithControls 
           label={translations[lang].editor.nameGap}
@@ -2121,6 +2157,7 @@ const TuningControls = React.memo(({ settings, setSettings, lang }: any) => {
           step={0.1}
           unit="%"
           precision={1}
+          disabled={isControlDisabled('namesGap')}
         />
         <SliderWithControls 
           label={translations[lang].editor.lineHeight}
@@ -2131,6 +2168,7 @@ const TuningControls = React.memo(({ settings, setSettings, lang }: any) => {
           step={0.1}
           unit=""
           precision={1}
+          disabled={isControlDisabled('lineHeight')}
         />
         <SliderWithControls 
           label={translations[lang].editor.pairsGap}
@@ -2141,6 +2179,7 @@ const TuningControls = React.memo(({ settings, setSettings, lang }: any) => {
           step={0.1}
           unit="%"
           precision={1}
+          disabled={isControlDisabled('pairsGap')}
         />
         <SliderWithControls 
           label={translations[lang].editor.letterSpacing}
@@ -2150,6 +2189,7 @@ const TuningControls = React.memo(({ settings, setSettings, lang }: any) => {
           max={20}
           step={1}
           precision={0}
+          disabled={isControlDisabled('letterSpacing')}
         />
       </div>
     </div>
@@ -2690,22 +2730,8 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
               <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", activeConsole === 'bg' && "rotate-90")} />
             </button>
             <CategoryPopover id="bg" title={translations[lang].editor.canvas} activeConsole={activeConsole} closeConsole={closeConsole} lang={lang}>
-              <div className="space-y-8">
-                <button 
-                  onClick={() => setSettings({...settings, transparentBg: !settings.transparentBg})}
-                  className={cn(
-                    "w-full p-6 flex items-center justify-between transition-all border",
-                    settings.transparentBg ? "bg-white text-black border-white" : "bg-white/5 text-white border-white/10"
-                  )}
-                >
-                  <div className="text-left">
-                    <div className="text-xs font-semibold tracking-normal text-zinc-300">{translations[lang].editor.transparent}</div>
-                    <p className="text-[11px] opacity-60 tracking-normal mt-1">Alpha Channel Background</p>
-                  </div>
-                  {settings.transparentBg ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5 opacity-20" />}
-                </button>
-                
-                <div className={cn("space-y-4 transition-all duration-300", settings.transparentBg ? "opacity-30 grayscale pointer-events-none" : "opacity-100")}>
+              <div className="space-y-6">
+                <div className="space-y-4">
                   <label className="text-[8px] font-bold uppercase tracking-widest text-zinc-500">Background Color</label>
                   <div className="bg-black border border-white/10 p-4 sm:p-6 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
@@ -2819,6 +2845,22 @@ const CreditItem = React.memo(({
         </div>
 
         <div className="flex gap-2 items-center" onClick={e => e.stopPropagation()}>
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              togglePairs(item.id);
+            }}
+            title={lang === 'id' ? "Toggle Mode Pairs" : "Toggle Pairs Mode"}
+            className={cn(
+              "p-2 border transition-all rounded-none",
+              item.isPairs
+                ? (selectedIds.has(item.id) ? "bg-black text-white border-black" : "bg-white text-black border-white")
+                : (selectedIds.has(item.id) ? "border-black/10 hover:bg-black/5 text-zinc-400 hover:text-black" : "border-white/10 hover:bg-white/10 text-zinc-600 hover:text-white")
+            )}
+          >
+            <Columns className="w-4 h-4" />
+          </button>
+
           <div className="relative">
             <button 
               onClick={() => setOpenSettingsId(openSettingsId === item.id ? null : item.id)}
@@ -2857,19 +2899,6 @@ const CreditItem = React.memo(({
                       className="w-full text-left px-4 py-3 text-xs font-semibold tracking-normal hover:bg-white hover:text-black transition-colors flex items-center justify-between text-white border-b border-white/10"
                     >
                       {translations[lang].editor.editTape}
-                    </button>
-
-                    <button 
-                      onClick={() => {
-                        togglePairs(item.id);
-                      }}
-                      className={cn(
-                        "w-full text-left px-4 py-3 text-xs font-semibold tracking-normal transition-colors flex items-center justify-between border-b border-white/10",
-                        item.isPairs ? "bg-white text-black" : "text-white hover:bg-white hover:text-black"
-                      )}
-                    >
-                      {translations[lang].editor.pairsMode}
-                      {item.isPairs && <Check className="w-3.5 h-3.5" />}
                     </button>
 
                     <button 
@@ -3081,7 +3110,6 @@ export default function App() {
       namesColor: '#ffffff',
       namesOpacity: 1,
       bgColor: '#000000',
-      transparentBg: false,
       direction: 'bottomToTop' as Direction,
       animationType: 'scroll' as AnimationType,
       paddingText: 20,
@@ -3226,10 +3254,6 @@ export default function App() {
                     labelId = 'Ubah Warna Latar';
                     labelEn = 'Change Background Color';
                     break;
-                  case 'transparentBg':
-                    labelId = settings.transparentBg ? 'Aktifkan Latar Transparan' : 'Nonaktifkan Latar Transparan';
-                    labelEn = settings.transparentBg ? 'Enable Transparent Bg' : 'Disable Transparent Bg';
-                    break;
                   case 'animationType':
                     labelId = `Ubah Animasi ke: ${settings.animationType}`;
                     labelEn = `Change Animation: ${settings.animationType}`;
@@ -3342,6 +3366,7 @@ export default function App() {
 
   const [newRole, setNewRole] = useState('');
   const [newNames, setNewNames] = useState('');
+  const [newIsPairs, setNewIsPairs] = useState(false);
 
   const [activeConsole, setActiveConsole] = useState<'none' | 'color' | 'bg' | 'font' | 'anim' | 'preset'>('none');
   const [openSettingsId, setOpenSettingsId] = useState<string | null>(null);
@@ -3436,20 +3461,8 @@ export default function App() {
 
     // Filter by type and MIME
     const allowedExtensions = /\.(ttf|otf|woff|woff2)$/i;
-    const allowedMimeTypes = [
-      'font/ttf',
-      'font/otf',
-      'font/woff',
-      'font/woff2',
-      'application/font-ttf',
-      'application/x-font-ttf',
-      'application/font-otf',
-      'application/x-font-otf',
-      'application/font-woff',
-      'application/font-woff2',
-    ];
 
-    if (!file.name.match(allowedExtensions) || !allowedMimeTypes.includes(file.type)) {
+    if (!file.name.match(allowedExtensions)) {
       alert("Format font tidak didukung atau file tidak valid. Gunakan .ttf, .otf, atau .woff/.woff2");
       return;
     }
@@ -3594,7 +3607,8 @@ export default function App() {
           ? { 
               ...c, 
               role: newRole, 
-              names: newNames.split('\n').filter(n => n.trim() !== '').map(n => n.trim())
+              names: newNames.split('\n').filter(n => n.trim() !== '').map(n => n.trim()),
+              isPairs: newIsPairs
             } 
           : c
       );
@@ -3604,7 +3618,8 @@ export default function App() {
       const entry: CreditEntry = {
         id: Date.now().toString(),
         role: newRole,
-        names: newNames.split('\n').filter(n => n.trim() !== '').map(n => n.trim())
+        names: newNames.split('\n').filter(n => n.trim() !== '').map(n => n.trim()),
+        isPairs: newIsPairs
       };
       const updated = [...credits, entry];
       setCredits(updated);
@@ -3612,6 +3627,7 @@ export default function App() {
     
     setNewRole('');
     setNewNames('');
+    setNewIsPairs(false);
   };
 
   const startEditing = (id: string) => {
@@ -3619,6 +3635,7 @@ export default function App() {
     if (tape) {
       setNewRole(tape.role);
       setNewNames((tape.names || []).join('\n'));
+      setNewIsPairs(tape.isPairs || false);
       setEditingId(id);
       setOpenSettingsId(null);
     }
@@ -3628,6 +3645,7 @@ export default function App() {
     setEditingId(null);
     setNewRole('');
     setNewNames('');
+    setNewIsPairs(false);
   };
 
   const removeRole = (id: string) => {
@@ -3702,369 +3720,396 @@ export default function App() {
     setExportProgress(0);
     setIsExporting(true);
 
-    // Initial stabilization wait - expanded to ensure full logic/style application
-    await new Promise(resolve => setTimeout(resolve, 400));
-
     const scroll = scrollRef.current;
-    if (!scroll) return;
-    
-    // Check if on mobile
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
     const canvasWidth = 1920; 
     const canvasHeight = 1080;
-    
-    // Recalculate duration NOW that isExporting is true and layout has expanded
-    const duration = getAnimationTotalDuration();
-    const fps = isMobile ? 30 : 60;
-    const totalFrames = Math.floor(duration * fps);
-    
-    // Save original styles to restore later
-    const originalStyle = scroll.style.cssText;
-    const originalParentStyle = scroll.parentElement?.style.cssText || '';
-    
-    // Virtual Canvas Preparation
-    if (scroll.parentElement) {
-      scroll.parentElement.style.overflow = 'visible';
-      scroll.parentElement.style.width = 'auto';
-      scroll.parentElement.style.maxWidth = 'none';
-      scroll.parentElement.style.height = 'auto';
-      scroll.parentElement.style.transform = 'none';
-    }
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-    scroll.style.position = 'fixed';
-    scroll.style.top = '0';
-    scroll.style.left = '0';
-    scroll.style.width = `${canvasWidth}px`;
-    scroll.style.maxWidth = `${canvasWidth}px`;
-    scroll.style.minWidth = `${canvasWidth}px`;
-    scroll.style.height = 'auto'; 
-    scroll.style.overflow = 'visible';
-    scroll.style.margin = '0';
-    scroll.style.opacity = '1';
-    scroll.style.pointerEvents = 'none';
-    scroll.style.transform = 'none';
-    scroll.style.display = 'block';
-    scroll.style.zIndex = '999999';
-    scroll.style.backgroundColor = settings.transparentBg ? 'transparent' : settings.bgColor;
-    
-    // Wait for fonts to be ready and specifically load the selected font
-    await document.fonts.ready;
-    try {
-      await document.fonts.load(`1em ${settings.fontFamily}`);
-    } catch {
-      console.warn("Failed to specifically load font:", settings.fontFamily);
-    }
-    await new Promise(resolve => setTimeout(resolve, 100));
+    const runEncode = (): Promise<{ success: boolean; isAlphaError: boolean }> => {
+      return new Promise<{ success: boolean; isAlphaError: boolean }>(async (resolve) => {
+        let active = true;
 
-    const canvas = document.createElement('canvas');
-    canvas.width = canvasWidth; 
-    canvas.height = canvasHeight;
-    const ctx = canvas.getContext('2d', { alpha: true });
-    if (!ctx) return;
+        const originalStyle = scroll.style.cssText;
+        const originalParentStyle = scroll.parentElement?.style.cssText || '';
 
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    
-    const muxer = new Muxer({
-      target: new ArrayBufferTarget(),
-      video: {
-        codec: 'V_VP9',
-        width: canvasWidth,
-        height: canvasHeight,
-        frameRate: fps,
-      }
-    });
+        const restoreStyles = () => {
+          scroll.style.cssText = originalStyle;
+          if (scroll.parentElement) {
+            scroll.parentElement.style.cssText = originalParentStyle;
+          }
+        };
 
-    let active = true;
-    const videoEncoder = new VideoEncoder({
-      output: (chunk, metadata) => muxer.addVideoChunk(chunk, metadata),
-      error: (e) => {
-        console.error("VideoEncoder error:", e);
-        active = false;
-        setIsExporting(false);
-      }
-    });
+        const fps = isMobile ? 30 : 60;
+        const duration = getAnimationTotalDuration();
+        const totalFrames = Math.floor(duration * fps);
 
-    try {
-      videoEncoder.configure({
-        codec: 'vp09.00.10.08',
-        //@ts-ignore - alpha is supported in some environments/codecs
-        alpha: settings.transparentBg ? 'keep' : 'discard',
-        width: canvasWidth,
-        height: canvasHeight,
-        bitrate: isMobile ? 5_000_000 : 12_000_000, 
-        latencyMode: 'realtime'
-      });
+        // Virtual Canvas Preparation
+        if (scroll.parentElement) {
+          scroll.parentElement.style.overflow = 'visible';
+          scroll.parentElement.style.width = 'auto';
+          scroll.parentElement.style.maxWidth = 'none';
+          scroll.parentElement.style.height = 'auto';
+          scroll.parentElement.style.transform = 'none';
+        }
 
-      // Re-measure after ensuring DOM update and style application
-      await new Promise(resolve => setTimeout(resolve, 100)); 
-      
-      let scrollHeight = scroll.scrollHeight; 
-      if (scrollHeight === 0) scrollHeight = 2000;
-      
-      // Memory safeguard for very long credit lists
-      if (scrollHeight > 15000) {
-        alert("Daftar kredit terlalu panjang untuk satu render (melebihi 15000px). Hasil mungkin terpotong atau gagal. Pertimbangkan untuk membagi kredit menjadi beberapa bagian.");
-        scrollHeight = 15000;
-      }
-      
-      if (scrollHeight < canvasHeight) {
-        scrollHeight = canvasHeight;
-      }
+        scroll.style.position = 'fixed';
+        scroll.style.top = '0';
+        scroll.style.left = '0';
+        scroll.style.width = `${canvasWidth}px`;
+        scroll.style.maxWidth = `${canvasWidth}px`;
+        scroll.style.minWidth = `${canvasWidth}px`;
+        scroll.style.height = 'auto'; 
+        scroll.style.overflow = 'visible';
+        scroll.style.margin = '0';
+        scroll.style.opacity = '1';
+        scroll.style.pointerEvents = 'none';
+        scroll.style.transform = 'none';
+        scroll.style.display = 'block';
+        scroll.style.zIndex = '999999';
+        scroll.style.backgroundColor = settings.bgColor;
 
-      const blocks = Array.from(scroll.querySelectorAll('.credit-block')) as HTMLDivElement[];
-      const blockMeasurements = blocks.map(b => ({
-        height: b.offsetHeight,
-        top: b.offsetTop
-      }));
+        const muxer = new Muxer({
+          target: new ArrayBufferTarget(),
+          video: {
+            codec: 'V_VP9',
+            width: canvasWidth,
+            height: canvasHeight,
+            frameRate: fps,
+            alpha: false,
+          }
+        });
 
-      setExportProgress(2);
-      
-      const captureWidth = canvasWidth; 
+        const videoEncoder = new VideoEncoder({
+          output: (chunk, metadata) => {
+            if (active) muxer.addVideoChunk(chunk, metadata);
+          },
+          error: (e) => {
+            console.error("VideoEncoder error in output/encode:", e);
+            active = false;
+            restoreStyles();
+            resolve({ success: false, isAlphaError: false });
+          }
+        });
 
-      const { toPng } = await import('html-to-image');
-      
-      const commonOptions: any = {
-        pixelRatio: 1,
-        width: canvasWidth,
-        height: scrollHeight,
-        cacheBust: true, 
-        skipFonts: false,
-        style: {
-          transform: 'none',
-          animation: 'none',
-          transition: 'none',
-          opacity: '1',
-          visibility: 'visible',
-          position: 'static',
-          margin: '0',
-          padding: `0`,
-          width: `${canvasWidth}px`,
-          maxWidth: `${canvasWidth}px`,
-          minWidth: `${canvasWidth}px`,
-          imageRendering: 'auto',
-          background: settings.transparentBg ? 'transparent' : settings.bgColor,
-          fontFamily: `'${settings.fontFamily}', sans-serif`,
-          filter: settings.lut === 'noir' ? 'grayscale(1) contrast(1.2)' :
-                  settings.lut === 'sepia' ? 'sepia(0.8) contrast(1.1)' :
-                  settings.lut === 'cold' ? 'saturate(0.6) hue-rotate(20deg) brightness(0.9) sepia(0.2)' :
-                  settings.lut === 'warm' ? 'saturate(1.4) hue-rotate(-10deg) brightness(1.05)' :
-                  settings.lut === 'mute' ? 'saturate(0.2) contrast(0.9)' : 'none'
-        },
-        // Filter to avoid crashing on cross-origin stylesheets that don't have CORS headers
-        filter: (node: any) => {
-          if (node.tagName === 'LINK' || node.tagName === 'STYLE') {
-            try {
-              const sheet = (node as any).sheet as CSSStyleSheet;
-              if (!sheet) return false;
-              
-              // If it's a link, check if it's cross-origin and if it has crossorigin attribute
-              if (node.tagName === 'LINK') {
-                const href = node.getAttribute('href');
-                if (href && !href.startsWith(window.location.origin) && !href.startsWith('/')) {
-                   // It's external. If it doesn't have crossorigin, we can't read its rules safely.
-                   if (node.getAttribute('crossorigin') === null) {
+        try {
+          // Wait for fonts to be ready and specifically load the selected font
+          await document.fonts.ready;
+          try {
+            await document.fonts.load(`1em ${settings.fontFamily}`);
+          } catch {
+            console.warn("Failed to specifically load font:", settings.fontFamily);
+          }
+          await new Promise(r => setTimeout(r, 100));
+
+          const canvas = document.createElement('canvas');
+          canvas.width = canvasWidth; 
+          canvas.height = canvasHeight;
+          const ctx = canvas.getContext('2d', { alpha: true });
+          if (!ctx) {
+            restoreStyles();
+            resolve({ success: false, isAlphaError: false });
+            return;
+          }
+
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+
+          try {
+            videoEncoder.configure({
+              codec: 'vp09.00.10.08',
+              alpha: 'discard',
+              width: canvasWidth,
+              height: canvasHeight,
+              bitrate: isMobile ? 5_000_000 : 12_000_000, 
+              latencyMode: 'realtime'
+            });
+          } catch (configErr) {
+            throw configErr;
+          }
+
+          // Re-measure after ensuring DOM update and style application
+          await new Promise(r => setTimeout(r, 100)); 
+          
+          let scrollHeight = scroll.scrollHeight; 
+          if (scrollHeight === 0) scrollHeight = 2000;
+          
+          // Memory safeguard for very long credit lists
+          if (scrollHeight > 15000) {
+            alert("Daftar kredit terlalu panjang untuk satu render (melebihi 15000px). Hasil mungkin terpotong atau gagal. Pertimbangkan untuk membagi kredit menjadi beberapa bagian.");
+            scrollHeight = 15000;
+          }
+          
+          if (scrollHeight < canvasHeight) {
+            scrollHeight = canvasHeight;
+          }
+
+          const blocks = Array.from(scroll.querySelectorAll('.credit-block')) as HTMLDivElement[];
+          const blockMeasurements = blocks.map(b => ({
+            height: b.offsetHeight,
+            top: b.offsetTop
+          }));
+
+          setExportProgress(2);
+          
+          const captureWidth = canvasWidth; 
+          const { toPng } = await import('html-to-image');
+          
+          const commonOptions: any = {
+            pixelRatio: 1,
+            width: canvasWidth,
+            height: scrollHeight,
+            cacheBust: true, 
+            skipFonts: false,
+            style: {
+              transform: 'none',
+              animation: 'none',
+              transition: 'none',
+              opacity: '1',
+              visibility: 'visible',
+              position: 'static',
+              margin: '0',
+              padding: `0`,
+              width: `${canvasWidth}px`,
+              maxWidth: `${canvasWidth}px`,
+              minWidth: `${canvasWidth}px`,
+              imageRendering: 'auto',
+              background: settings.bgColor,
+              fontFamily: `'${settings.fontFamily}', sans-serif`,
+              filter: settings.lut === 'noir' ? 'grayscale(1) contrast(1.2)' :
+                      settings.lut === 'sepia' ? 'sepia(0.8) contrast(1.1)' :
+                      settings.lut === 'cold' ? 'saturate(0.6) hue-rotate(20deg) brightness(0.9) sepia(0.2)' :
+                      settings.lut === 'warm' ? 'saturate(1.4) hue-rotate(-10deg) brightness(1.05)' :
+                      settings.lut === 'mute' ? 'saturate(0.2) contrast(0.9)' : 'none'
+            },
+            filter: (node: any) => {
+              if (node.tagName === 'LINK' || node.tagName === 'STYLE') {
+                try {
+                   const sheet = (node as any).sheet as CSSStyleSheet;
+                   if (!sheet) return false;
+                   if (node.tagName === 'LINK') {
+                     const href = node.getAttribute('href');
+                     if (href && !href.startsWith(window.location.origin) && !href.startsWith('/')) {
+                        if (node.getAttribute('crossorigin') === null) {
+                          return false;
+                        }
+                     }
+                   }
+                   try {
+                     const rules = sheet.cssRules;
+                     return !!rules;
+                   } catch {
                      return false;
                    }
+                } catch {
+                  return false;
                 }
               }
-
-              // Test if we can read the rules
-              try {
-                const rules = sheet.cssRules;
-                return !!rules;
-              } catch {
-                // Ignore cross-origin stylesheet errors
-                return false;
-              }
-            } catch {
-              return false;
+              return true;
             }
+          };
+
+          commonOptions.backgroundColor = settings.bgColor;
+
+          let bigImage;
+          try {
+            bigImage = await toPng(scroll, commonOptions);
+          } catch {
+            bigImage = await toPng(scroll, { ...commonOptions, skipFonts: true });
           }
-          return true;
-        }
-      };
 
-      if (!settings.transparentBg) {
-        commonOptions.backgroundColor = settings.bgColor;
-      }
+          // Restore original state promptly
+          restoreStyles();
 
-      let bigImage;
-      try {
-        bigImage = await toPng(scroll, commonOptions);
-      } catch {
-        bigImage = await toPng(scroll, { ...commonOptions, skipFonts: true });
-      }
+          const img = new Image();
+          await new Promise((resL, rejL) => {
+            img.onload = resL;
+            img.onerror = () => rejL(new Error("Failed to load captured scroll image"));
+            img.src = bigImage;
+          });
 
-      // Restore original state promptly
-      scroll.style.cssText = originalStyle;
-      if (scroll.parentElement) {
-        scroll.parentElement.style.cssText = originalParentStyle;
-      }
+          const imgWidth = captureWidth;
+          const imgHeight = scrollHeight;
+          const startPos = canvasHeight; 
+          const endPos = -imgHeight;
+          const travelDistance = startPos - endPos;
 
-      const img = new Image();
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = () => reject(new Error("Failed to load captured scroll image"));
-        img.src = bigImage;
-      });
-
-      const imgWidth = captureWidth;
-      const imgHeight = scrollHeight;
-
-      const startPos = canvasHeight; 
-      const endPos = -imgHeight;
-      const travelDistance = startPos - endPos;
-
-      const renderFrame = (frame: number) => {
-        const progress = frame / (totalFrames - 1);
-        
-        if (settings.transparentBg) {
-          ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-        } else {
+        const renderFrame = async (frame: number) => {
+          const progress = frame / (totalFrames - 1);
+          
           ctx.fillStyle = settings.bgColor;
           ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-        }
 
-        if (settings.animationType === 'scroll') {
-          let drawY = 0;
-          if (settings.direction === 'bottomToTop') {
-            drawY = startPos - (progress * travelDistance);
-          } else if (settings.direction === 'topToBottom') {
-            drawY = endPos + (progress * travelDistance);
+          if (settings.animationType === 'scroll') {
+            let drawY = 0;
+            if (settings.direction === 'bottomToTop') {
+              drawY = startPos - (progress * travelDistance);
+            } else if (settings.direction === 'topToBottom') {
+              drawY = endPos + (progress * travelDistance);
+            }
+            const drawX = (canvasWidth - imgWidth) / 2;
+            ctx.drawImage(img, Math.round(drawX), Math.round(drawY), imgWidth, imgHeight);
+          } else if (settings.animationType !== 'scroll' && blockMeasurements.length > 0) {
+            const entriesCount = blockMeasurements.length;
+            const entryDuration = 1 / entriesCount;
+            const currentEntryIndex = Math.min(Math.floor(progress / entryDuration), entriesCount - 1);
+            const entryProgress = (progress % entryDuration) / entryDuration;
+            
+            let opacity = 1;
+            if (entryProgress < 0.1) opacity = entryProgress / 0.1;
+            else if (entryProgress > 0.9) opacity = (1 - entryProgress) / 0.1;
+
+            let scale = 1;
+            let blur = 0;
+            let offsetY = 0;
+
+            if (settings.animationType === 'zoom') {
+              scale = 0.9 + (entryProgress * 0.2);
+            } else if (settings.animationType === 'blur') {
+              if (entryProgress < 0.2) blur = (0.2 - entryProgress) * 100;
+              else if (entryProgress > 0.8) blur = (entryProgress - 0.8) * 100;
+            } else if (settings.animationType === 'slide') {
+              if (entryProgress < 0.2) offsetY = (0.2 - entryProgress) * 200;
+              else if (entryProgress > 0.8) offsetY = (0.8 - entryProgress) * 200;
+            } else if (settings.animationType === 'glitch') {
+              if (entryProgress < 0.1 || entryProgress > 0.9 || Math.random() > 0.95) {
+                offsetY = (Math.random() - 0.5) * 20;
+                opacity *= 0.8;
+              }
+            }
+
+            const block = blockMeasurements[currentEntryIndex];
+            const sY = block.top;
+            const sH = block.height;
+            const sW = captureWidth;
+            
+            const dW = imgWidth;
+            const dH = block.height;
+            const drawX = (canvasWidth - dW) / 2;
+            const dY = (canvasHeight - dH) / 2;
+
+            ctx.save();
+            if (blur > 0) ctx.filter = `blur(${blur}px)`;
+            ctx.globalAlpha = opacity;
+            ctx.translate(Math.round(drawX) + dW / 2, dY + dH / 2 + offsetY);
+            ctx.scale(scale, scale);
+            ctx.drawImage(img, 0, sY, sW, sH, -dW / 2, -dH / 2, dW, dH);
+            ctx.restore();
           }
-          const drawX = (canvasWidth - imgWidth) / 2;
-          ctx.drawImage(img, Math.round(drawX), Math.round(drawY), imgWidth, imgHeight);
-        } else if (settings.animationType !== 'scroll' && blockMeasurements.length > 0) {
-          const entriesCount = blockMeasurements.length;
-          const entryDuration = 1 / entriesCount;
-          const currentEntryIndex = Math.min(Math.floor(progress / entryDuration), entriesCount - 1);
-          const entryProgress = (progress % entryDuration) / entryDuration;
-          
-          let opacity = 1;
-          if (entryProgress < 0.1) opacity = entryProgress / 0.1;
-          else if (entryProgress > 0.9) opacity = (1 - entryProgress) / 0.1;
 
-          let scale = 1;
-          let blur = 0;
-          let offsetY = 0;
-
-          if (settings.animationType === 'zoom') {
-            scale = 0.9 + (entryProgress * 0.2);
-          } else if (settings.animationType === 'blur') {
-            if (entryProgress < 0.2) blur = (0.2 - entryProgress) * 100;
-            else if (entryProgress > 0.8) blur = (entryProgress - 0.8) * 100;
-          } else if (settings.animationType === 'slide') {
-            if (entryProgress < 0.2) offsetY = (0.2 - entryProgress) * 200;
-            else if (entryProgress > 0.8) offsetY = (0.8 - entryProgress) * 200;
-          } else if (settings.animationType === 'glitch') {
-            if (entryProgress < 0.1 || entryProgress > 0.9 || Math.random() > 0.95) {
-              offsetY = (Math.random() - 0.5) * 20;
-              opacity *= 0.8;
+          // Overlay effects in export
+          if (settings.showNoise) {
+            ctx.fillStyle = `rgba(255,255,255,${settings.noiseOpacity * 0.8})`;
+            for (let i = 0; i < 15000; i++) {
+              ctx.fillRect(Math.random() * canvasWidth, Math.random() * canvasHeight, 1, 1);
             }
           }
+          if (settings.showScanlines) {
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            for (let i = 0; i < canvasHeight; i += 2) {
+               ctx.fillRect(0, i, canvasWidth, 1);
+            }
+          }
+          if (settings.vignette > 0) {
+            const gradient = ctx.createRadialGradient(
+              canvasWidth / 2, canvasHeight / 2, 0,
+              canvasWidth / 2, canvasHeight / 2, Math.max(canvasWidth, canvasHeight) / 1.1
+            );
+            gradient.addColorStop(0, 'transparent');
+            gradient.addColorStop(1, `rgba(0,0,0,${settings.vignette * 0.95})`);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+          }
 
-          const block = blockMeasurements[currentEntryIndex];
-          const sY = block.top;
-          const sH = block.height;
-          const sW = captureWidth;
+          if (frame % 30 === 0) {
+            setExportProgress(Math.min(99, Math.round((frame / totalFrames) * 100)));
+          }
+
+          if (!active) return;
+
+          try {
+            if (videoEncoder.state !== 'configured') {
+              active = false;
+              return;
+            }
+            const videoFrame = new VideoFrame(canvas, { timestamp: (frame * 1000000) / fps });
+            videoEncoder.encode(videoFrame, { keyFrame: frame % 60 === 0 });
+            videoFrame.close();
+          } catch (encodeErr) {
+            console.warn("Synchronous encode / frame push failed:", encodeErr);
+            active = false;
+          }
+        };
+
+        for (let frame = 0; frame < totalFrames && active; frame++) {
+          await renderFrame(frame);
+          if (!active) break;
           
-          const dW = imgWidth;
-          const dH = block.height;
-          const drawX = (canvasWidth - dW) / 2;
-          const dY = (canvasHeight - dH) / 2;
-
-          ctx.save();
-          if (blur > 0) ctx.filter = `blur(${blur}px)`;
-          ctx.globalAlpha = opacity;
-          ctx.translate(Math.round(drawX) + dW / 2, dY + dH / 2 + offsetY);
-          ctx.scale(scale, scale);
-          ctx.drawImage(img, 0, sY, sW, sH, -dW / 2, -dH / 2, dW, dH);
-          ctx.restore();
-        }
-
-        // Overlay effects in export
-        if (settings.showNoise) {
-          ctx.fillStyle = `rgba(255,255,255,${settings.noiseOpacity * 0.8})`;
-          for (let i = 0; i < 15000; i++) {
-            ctx.fillRect(Math.random() * canvasWidth, Math.random() * canvasHeight, 1, 1);
+          if (videoEncoder.encodeQueueSize > 30) {
+            await new Promise(resQ => {
+              const check = () => {
+                if (videoEncoder.encodeQueueSize < 10 || !active) resQ(null);
+                else setTimeout(check, 50);
+              };
+              check();
+            });
+          }
+          if (frame % (isMobile ? 2 : 15) === 0) {
+            await new Promise(r => setTimeout(r, 0));
           }
         }
-        if (settings.showScanlines) {
-          ctx.fillStyle = 'rgba(0,0,0,0.3)';
-          for (let i = 0; i < canvasHeight; i += 2) {
-             ctx.fillRect(0, i, canvasWidth, 1);
+
+        if (active) {
+          setExportProgress(100);
+          await new Promise(resWait => setTimeout(resWait, 2400));
+
+          if (videoEncoder.state === 'configured') {
+            try {
+              await videoEncoder.flush();
+              muxer.finalize();
+
+              const { buffer } = muxer.target as ArrayBufferTarget;
+              const blob = new Blob([buffer], { type: 'video/webm' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.style.display = 'none';
+              a.href = url;
+              a.download = `${projectName.trim().replace(/\s+/g, '_').toUpperCase()}.webm`;
+              document.body.appendChild(a);
+              a.click();
+              
+              setTimeout(() => {
+                if (document.body.contains(a)) document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              }, 2000);
+
+              resolve({ success: true, isAlphaError: false });
+            } catch (finalErr) {
+              console.error("Flush or finalization failed:", finalErr);
+              resolve({ success: false, isAlphaError: false });
+            }
+          } else {
+            resolve({ success: false, isAlphaError: false });
           }
+        } else {
+          resolve({ success: false, isAlphaError: false });
         }
-        if (settings.vignette > 0) {
-          const gradient = ctx.createRadialGradient(
-            canvasWidth / 2, canvasHeight / 2, 0,
-            canvasWidth / 2, canvasHeight / 2, Math.max(canvasWidth, canvasHeight) / 1.1
-          );
-          gradient.addColorStop(0, 'transparent');
-          gradient.addColorStop(1, `rgba(0,0,0,${settings.vignette * 0.95})`);
-          ctx.fillStyle = gradient;
-          ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        } catch (err) {
+          console.error("Internal record error:", err);
+          restoreStyles();
+          resolve({ success: false, isAlphaError: false });
         }
+      });
+    };
 
-        if (frame % 30 === 0) {
-          setExportProgress(Math.min(99, Math.round((frame / totalFrames) * 100)));
-        }
-
-        const videoFrame = new VideoFrame(canvas, { timestamp: (frame * 1000000) / fps });
-        videoEncoder.encode(videoFrame, { keyFrame: frame % 60 === 0 });
-        videoFrame.close();
-      };
-
-      for (let frame = 0; frame < totalFrames && active; frame++) {
-        renderFrame(frame);
-        
-        // Safety: don't overwhelm the encoder queue
-        if (videoEncoder.encodeQueueSize > 30) {
-          await new Promise(resolve => {
-            const check = () => {
-              if (videoEncoder.encodeQueueSize < 10 || !active) resolve(null);
-              else setTimeout(check, 50);
-            };
-            check();
-          });
-        }
-
-        if (frame % (isMobile ? 2 : 15) === 0) {
-          await new Promise(r => setTimeout(r, 0));
-        }
+    try {
+      let result = await runEncode();
+      if (!result.success) {
+        alert("Ekspor gagal karena memori tidak cukup atau browser tidak mendukung. Coba perpendek durasi atau gunakan desktop.");
       }
-
-      if (active) {
-        setExportProgress(100);
-        // Make sure the 100% state is registered and let the film reel drop-bounce animation complete beautifully
-        await new Promise(resolve => setTimeout(resolve, 2400));
-
-        await videoEncoder.flush();
-        muxer.finalize();
-
-        const { buffer } = muxer.target as ArrayBufferTarget;
-        const blob = new Blob([buffer], { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `${projectName.trim().replace(/\s+/g, '_').toUpperCase()}.webm`;
-        document.body.appendChild(a);
-        a.click();
-        
-        setTimeout(() => {
-          if (document.body.contains(a)) document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }, 2000);
-      }
-
-      setIsExporting(false);
-      setExportProgress(0);
-    } catch (err) {
-      console.error("Export failed:", err);
-      alert("Ekspor gagal karena memori tidak cukup atau browser tidak mendukung. Coba perpendek durasi atau gunakan desktop.");
+    } catch (outerErr) {
+      console.error("Outer capture error:", outerErr);
+      alert("Terjadi kesalahan saat mengekspor.");
+    } finally {
       setIsExporting(false);
       setExportProgress(0);
     }
@@ -4286,13 +4331,10 @@ export default function App() {
                   </motion.button>
                   
                   <div className="flex flex-col items-center gap-2">
-                    <div className="text-[9px] text-zinc-700 uppercase tracking-[0.8em] font-black">{translations[lang].hero.scroll}</div>
-                    <motion.div 
-                      animate={{ y: [0, 5, 0] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    >
-                      <ChevronDown className="w-4 h-4 text-zinc-800" />
-                    </motion.div>
+                    <div className="flex items-center gap-2.5 text-[9px] text-zinc-700 font-black uppercase">
+                      <Mouse className="w-3.5 h-3.5 text-zinc-650 shrink-0 animate-bounce" />
+                      <span className="tracking-[0.6em] mr-[-0.6em]">{translations[lang].hero.scroll}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -4496,7 +4538,6 @@ export default function App() {
                                   { key: 'roleColor' as keyof ProjectSettings, labelId: 'Warna Posisi', labelEn: 'Role Color', value: settings.roleColor, isColor: true },
                                   { key: 'namesColor' as keyof ProjectSettings, labelId: 'Warna Nama', labelEn: 'Names Color', value: settings.namesColor, isColor: true },
                                   { key: 'bgColor' as keyof ProjectSettings, labelId: 'Warna Latar', labelEn: 'Backdrop Color', value: settings.bgColor, isColor: true },
-                                  { key: 'transparentBg' as keyof ProjectSettings, labelId: 'Latar Transparan', labelEn: 'Transparent Backdrop', value: settings.transparentBg ? 'YA' : 'TIDAK' },
                                   { key: 'marginBlock' as keyof ProjectSettings, labelId: 'Jarak Blok', labelEn: 'Block Spacing', value: `${settings.marginBlock}px` },
                                   { key: 'pairsGap' as keyof ProjectSettings, labelId: 'Jarak Pairs', labelEn: 'Pairs Gaps', value: `${settings.pairsGap}px` },
                                   { key: 'animationType' as keyof ProjectSettings, labelId: 'Tipe Animasi', labelEn: 'Animation Type', value: settings.activePreset !== 'default' ? `${settings.animationType} (${settings.activePreset})` : settings.animationType },
@@ -4805,7 +4846,7 @@ export default function App() {
                     transition={{ delay: 0.36, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                     className="border-t border-white/10 pt-6 relative z-10 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4 max-w-md w-full mx-auto pb-6"
                   >
-                    <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">ACTIVE_ENGINE_LANGUAGE //</span>
+                    <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">// SELECT LANGUAGE</span>
                     <div className="flex gap-2 w-full sm:w-auto">
                       {(['id', 'en'] as Lang[]).map((l) => (
                         <button
@@ -4994,7 +5035,7 @@ export default function App() {
                 {/* Sidebar Toggle Button (Desktop only) */}
                 <button 
                   onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                  className="hidden lg:flex sticky top-0 h-screen w-8 bg-zinc-900 border-l border-white/10 hover:bg-white hover:text-black transition-all items-center justify-center z-[250] group/toggle cursor-pointer shrink-0"
+                  className="hidden lg:flex sticky top-8 mt-8 mb-auto h-16 w-8 bg-[#111111] border border-white/10 hover:bg-white hover:text-black transition-all items-center justify-center z-[250] group/toggle cursor-pointer shrink-0 rounded-none hover:pr-1"
                   title={isSidebarCollapsed ? (lang === 'id' ? "Buka Sidebar (Q)" : "Expand Sidebar (Q)") : (lang === 'id' ? "Tutup Sidebar (Q)" : "Collapse Sidebar (Q)")}
                 >
                   {isSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
@@ -5023,6 +5064,7 @@ export default function App() {
                       placeholder={translations[lang].editor.namesPlaceholder}
                       className="w-full h-32 lg:h-40 bg-black border border-white p-4 lg:p-5 text-xs lg:text-[13px] font-medium focus:outline-none focus:ring-1 focus:ring-white rounded-none resize-none placeholder:text-zinc-700 font-mono transition-colors hover:border-white/40"
                     />
+
                     <button 
                       onClick={addRole}
                       disabled={!newRole.trim() || !newNames.trim()}
@@ -5113,14 +5155,14 @@ export default function App() {
                     </div>
 
                     <div className="space-y-6">
-                      <TuningControls settings={settings} setSettings={setSettings} lang={lang} />
+                      <TuningControls settings={settings} setSettings={setSettings} lang={lang} credits={credits} />
                     </div>
                   </div>
 
                   {/* Move Export here for Mobile */}
                   <div className="pt-6 border-t border-white/20">
                     <button 
-                      onClick={recordVideo}
+                      onClick={() => recordVideo()}
                       disabled={isExporting}
                       className="w-full bg-white text-black border border-white py-4 text-[12px] font-bold uppercase tracking-[0.3em] hover:bg-black hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-20 rounded-none shadow-[8px_8px_0px_rgba(255,255,255,0.05)] active:scale-[0.98]"
                     >
@@ -5249,12 +5291,9 @@ export default function App() {
                           height: DESIGN_BASE_HEIGHT,
                           transform: `scale(${previewScale})`,
                           transformOrigin: 'center center',
-                          backgroundColor: settings.transparentBg ? 'transparent' : settings.bgColor,
+                          backgroundColor: settings.bgColor,
                         }}
                       >
-                        {settings.transparentBg && (
-                          <div className="absolute inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-                        )}
                       
                         {/* Credits Container */}
                         {/* LUT / Color Filter */}
@@ -5651,7 +5690,7 @@ export default function App() {
                         {/* Export Button for Desktop */}
                         <div className="mt-10 pt-10 border-t border-white/10 flex justify-end">
                         <button 
-                            onClick={recordVideo}
+                            onClick={() => recordVideo()}
                             disabled={isExporting}
                             title={translations[lang].editor.renderExport}
                             className={cn(
@@ -5684,7 +5723,7 @@ export default function App() {
                     {/* Right Sidebar Toggle Button */}
                     <button 
                       onClick={() => setIsRightSidebarCollapsed(!isRightSidebarCollapsed)}
-                      className="hidden lg:flex sticky top-0 h-screen w-8 bg-zinc-900 border-r border-white/10 hover:bg-white hover:text-black transition-all items-center justify-center z-[250] group/toggle cursor-pointer shrink-0"
+                      className="hidden lg:flex sticky top-8 mt-8 mb-auto h-16 w-8 bg-[#111111] border border-white/10 hover:bg-white hover:text-black transition-all items-center justify-center z-[250] group/toggle cursor-pointer shrink-0 rounded-none hover:pl-1"
                       title={isRightSidebarCollapsed ? (lang === 'id' ? "Buka Panel Tuning (E)" : "Expand Tuning Panel (E)") : (lang === 'id' ? "Tutup Panel Tuning (E)" : "Collapse Tuning Panel (E)")}
                     >
                       {isRightSidebarCollapsed ? <ChevronLeft className="w-4 h-4 ml-[-2px]" /> : <ChevronRight className="w-4 h-4 ml-[-2px]" />}
@@ -5694,7 +5733,7 @@ export default function App() {
                       "flex-1 p-5 lg:p-10 space-y-12 transition-opacity duration-300 min-w-[388px]",
                       isRightSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"
                     )}>
-                      <TuningControls settings={settings} setSettings={setSettings} lang={lang} />
+                      <TuningControls settings={settings} setSettings={setSettings} lang={lang} credits={credits} />
                     </div>
                   </motion.aside>
                 </div>
@@ -5743,13 +5782,10 @@ export default function App() {
                       height: DESIGN_BASE_HEIGHT,
                       transform: `scale(${previewScale})`,
                       transformOrigin: 'center center',
-                      backgroundColor: settings.transparentBg ? 'transparent' : settings.bgColor,
+                      backgroundColor: settings.bgColor,
                     }}
                   >
                     {/* Reuse inner preview content */}
-                    {settings.transparentBg && (
-                      <div className="absolute inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-                    )}
 
                     {/* LUT / Color Filter */}
                     {settings.lut !== 'none' && (
