@@ -32,7 +32,8 @@ import {
   Redo,
   History,
   Clock,
-  Mouse
+  Mouse,
+  ArrowUpRight
 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder, useDragControls } from 'motion/react';
 import Lenis from 'lenis';
@@ -503,12 +504,15 @@ const TypingDescription = ({ lang }: { lang: Lang }) => {
   );
 };
 
-const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSection, isHidden, isScrolled, lenisRef }: { 
+const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSection, setActiveSection, view, setView, isHidden, isScrolled, lenisRef }: { 
   lang: Lang, 
   setLang: (l: Lang) => void, 
   isMobileMenuOpen: boolean, 
   setIsMobileMenuOpen: (v: boolean) => void,
   activeSection: string,
+  setActiveSection: (v: string) => void,
+  view: View,
+  setView: (v: View) => void,
   isHidden: boolean,
   isScrolled: boolean,
   lenisRef: React.RefObject<Lenis | null>
@@ -516,27 +520,39 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSe
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
+      const scrollOptions = {
+        duration: 1.5,
+        lock: true,
+        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        onComplete: () => {
+          ScrollTrigger.refresh();
+        }
+      };
       if (lenisRef.current) {
-        lenisRef.current.scrollTo(el, {
-          duration: 1.5,
-          lock: true,
-          easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t))
-        });
+        lenisRef.current.scrollTo(el, scrollOptions);
       } else {
         gsap.to(window, {
           duration: 1.2,
           scrollTo: { y: el, offsetY: 0 },
           ease: "power4.out",
-          overwrite: true
+          overwrite: true,
+          onComplete: () => {
+            ScrollTrigger.refresh();
+          }
         });
       }
     }
   };
 
   const getActiveLabel = () => {
+    if (view === 'editor') return lang === 'id' ? 'RUANG KERJA' : 'WORKSPACE';
+    
+    // If we just entered hero, activeSection might be 'editor' for a frame
     let item = activeSection;
-    if (activeSection === 'get-started') item = 'getStarted';
-    return translations[lang].nav[item as keyof typeof translations.id.nav] || activeSection.toUpperCase();
+    if (item === 'editor') item = 'home';
+    if (item === 'get-started') item = 'getStarted';
+    
+    return translations[lang].nav[item as keyof typeof translations.id.nav] || item.toUpperCase();
   };
 
   return (
@@ -556,10 +572,10 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSe
         )}
       >
         {/* UNIFIED COMPACT PILL LAYOUT FOR ALL SCREEN BREAKPOINTS */}
-        <div className="flex items-center justify-between w-[230px] sm:w-[280px] md:w-[320px] h-9 sm:h-10 px-2 pl-3">
-          <div className="flex items-center gap-2 overflow-hidden select-none">
+        <div className="flex items-center justify-between w-[220px] xs:w-[250px] sm:w-[300px] md:w-[350px] h-9 sm:h-10 px-2 pl-3">
+          <div className="flex items-center gap-2 overflow-hidden select-none flex-1 mr-2">
             <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse shrink-0" />
-            <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.25em] text-white truncate max-w-[110px] sm:max-w-[160px]">
+            <span className="text-[8px] xs:text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.25em] text-white truncate">
               {getActiveLabel()}
             </span>
           </div>
@@ -613,7 +629,8 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSe
             <div className="flex-1 flex flex-col justify-center py-8 relative z-10">
               <div className="space-y-3 sm:space-y-5 max-w-md w-full mx-auto">
                 {['home', 'about', 'documentation', 'faq', 'getStarted'].map((item, idx) => {
-                  const isActive = activeSection === (item === 'getStarted' ? 'get-started' : item);
+                  const targetId = item === 'getStarted' ? 'get-started' : item;
+                  const isActive = view === 'hero' && activeSection === targetId;
                   return (
                     <motion.div
                       key={item}
@@ -624,15 +641,38 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSe
                       <button
                         onClick={() => {
                           setIsMobileMenuOpen(false);
-                          const targetId = item === 'getStarted' ? 'get-started' : item;
-                          if (item === 'home') {
-                            if (lenisRef.current) {
-                              lenisRef.current.scrollTo(0, { duration: 1.5 });
-                            } else {
-                              gsap.to(window, { duration: 1.2, scrollTo: 0, ease: "power4.out", overwrite: true });
+                          if (view === 'editor') {
+                            if (item === 'home') {
+                              // Hard refresh as requested for "clean state" when returning to home
+                              window.location.href = window.location.origin;
+                              return;
                             }
+                            
+                            setView('hero');
+                            // Set target immediately to avoid "Home" flicker
+                            const newSection = targetId === 'get-started' ? 'get-started' : targetId;
+                            setActiveSection(newSection);
+                            
+                            // Small delay to allow View change before scrolling
+                            setTimeout(() => {
+                              if (item === 'home') {
+                                window.scrollTo(0, 0);
+                                setActiveSection('home');
+                              } else {
+                                scrollTo(targetId);
+                              }
+                              ScrollTrigger.refresh();
+                            }, 100);
                           } else {
-                            scrollTo(targetId);
+                            if (item === 'home') {
+                              if (lenisRef.current) {
+                                lenisRef.current.scrollTo(0, { duration: 1.5 });
+                              } else {
+                                gsap.to(window, { duration: 1.2, scrollTo: 0, ease: "power4.out", overwrite: true });
+                              }
+                            } else {
+                              scrollTo(targetId);
+                            }
                           }
                         }}
                         className={cn(
@@ -2950,7 +2990,7 @@ export default function App() {
     }, 1200);
   };
   const [isClapping, setIsClapping] = useState(false);
-  const [activeSection, setActiveSection] = useState('home');
+  const [activeSection, setActiveSection] = useState(() => view === 'editor' ? 'editor' : 'home');
   const [isScrolled, setIsScrolled] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
 
@@ -2958,71 +2998,139 @@ export default function App() {
     setIsClapping(true);
     setTimeout(() => {
       setView('editor');
+      setActiveSection('editor');
       window.scrollTo({ top: 0 });
-    }, 950); // Slam/clap moment (0.42 * 2200ms)
+    }, 950); 
     setTimeout(() => {
       setIsClapping(false);
-    }, 2200); // Animation completion (2.2 seconds)
+    }, 2200); 
   };
 
   useGSAP(() => {
-    let ticking = false;
     const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          const currentScrollY = window.scrollY;
-          const diff = currentScrollY - lastScrollY.current;
-          
-          if (currentScrollY > 100) {
-            if (diff > 10) {
-              setIsHidden(true);
-            } else if (diff < -10) {
-              setIsHidden(false);
-            }
-          } else {
-            setIsHidden(false);
-          }
-          setIsScrolled(currentScrollY > 50);
-          lastScrollY.current = currentScrollY;
-          ticking = false;
-        });
-        ticking = true;
+      const currentScrollY = window.scrollY;
+      setIsScrolled(currentScrollY > 50);
+      
+      const diff = currentScrollY - lastScrollY.current;
+      if (Math.abs(diff) > 5) {
+        if (diff > 10 && currentScrollY > 200) {
+          setIsHidden(true);
+        } else if (diff < -10) {
+          setIsHidden(false);
+        }
+      } else if (currentScrollY <= 50) {
+        setIsHidden(false);
       }
+
+      // Sync active section to home if at very top
+      if (currentScrollY < 10 && view === 'hero') {
+        setActiveSection('home');
+      }
+
+      lastScrollY.current = currentScrollY;
     };
     
     window.addEventListener('scroll', handleScroll, { passive: true });
-
+    
     // Precise section tracking with ScrollTrigger
     if (view === 'hero') {
       const sections = [
+        { id: 'home', target: 'home' },
         { id: 'about', target: 'about' },
         { id: 'documentation', target: 'documentation' },
         { id: 'faq', target: 'faq' },
         { id: 'get-started', target: 'get-started' }
       ];
 
+      const triggers: ScrollTrigger[] = [];
+
       sections.forEach(section => {
-        ScrollTrigger.create({
+        const st = ScrollTrigger.create({
           trigger: `#${section.target}`,
-          start: "top 60%",
-          end: "bottom 60%",
-          onEnter: () => setActiveSection(section.id),
-          onEnterBack: () => setActiveSection(section.id),
+          start: "top center", 
+          end: "bottom center",
+          onToggle: (self) => {
+            if (self.isActive && view === 'hero') {
+              setActiveSection(section.id);
+            }
+          },
+          onEnter: () => { if (view === 'hero') setActiveSection(section.id); },
+          onEnterBack: () => { if (view === 'hero') setActiveSection(section.id); },
+          onUpdate: (self) => {
+            if (self.isActive && view === 'hero') {
+              // Set value directly; state hook is stable and handles equality checks internally
+              setActiveSection(section.id);
+            }
+          },
+          fastScrollEnd: true,
         });
+        triggers.push(st);
       });
 
-      // Special case for home (top of page)
-      ScrollTrigger.create({
-        start: 0,
-        end: 200,
-        onEnter: () => setActiveSection('home'),
-        onEnterBack: () => setActiveSection('home'),
-      });
+      // Immediate check based on current scroll position
+      // Using a staggered approach to ensure DOM is ready and measurements are correct
+      const timer1 = setTimeout(() => {
+        ScrollTrigger.refresh();
+      }, 50);
+
+      const timer2 = setTimeout(() => {
+        ScrollTrigger.refresh();
+        const findActive = () => {
+          // Check triggers first
+          const activeST = triggers.find(st => st.isActive);
+          if (activeST && activeST.vars.trigger) {
+            const id = (activeST.vars.trigger as string).replace('#', '');
+            const found = sections.find(s => s.target === id);
+            if (found) return found.id;
+          }
+
+          // Fallback to manual check ONLY if window is not at the very top
+          if (window.scrollY < 20) return 'home';
+
+          const scrollPos = window.scrollY + window.innerHeight / 3; // Shifted up for better accuracy
+          let closest = sections[0].id;
+          let minDiff = Infinity;
+
+          sections.forEach(s => {
+            const el = document.getElementById(s.target);
+            if (el) {
+              const rect = el.getBoundingClientRect();
+              const absoluteTop = rect.top + window.scrollY;
+              // Compare scroll center with section center
+              const diff = Math.abs(scrollPos - (absoluteTop + rect.height / 2));
+              if (diff < minDiff) {
+                minDiff = diff;
+                closest = s.id;
+              }
+            }
+          });
+          return closest;
+        };
+
+        const currentActiveId = findActive();
+        if (currentActiveId && view === 'hero') {
+          setActiveSection(currentActiveId);
+        }
+      }, 300);
+
+      const timer3 = setTimeout(() => {
+        ScrollTrigger.refresh();
+      }, 1000);
+
+      return () => {
+        window.removeEventListener('scroll', handleScroll);
+        triggers.forEach(t => t.kill());
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+        clearTimeout(timer3);
+      };
+    } else {
+      setActiveSection('editor');
+      return () => {
+        window.removeEventListener('scroll', handleScroll);
+        ScrollTrigger.getAll().forEach(t => t.kill());
+      };
     }
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
   }, { dependencies: [view] });
 
   const lastScrollY = useRef(0);
@@ -3063,7 +3171,7 @@ export default function App() {
       // Refresh ScrollTrigger after a slight delay to ensure layout is ready
       const timeout = setTimeout(() => {
         ScrollTrigger.refresh();
-      }, 1000);
+      }, 50); // Faster refresh for real-time feel
 
       return () => {
         clearTimeout(timeout);
@@ -3090,7 +3198,6 @@ export default function App() {
   const [showInfo, setShowInfo] = useState(true);
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isNavSubOpen, setIsNavSubOpen] = useState(false);
   const [showSaveToast, setShowSaveToast] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [credits, setCredits] = useState<CreditEntry[]>(() => {
@@ -4208,6 +4315,9 @@ export default function App() {
           isMobileMenuOpen={isMobileMenuOpen} 
           setIsMobileMenuOpen={setIsMobileMenuOpen}
           activeSection={activeSection}
+          setActiveSection={setActiveSection}
+          view={view}
+          setView={setView}
           isHidden={isHidden}
           isScrolled={isScrolled}
           lenisRef={lenisRef}
@@ -4359,7 +4469,11 @@ export default function App() {
             <header className={cn("h-16 md:h-20 border-b border-white flex items-center justify-between px-4 md:px-8 bg-black flex-shrink-0 relative", (isHistoryOpen || isMenuOpen) ? "z-[11000]" : "z-[100]")}>
               <div 
                 className="flex items-center gap-4 cursor-pointer group"
-                onClick={() => setView('hero')}
+                onClick={() => {
+                  // Logo click in workspace acts as a "Home" button
+                  // Hard refresh requested for returning home to ensure full reset
+                  window.location.href = window.location.origin;
+                }}
               >
                 <img src="/daftarkru.png" alt="DaftarKru" className="h-5 md:h-10 w-auto" />
               </div>
@@ -4667,7 +4781,7 @@ export default function App() {
                   <div className="flex-1 flex flex-col justify-center py-8 relative z-10">
                     <div className="space-y-4 sm:space-y-6 max-w-md w-full mx-auto">
                       
-                      {/* 01 // NAVIGASI */}
+                      {/* 01 // BERANDA */}
                       <motion.div 
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -4675,68 +4789,35 @@ export default function App() {
                         className="border-b border-white/5 pb-2"
                       >
                         <button
-                          onClick={() => setIsNavSubOpen(!isNavSubOpen)}
-                          className="w-full text-left font-black tracking-widest uppercase transition-all duration-300 py-3 sm:py-4 flex items-center justify-between bg-transparent text-white border-none cursor-pointer"
+                          onClick={() => {
+                            if (view === 'editor') {
+                              // User requested to "refresh" the page when returning from workspace to home to ensure clean state
+                              window.location.href = window.location.origin;
+                              return;
+                            }
+                            
+                            setIsMenuOpen(false);
+                            window.scrollTo(0, 0);
+                            setActiveSection('home');
+                            
+                            setTimeout(() => {
+                              window.scrollTo(0, 0);
+                              ScrollTrigger.refresh();
+                              setActiveSection('home');
+                            }, 100);
+                          }}
+                          className="w-full text-left font-black tracking-widest uppercase transition-all duration-300 py-3 sm:py-4 flex items-center justify-between bg-transparent text-white border-none cursor-pointer group"
                         >
                           <div className="flex items-center gap-3 sm:gap-4">
                             <span className="font-mono text-[9px] sm:text-[10px] text-zinc-600">01 //</span>
-                            <span className="text-base sm:text-lg md:text-xl lg:text-2xl tracking-[0.25em]">
-                              {lang === 'id' ? "NAVIGASI" : "NAVIGATION"}
+                            <span className="text-base sm:text-lg md:text-xl lg:text-2xl tracking-[0.25em] group-hover:text-zinc-300 transition-colors">
+                              {lang === 'id' ? "BERANDA" : "HOME"}
                             </span>
                           </div>
-                          <div className="text-zinc-300 font-mono text-xs sm:text-sm">
-                            {isNavSubOpen ? "[-]" : "[+]"}
+                          <div className="text-zinc-500 group-hover:text-white transition-colors">
+                             <ArrowUpRight size={18} className="rotate-45 sm:scale-125" />
                           </div>
                         </button>
-
-                        <AnimatePresence>
-                          {isNavSubOpen && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                              className="pl-6 sm:pl-8 border-l border-white/5 mt-2 space-y-2 overflow-hidden"
-                            >
-                              {[
-                                { key: 'home', label: translations[lang].nav.home },
-                                { key: 'about', label: translations[lang].nav.about },
-                                { key: 'documentation', label: translations[lang].nav.documentation },
-                                { key: 'faq', label: translations[lang].nav.faq },
-                                { key: 'getStarted', label: translations[lang].nav.getStarted }
-                              ].map((subItem) => {
-                                const isActive = activeSection === (subItem.key === 'getStarted' ? 'get-started' : subItem.key);
-                                return (
-                                  <button
-                                    key={subItem.key}
-                                    onClick={() => {
-                                      setIsMenuOpen(false);
-                                      setView('hero');
-                                      const targetId = subItem.key === 'getStarted' ? 'get-started' : subItem.key;
-                                      setTimeout(() => {
-                                        if (subItem.key === 'home') {
-                                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                                        } else {
-                                          const el = document.getElementById(targetId);
-                                          if (el) {
-                                            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                          }
-                                        }
-                                      }, 400);
-                                    }}
-                                    className={cn(
-                                      "w-full text-left font-black tracking-widest uppercase transition-all duration-200 py-2 sm:py-3 flex items-center justify-between group bg-transparent border-none cursor-pointer",
-                                      isActive ? "text-white" : "text-zinc-500 hover:text-zinc-300"
-                                    )}
-                                  >
-                                    <span className="text-xs sm:text-sm tracking-[0.2em]">↳ {subItem.label}</span>
-                                    {isActive && <div className="w-1.5 h-1.5 bg-white shrink-0" />}
-                                  </button>
-                                );
-                              })}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
                       </motion.div>
 
                       {/* 02 // FITUR CHANGE PROJECT NAME */}
