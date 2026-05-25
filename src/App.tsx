@@ -725,22 +725,55 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSe
   );
 };
 
+const FilmFrame = ({ ke }: { ke: number; key?: string }) => (
+  <div className="w-[280px] h-[90px] bg-zinc-950 border-y border-zinc-800 flex flex-col justify-between p-1.5 relative shrink-0 select-none">
+    {/* Sprocket Holes / Perforations at Top */}
+    <div className="flex justify-between w-full px-1">
+      {[...Array(8)].map((_, p) => (
+        <div key={p} className="w-3 h-1.5 bg-black border border-zinc-900 rounded-[1px]" />
+      ))}
+    </div>
+
+    {/* Film Frame Content Panel */}
+    <div className="flex-1 my-1 mx-0.5 bg-black border border-zinc-900/60 flex flex-col justify-between py-1 px-3 relative overflow-hidden">
+      <div className="flex justify-between items-center w-full">
+        <span className="text-[7px] font-mono tracking-[0.2em] text-zinc-600 font-bold uppercase">
+          KODAK 400TX
+        </span>
+        <span className="text-[7px] font-mono text-zinc-600">
+          24fps
+        </span>
+      </div>
+
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[10px] font-extrabold tracking-[0.25em] text-zinc-500 uppercase leading-none italic select-none">
+          {ke % 2 === 0 ? "DAFTARKRU" : "CINE LABS"}
+        </span>
+        <div className="flex gap-1 items-end">
+          <span className="text-[8px] font-mono text-zinc-650 bg-zinc-955 px-1 py-0.5 leading-none">
+            {100 + ke * 3}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex justify-between items-center w-full text-[6px] font-mono text-zinc-600">
+        <span>SEC {ke + 1}</span>
+        <span>00:03:{10 + ke}</span>
+      </div>
+    </div>
+
+    {/* Sprocket Holes / Perforations at Bottom */}
+    <div className="flex justify-between w-full px-1">
+      {[...Array(8)].map((_, p) => (
+        <div key={p} className="w-3 h-1.5 bg-black border border-zinc-900 rounded-[1px]" />
+      ))}
+    </div>
+  </div>
+);
+
 const FilmStrip = ({ speed = 40, reverse = false, rotate = -4, yOffset = "25%", opacity = 0.12 }: { speed?: number, reverse?: boolean, rotate?: number, yOffset?: string, opacity?: number }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  
-  useGSAP(() => {
-    if (!containerRef.current) return;
-    
-    gsap.to(containerRef.current, {
-      x: reverse ? -912 : 912,
-      duration: speed,
-      repeat: -1,
-      ease: "none",
-      // Optimization: use hardware acceleration and lazy loading
-      force3D: true,
-      lazy: true,
-    });
-  }, { scope: containerRef, dependencies: [speed, reverse] });
+  const items = [...Array(10)];
+  const animationName = reverse ? 'marquee-right' : 'marquee-left';
 
   return (
     <div 
@@ -750,91 +783,119 @@ const FilmStrip = ({ speed = 40, reverse = false, rotate = -4, yOffset = "25%", 
         top: yOffset,
         height: '110px',
         opacity: opacity,
-        willChange: 'transform',
       }}
     >
-      <div
-        ref={containerRef}
-        className="flex whitespace-nowrap gap-6"
-        style={{ 
-          width: 'max-content',
-          willChange: 'transform',
-          // Offset initial position to handle seamless loop
-          transform: `translateX(${reverse ? 0 : -912}px)`,
-        }}
-      >
-        {[...Array(9)].map((_, i) => (
-          <div key={i} className="flex gap-6">
-            {/* Film frame */}
-            <div className="w-[280px] h-[90px] bg-zinc-950 border-y border-zinc-800 flex flex-col justify-between p-1.5 relative">
-              {/* Sprocket Holes / Perforations at Top */}
-              <div className="flex justify-between w-full px-1">
-                {[...Array(8)].map((_, p) => (
-                  <div key={p} className="w-3 h-1.5 bg-black border border-zinc-900 rounded-[1px]" />
-                ))}
-              </div>
-
-              {/* Film Frame Content Panel */}
-              <div className="flex-1 my-1 mx-0.5 bg-black border border-zinc-900/60 flex flex-col justify-between py-1 px-3 relative overflow-hidden">
-                <div className="flex justify-between items-center w-full">
-                  <span className="text-[7px] font-mono tracking-[0.2em] text-zinc-650 font-bold uppercase">
-                    KODAK 400TX
-                  </span>
-                  <span className="text-[7px] font-mono text-zinc-650">
-                    24fps
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] font-extrabold tracking-[0.25em] text-zinc-500 uppercase leading-none italic select-none">
-                    {i % 2 === 0 ? "DAFTARKRU" : "CINE LABS"}
-                  </span>
-                  <div className="flex gap-1 items-end">
-                    <span className="text-[8px] font-mono text-zinc-600 bg-zinc-955 px-1 py-0.5 leading-none">
-                      {100 + i * 3}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center w-full text-[6px] font-mono text-zinc-600">
-                  <span>SEC {i + 1}</span>
-                  <span>00:03:{10 + i}</span>
-                </div>
-              </div>
-
-              {/* Sprocket Holes / Perforations at Bottom */}
-              <div className="flex justify-between w-full px-1">
-                {[...Array(8)].map((_, p) => (
-                  <div key={p} className="w-3 h-1.5 bg-black border border-zinc-900 rounded-[1px]" />
-                ))}
-              </div>
-            </div>
-          </div>
-        ))}
+      <style>{`
+        @keyframes marquee-left {
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(-50%, 0, 0); }
+        }
+        @keyframes marquee-right {
+          0% { transform: translate3d(-50%, 0, 0); }
+          100% { transform: translate3d(0, 0, 0); }
+        }
+        .filmstrip-track {
+          display: flex;
+          gap: 24px;
+          padding-right: 24px;
+          flex-shrink: 0;
+          animation: ${animationName} ${speed}s linear infinite;
+        }
+      `}</style>
+      
+      <div className="flex whitespace-nowrap w-max">
+        <div className="filmstrip-track">
+          {items.map((_, i) => (
+            <FilmFrame ke={i} key={`group1-${i}`} />
+          ))}
+        </div>
+        <div className="filmstrip-track">
+          {items.map((_, i) => (
+            <FilmFrame ke={i} key={`group2-${i}`} />
+          ))}
+        </div>
       </div>
     </div>
   );
 };
 
-const BackgroundElements = ({ hideExtra = false }: { hideExtra?: boolean }) => {
+const BackgroundElements = ({ hideExtra = false, showPerspectiveGrid = false }: { hideExtra?: boolean; showPerspectiveGrid?: boolean }) => {
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-[#020202]">
       {!hideExtra && (
         <>
           {/* Film Strips Scrolling endlessly diagonally */}
-          <FilmStrip speed={45} reverse={false} rotate={-3} yOffset="15%" opacity={0.12} />
-          <FilmStrip speed={55} reverse={true} rotate={4} yOffset="65%" opacity={0.10} />
+          {/* Increase opacity for the top tape on Beranda/showPerspectiveGrid, otherwise keep transparent default */}
+          <FilmStrip 
+            speed={40} 
+            reverse={showPerspectiveGrid ? true : false} 
+            rotate={-2.5} 
+            yOffset="15%" 
+            opacity={showPerspectiveGrid ? 0.35 : 0.12} 
+          />
+          {/* Hide bottom diagonal tape on Beranda/showPerspectiveGrid as requested */}
+          {!showPerspectiveGrid && (
+            <FilmStrip speed={55} reverse={true} rotate={4} yOffset="65%" opacity={0.10} />
+          )}
         </>
       )}
 
-      {/* Static Tech Grid - Reduced opacity and simplified */}
-      <div 
-        className="absolute inset-0 opacity-[0.05]" 
-        style={{ 
-          backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)',
-          backgroundSize: '80px 80px',
-        }} 
-      />
+      {showPerspectiveGrid ? (
+        /* Perspective Grid: Animating grid with 3D perspective, shrinking to vanishing point */
+        <div 
+          className="absolute inset-0 pointer-events-none overflow-hidden" 
+          style={{ 
+            perspective: '450px', 
+            perspectiveOrigin: '50% 34%' 
+          }}
+        >
+          <style>{`
+            @keyframes grid-scroll-3d {
+              0% {
+                transform: rotateX(74deg) translateY(0px) translateZ(0);
+              }
+              100% {
+                transform: rotateX(74deg) translateY(36px) translateZ(0);
+              }
+            }
+            .animate-perspective-grid-3d {
+              animation: grid-scroll-3d 6s linear infinite;
+              will-change: transform;
+              backface-visibility: hidden;
+              -webkit-backface-visibility: hidden;
+            }
+          `}</style>
+          
+          {/* Glow behind the vanishing point/horizon */}
+          <div className="absolute top-[35%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[300px] bg-gradient-to-b from-white/12 to-transparent blur-[95px] rounded-full pointer-events-none opacity-85" />
+          
+          {/* 3D Perspective Plane */}
+          <div 
+            className="absolute top-[34%] left-[-50%] w-[150%] h-[120%] origin-top animate-perspective-grid-3d"
+            style={{
+              backgroundImage: `
+                linear-gradient(to right, rgba(255, 255, 255, 0.16) 1.5px, transparent 1.5px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.16) 1.5px, transparent 1.5px)
+              `,
+              backgroundSize: '36px 36px',
+              maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.1) 80%, rgba(0,0,0,0) 100%)',
+              WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.1) 80%, rgba(0,0,0,0) 100%)',
+            }}
+          />
+
+          {/* Cinematic Horizon Accent Line */}
+          <div className="absolute top-[34%] inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+        </div>
+      ) : (
+        /* Static Tech Grid - Reduced opacity and simplified for normal section flow */
+        <div 
+          className="absolute inset-0 opacity-[0.05]" 
+          style={{ 
+            backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)',
+            backgroundSize: '80px 80px',
+          }} 
+        />
+      )}
 
       {/* Fluid Animated Blobs */}
       <div className="absolute top-[20%] right-[10%] w-[400px] h-[400px] rounded-full bg-white/[0.03] blur-[100px]" />
@@ -861,13 +922,13 @@ const ClapperboardTransition = ({ isOpen }: { isOpen: boolean }) => {
   return (
     <div 
       className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-auto select-none overflow-hidden"
-      style={{ perspective: "800px" }}
+      style={{ perspective: "1000px" }}
     >
       {/* Background Dimmer and Blur Overlay */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: [0, 0.95, 0.95, 0] }}
-        transition={{ times: [0, 0.15, 0.85, 1], duration: 2.2, ease: "easeInOut" }}
+        transition={{ times: [0, 0.15, 0.85, 1], duration: 2.0, ease: "easeInOut" }}
         className="absolute inset-0 bg-black/95 backdrop-blur-md"
       />
 
@@ -876,8 +937,8 @@ const ClapperboardTransition = ({ isOpen }: { isOpen: boolean }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: [0, 0, 1, 0] }}
         transition={{ 
-          times: [0, 0.418, 0.42, 0.55], 
-          duration: 2.2, 
+          times: [0, 0.378, 0.38, 0.52], 
+          duration: 2.0, 
           ease: "linear" 
         }}
         className="absolute inset-0 bg-white pointer-events-none z-[100] mix-blend-plus-lighter"
@@ -885,24 +946,24 @@ const ClapperboardTransition = ({ isOpen }: { isOpen: boolean }) => {
 
       {/* Center 3D container */}
       <motion.div
-        initial={{ scale: 0.35, rotateY: 65, rotateX: 45, rotate: -35, y: 250, opacity: 0 }}
+        initial={{ scale: 0.65, rotateY: 42, rotateX: 24, rotate: -15, y: 160, opacity: 0 }}
         animate={{ 
-          scale: [0.35, 1.1, 1, 0.7],
-          rotateY: [65, 20, 12, -85],
-          rotateX: [45, 25, 15, -45],
-          rotate: [-35, -8, 8, 35],
-          y: [250, 0, 0, -250],
-          opacity: [0, 1, 1, 0]
+          scale: [0.65, 1.0, 1.15, 2.2, 5.5],
+          rotateY: [42, 18, 0, 0, 0],
+          rotateX: [24, 10, 0, 0, 0],
+          rotate: [-15, -6, 0, 0, 0],
+          y: [160, 20, 0, 0, 0],
+          opacity: [0, 1, 1, 1, 0]
         }}
         transition={{ 
-          times: [0, 0.35, 0.75, 1], 
-          duration: 2.2, 
-          ease: [0.16, 1, 0.3, 1] 
+          times: [0, 0.22, 0.38, 0.70, 1.0], 
+          duration: 2.0, 
+          ease: [0.25, 1, 0.4, 1] 
         }}
         className="relative flex flex-col items-center justify-center pt-12 pb-6 px-10 w-[280px] sm:w-[420px] aspect-[4/3]"
         style={{ transformStyle: "preserve-3d" }}
       >
-        <div className="relative flex flex-col w-full bg-zinc-950 border-2 border-zinc-700 shadow-[0_30px_60px_rgba(0,0,0,0.8)] rounded-lg overflow-hidden flex-1 p-3 sm:p-4 font-mono select-none">
+        <div className="relative flex flex-col w-full bg-zinc-950 border-2 border-zinc-700 shadow-[0_30px_60px_rgba(0,0,0,0.8)] rounded-none overflow-visible flex-1 p-3 sm:p-4 font-mono select-none">
           {/* Top hinge block fixed */}
           <div className="w-full h-6 sm:h-8 bg-[repeating-linear-gradient(-45deg,#000,#000_15px,#fff_15px,#fff_30px)] border-b border-zinc-800" />
 
@@ -911,11 +972,11 @@ const ClapperboardTransition = ({ isOpen }: { isOpen: boolean }) => {
             initial={{ rotate: -38 }}
             animate={{ rotate: [-38, -38, 0, 0, -20] }}
             transition={{
-              times: [0, 0.25, 0.42, 0.8, 1],
-              duration: 2.2,
+              times: [0, 0.22, 0.38, 0.82, 1],
+              duration: 2.0,
               ease: "easeInOut"
             }}
-            className="absolute h-6 sm:h-8 bg-[repeating-linear-gradient(-45deg,#000,#000_15px,#fff_15px,#fff_30px)] border-b-2 border-zinc-800 origin-left-bottom z-20"
+            className="absolute h-6 sm:h-8 bg-[repeating-linear-gradient(-45deg,#000,#000_15px,#fff_15px,#fff_30px)] border-b-2 border-zinc-800 origin-left-bottom z-20 rounded-none"
             style={{ 
               transformOrigin: "0% 100%",
               top: "12px",
@@ -924,43 +985,98 @@ const ClapperboardTransition = ({ isOpen }: { isOpen: boolean }) => {
             }}
           />
 
-          {/* Chalk Writing Section */}
-          <div className="flex-1 mt-2 sm:mt-3 border border-zinc-800 p-2 sm:p-3 flex flex-col justify-between text-[8px] sm:text-xs text-zinc-400 uppercase font-bold tracking-wider space-y-1 sm:space-y-2">
-            
-            {/* Spec lines */}
-            <div className="flex justify-between border-b border-zinc-900 w-full pb-1 items-center">
-              <span className="text-[6px] sm:text-[9px] text-zinc-500">PROD.</span>
-              <span className="text-white text-[7px] sm:text-[11px] font-black tracking-widest text-right">DAFTARKRU ENGINE</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 border-b border-zinc-900 pb-1">
-              <div className="flex flex-col">
-                <span className="text-[6px] sm:text-[9px] text-zinc-500 leading-none mb-0.5 sm:mb-1">SCENE</span>
-                <span className="text-white text-[10px] sm:text-sm font-black italic">A-01</span>
+          {/* Workspace Page Miniature Preview Representation */}
+          <div className="flex-1 mt-2 sm:mt-3 border border-zinc-850 p-1.5 sm:p-2 bg-black rounded-none flex flex-col justify-between overflow-hidden relative select-none">
+            {/* 1. Header of Miniature Workspace */}
+            <div className="flex justify-between items-center border-b border-zinc-900 pb-1 mb-1 font-sans">
+              <div className="flex items-center gap-1">
+                <span className="text-[5px] sm:text-[6px] font-black tracking-wider text-white">DK</span>
+                <span className="text-[5px] sm:text-[6px] font-black tracking-widest text-zinc-300">DAFTARKRU</span>
+                <span className="text-[4px] sm:text-[5px] text-zinc-500 font-bold uppercase tracking-wider">ENGINE</span>
               </div>
-              <div className="flex flex-col border-l border-zinc-900 pl-2">
-                <span className="text-[6px] sm:text-[9px] text-zinc-500 leading-none mb-0.5 sm:mb-1">TAKE</span>
-                <span className="text-white text-[10px] sm:text-sm font-black italic">01</span>
+              <div className="flex items-center gap-1.5 bg-zinc-900 px-1 py-0.5 rounded-none border border-zinc-800">
+                <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[4px] sm:text-[5px] text-zinc-400 font-bold tracking-widest">RIWAYAT</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 border-b border-zinc-900 pb-1">
-              <div className="flex flex-col">
-                <span className="text-[6px] sm:text-[9px] text-zinc-500 leading-none mb-0.5 sm:mb-1">DIRECTOR</span>
-                <span className="text-white font-extrabold text-[7px] sm:text-[10px] leading-tight">AFGAN AL-FANANY</span>
+            {/* 2. Interactive Column Grid */}
+            <div className="flex-1 grid grid-cols-5 gap-1.5 overflow-hidden font-sans">
+              {/* Left Column: Input Credit Section */}
+              <div className="col-span-1.5 flex flex-col gap-1 border-r border-zinc-900/60 pr-1 select-none">
+                <span className="text-[3.5px] sm:text-[4.5px] text-zinc-500 font-bold tracking-wider uppercase">INPUT KREDIT</span>
+                {/* Input 1 */}
+                <div className="h-2.5 bg-zinc-950 border border-zinc-900 rounded-none p-0.5 flex items-center">
+                  <div className="w-full h-[1px] bg-zinc-800" />
+                </div>
+                {/* Input 2 */}
+                <div className="h-5 bg-zinc-950 border border-zinc-900 rounded-none p-0.5 flex flex-col gap-0.5">
+                  <div className="w-3/4 h-[1px] bg-zinc-800" />
+                  <div className="w-1/2 h-[1px] bg-zinc-800" />
+                </div>
+                {/* Tape track block representation */}
+                <div className="mt-auto border border-zinc-900 rounded-none p-0.5 bg-zinc-950">
+                  <div className="flex justify-between items-center gap-0.5">
+                    <div className="w-1.5 h-1 bg-zinc-800 rounded-full" />
+                    <div className="w-3 h-1 bg-zinc-500 rounded-full" />
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-col border-l border-zinc-900 pl-2">
-                <span className="text-[6px] sm:text-[9px] text-zinc-500 leading-none mb-0.5 sm:mb-1">CAMERA</span>
-                <span className="text-white font-extrabold text-[7px] sm:text-[10px] leading-tight text-right sm:text-left">CINE ULTRA</span>
+
+              {/* Center Column: Big Screen Preview */}
+              <div className="col-span-2 flex flex-col gap-1">
+                {/* Monitor Frame */}
+                <div className="flex-1 bg-zinc-950 border border-zinc-800 rounded-none p-1 flex flex-col items-center justify-center relative overflow-hidden">
+                  {/* Outer corner marks to look high-tech and authentic */}
+                  <div className="absolute top-0.5 right-0.5 w-[2.5px] h-[2.5px] border-t border-r border-zinc-700" />
+                  <div className="absolute bottom-0.5 left-0.5 w-[2.5px] h-[2.5px] border-b border-l border-zinc-700" />
+                  
+                  {/* Posisi Title */}
+                  <span className="text-[3.5px] sm:text-[4px] text-zinc-500 font-bold tracking-[0.2em] mb-1">DIRECTOR</span>
+                  
+                  {/* Huge Name Title matching font and size style of workspace */}
+                  <span className="text-[7px] sm:text-[9px] text-white font-extrabold tracking-wider text-center leading-none">
+                    AFGAN AL-FANANY
+                  </span>
+                </div>
+
+                {/* Mini console bars under monitor */}
+                <div className="h-3 bg-zinc-950 border border-zinc-900 rounded-none p-0.5 flex justify-between items-center gap-0.5">
+                  <div className="w-2 h-1.5 bg-zinc-900 rounded-none" />
+                  <div className="w-2 h-1.5 bg-zinc-900 rounded-none" />
+                  <div className="w-[18px] h-2 bg-white text-black text-[3px] sm:text-[4px] font-black flex items-center justify-center rounded-none tracking-wide">
+                    RENDER
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Mini Controls / Fine Tuning side panel */}
+              <div className="col-span-1.5 border-l border-zinc-900/60 pl-1 flex flex-col justify-between gap-1 select-none">
+                <span className="text-[3.5px] sm:text-[4.5px] text-zinc-500 font-bold tracking-wider uppercase text-right">FINE TUNING</span>
+                
+                {[...Array(4)].map((_, sliderIdx) => (
+                  <div key={sliderIdx} className="flex flex-col gap-0.5">
+                    <div className="flex justify-between text-[3px]">
+                      <span className="text-zinc-650">CTRL {sliderIdx + 1}</span>
+                      <span className="text-zinc-500">[{30 + sliderIdx * 15}%]</span>
+                    </div>
+                    <div className="h-0.5 w-full bg-zinc-900 rounded-none relative">
+                      <div 
+                        className="absolute -top-0.5 w-1 h-1 bg-white rounded-full border border-zinc-950" 
+                        style={{ left: `${25 + sliderIdx * 18}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="flex justify-between pt-1 text-[6px] sm:text-[8px] text-zinc-500 font-medium">
-              <span>MAY 20, 2026</span>
-              <span className="text-zinc-600">24 FPS</span>
-              <span>MOS</span>
+            {/* 3. Bottom Footer showing design preset console bar */}
+            <div className="mt-1 border-t border-zinc-900/80 pt-1 flex justify-between items-center text-[4px] sm:text-[5px] text-zinc-500 font-semibold font-sans">
+              <span className="text-zinc-600">BEBAS NEUE</span>
+              <span className="text-zinc-600">• FADE •</span>
+              <span className="text-zinc-600">KANVAS</span>
             </div>
-
           </div>
         </div>
 
@@ -969,13 +1085,13 @@ const ClapperboardTransition = ({ isOpen }: { isOpen: boolean }) => {
           initial={{ opacity: 0, scale: 0.5, rotate: -15, filter: "blur(15px)" }}
           animate={{ 
             opacity: [0, 0, 1, 1, 0],
-            scale: [0.5, 0.5, 1.4, 1.2, 0.5],
-            rotate: [-15, -15, 10, 5, -15],
+            scale: [0.5, 0.5, 1.3, 1.15, 0.5],
+            rotate: [-15, -15, 8, 4, -15],
             filter: ["blur(15px)", "blur(15px)", "blur(0px)", "blur(0px)", "blur(15px)"]
           }}
           transition={{ 
-            times: [0, 0.42, 0.45, 0.75, 1],
-            duration: 2.2, 
+            times: [0, 0.38, 0.41, 0.78, 1],
+            duration: 2.0, 
             ease: "easeOut" 
           }}
           className="absolute text-5xl sm:text-7xl font-black italic text-white tracking-widest uppercase z-[120] pointer-events-none"
@@ -1614,6 +1730,18 @@ interface FAQProps {
 const FAQItem: React.FC<FAQProps> = ({ faq, index }) => {
   const [isOpen, setIsOpen] = useState(false);
 
+  React.useEffect(() => {
+    // Only refresh ScrollTrigger after the accordion animation has fully settled to prevent
+    // layout thrashing and stutter while the transition is mid-flight.
+    const timer = setTimeout(() => {
+      try {
+        ScrollTrigger.refresh();
+      } catch (e) {}
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [isOpen]);
+
   return (
     <motion.div 
       initial={{ opacity: 0, x: -20 }}
@@ -1621,36 +1749,61 @@ const FAQItem: React.FC<FAQProps> = ({ faq, index }) => {
       viewport={{ once: true, amount: 0.1 }}
       transition={{ delay: index * 0.05, duration: 0.6 }}
       className="relative"
+      style={{ overflowAnchor: "none" }}
     >
       <div className={cn(
-        "bg-white/[0.02] border border-white/5 overflow-hidden transition-all duration-500 shadow-[4px_4px_0px_rgba(255,255,255,0.01)]",
+        "bg-white/[0.02] border border-white/5 overflow-hidden transition-[background-color,border-color,box-shadow,opacity] duration-500 shadow-[4px_4px_0px_rgba(255,255,255,0.01)]",
         isOpen ? "bg-white/[0.05] border-white/20 shadow-[8px_8px_0px_rgba(255,255,255,0.03)]" : "hover:border-white/10 hover:bg-white/[0.03] hover:shadow-[6px_6px_0px_rgba(255,255,255,0.02)]"
       )}>
         <button 
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full p-6 sm:p-10 flex items-center justify-between text-left transition-all"
+          className="w-full p-6 sm:p-10 flex items-center justify-between text-left group"
         >
           <div className="flex items-center gap-6 sm:gap-10">
             <span className="text-[10px] font-mono opacity-20">0{index + 1}</span>
-            <span className="text-xs sm:text-sm md:text-base font-semibold tracking-wide text-zinc-300 group-hover:text-white transition-colors">{faq.q}</span>
+            <span className="text-xs sm:text-sm md:text-base font-semibold tracking-wide text-zinc-300 group-hover:text-white transition-colors duration-300">{faq.q}</span>
           </div>
           <motion.div
-            animate={{ rotate: isOpen ? 180 : 0 }}
-            className="text-zinc-700"
+            animate={{ 
+              rotate: isOpen ? 45 : 0,
+              scale: isOpen ? 1.1 : 1
+            }}
+            transition={{ 
+              type: "spring",
+              stiffness: 260,
+              damping: 20
+            }}
+            className="text-zinc-600 group-hover:text-white transition-colors duration-300"
           >
-            <Plus className={cn("w-5 h-5 transition-all", isOpen && "rotate-45")} />
+            <Plus className="w-5 h-5" />
           </motion.div>
         </button>
-        <AnimatePresence>
+        <AnimatePresence initial={false}>
           {isOpen && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
+              animate={{ 
+                height: "auto", 
+                opacity: 1,
+              }}
               exit={{ height: 0, opacity: 0 }}
+              transition={{ 
+                height: {
+                  duration: 0.35,
+                  ease: [0.16, 1, 0.3, 1]
+                },
+                opacity: { duration: 0.25 }
+              }}
               className="overflow-hidden"
             >
               <div className="px-6 sm:px-10 pb-10 pt-4">
-                <div className="h-[1px] w-full bg-white/10 mb-8" />
+                <motion.div 
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  exit={{ scaleX: 0 }}
+                  transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                  className="h-[1.5px] w-full bg-gradient-to-r from-zinc-800 via-white to-zinc-800 mb-8 origin-left"
+                />
                 <p className="text-xs sm:text-sm text-zinc-400 tracking-normal leading-relaxed max-w-3xl">
                   {faq.a}
                 </p>
@@ -1673,7 +1826,7 @@ const FAQSection = ({ lang }: { lang: Lang }) => {
   ];
 
   return (
-    <section id="faq" className="min-h-screen w-full bg-[#020202] flex flex-col items-center justify-center p-6 sm:p-12 lg:p-24 relative overflow-hidden border-t border-white/5">
+    <section id="faq" style={{ overflowAnchor: "none" }} className="min-h-screen w-full bg-[#020202] flex flex-col items-center justify-center py-16 sm:py-24 px-6 sm:px-12 lg:px-24 relative overflow-hidden border-t border-white/5">
        <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-white/[0.01] blur-[120px] rounded-full translate-y-1/2 -translate-x-1/2" />
        
        <div className="max-w-7xl w-full flex flex-col lg:grid lg:grid-cols-[1fr_1.5fr] gap-12 sm:gap-20 items-start">
@@ -2773,7 +2926,7 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
               <div className="space-y-6">
                 <div className="space-y-4">
                   <label className="text-[8px] font-bold uppercase tracking-widest text-zinc-500">Background Color</label>
-                  <div className="bg-black border border-white/10 p-4 sm:p-6 flex items-center justify-between gap-4">
+                  <div className="bg-black border border-white/10 p-4 sm:p-6 flex items-center justify-between gap-4 transition-all duration-300">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-none relative overflow-hidden border border-white/20" style={{ backgroundColor: settings.bgColor }}>
                         <input 
@@ -2964,12 +3117,19 @@ CreditItem.displayName = 'CreditItem';
 
 
 const safeParse = (value: string | null, defaultValue: any) => {
-  if (!value || value.trim() === 'undefined' || value.trim() === 'null' || value.trim() === '') return defaultValue;
+  if (!value) return defaultValue;
+  const trimmed = value.trim();
+  if (trimmed === '' || trimmed === 'undefined' || trimmed === 'null' || trimmed === 'NaN') {
+    return defaultValue;
+  }
   try {
+    if (!/^[{\["\d\-]|true|false|null/.test(trimmed)) {
+      return defaultValue;
+    }
     const parsed = JSON.parse(value);
-    return parsed !== undefined ? parsed : defaultValue;
+    return parsed !== undefined && parsed !== null ? parsed : defaultValue;
   } catch (e) {
-    console.error("JSON parse error:", e, "Value:", value);
+    console.error("JSON parse error in safeParse:", e, "Value:", value);
     return defaultValue;
   }
 };
@@ -3499,6 +3659,7 @@ export default function App() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [previewScaleValue, setPreviewScale] = useState(1);
+  const [fullscreenScaleValue, setFullscreenScale] = useState(1);
   const [fadeIndex, setFadeIndex] = useState(0);
   const [isConsoleCollapsed, setIsConsoleCollapsed] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -3700,10 +3861,12 @@ export default function App() {
   const DESIGN_BASE_HEIGHT = 1080;
   
   const previewScale = isExporting ? 1 : previewScaleValue;
+  const fullscreenScale = isExporting ? 1 : fullscreenScaleValue;
 
   const previewRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const fullscreenContainerRef = useRef<HTMLDivElement>(null);
 
   const addRole = () => {
     if (!newRole.trim() || !newNames.trim()) return;
@@ -3804,14 +3967,35 @@ export default function App() {
         const width = entry.contentRect.width;
         const height = entry.contentRect.height;
         if (width === 0 || height === 0) return;
-        // Set scale to 1 for 1:1 preview matching export
-        setPreviewScale(1);
+        // Scale down the 1920x1080 canvas to fit the preview container
+        const scaleX = width / DESIGN_BASE_WIDTH;
+        const scaleY = height / DESIGN_BASE_HEIGHT;
+        setPreviewScale(Math.min(scaleX, scaleY));
       }
     });
 
     observer.observe(previewRef.current);
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (!fullscreenContainerRef.current) return;
+    
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const width = entry.contentRect.width;
+        const height = entry.contentRect.height;
+        if (width === 0 || height === 0) return;
+        // Scale down the 1920x1080 canvas to fit the fullscreen container
+        const scaleX = width / DESIGN_BASE_WIDTH;
+        const scaleY = height / DESIGN_BASE_HEIGHT;
+        setFullscreenScale(Math.min(scaleX, scaleY));
+      }
+    });
+
+    observer.observe(fullscreenContainerRef.current);
+    return () => observer.disconnect();
+  }, [isFullscreen]);
 
    const recordVideo = async () => {
     if (!previewRef.current || !scrollRef.current) {
@@ -3833,8 +4017,16 @@ export default function App() {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
     const runEncode = (): Promise<{ success: boolean; isAlphaError: boolean }> => {
-      return new Promise<{ success: boolean; isAlphaError: boolean }>(async (resolve) => {
+      return new Promise<{ success: boolean; isAlphaError: boolean }>(async (originalResolve) => {
         let active = true;
+        let exportPromiseResolved = false;
+        
+        const resolve = (result: { success: boolean; isAlphaError: boolean }) => {
+          if (!exportPromiseResolved) {
+            exportPromiseResolved = true;
+            originalResolve(result);
+          }
+        };
 
         const originalStyle = scroll.style.cssText;
         const originalParentStyle = scroll.parentElement?.style.cssText || '';
@@ -3873,30 +4065,31 @@ export default function App() {
         scroll.style.transform = 'none';
         scroll.style.display = 'block';
         scroll.style.zIndex = '999999';
+
         scroll.style.backgroundColor = settings.bgColor;
 
-        const muxer = new Muxer({
-          target: new ArrayBufferTarget(),
-          video: {
-            codec: 'V_VP9',
-            width: canvasWidth,
-            height: canvasHeight,
-            frameRate: fps,
-            alpha: false,
-          }
-        });
+        let muxer: any = null;
+        let videoEncoder: VideoEncoder | null = null;
 
-        const videoEncoder = new VideoEncoder({
-          output: (chunk, metadata) => {
-            if (active) muxer.addVideoChunk(chunk, metadata);
-          },
-          error: (e) => {
-            console.error("VideoEncoder error in output/encode:", e);
-            active = false;
-            restoreStyles();
-            resolve({ success: false, isAlphaError: false });
-          }
-        });
+
+        try {
+          videoEncoder = new VideoEncoder({
+            output: (chunk, metadata) => {
+              if (active && muxer) muxer.addVideoChunk(chunk, metadata);
+            },
+            error: (e) => {
+              console.error("VideoEncoder error in output/encode:", e);
+              active = false;
+              restoreStyles();
+              resolve({ success: false, isAlphaError: false });
+            }
+          });
+        } catch (encInstantiationErr) {
+          console.error("Failed to instantiate VideoEncoder:", encInstantiationErr);
+          restoreStyles();
+          resolve({ success: false, isAlphaError: false });
+          return;
+        }
 
         try {
           // Wait for fonts to be ready and specifically load the selected font
@@ -3931,7 +4124,27 @@ export default function App() {
               latencyMode: 'realtime'
             });
           } catch (configErr) {
-            throw configErr;
+             console.warn("VideoEncoder configuration failed:", configErr);
+             throw configErr;
+          }
+
+          // Setup Muxer with matching alpha support
+          try {
+            muxer = new Muxer({
+              target: new ArrayBufferTarget(),
+              video: {
+                codec: 'V_VP9',
+                width: canvasWidth,
+                height: canvasHeight,
+                frameRate: fps,
+                alpha: false,
+              }
+            });
+          } catch (muxerCreationErr) {
+            console.error("Muxer creation failed:", muxerCreationErr);
+            restoreStyles();
+            resolve({ success: false, isAlphaError: false });
+            return;
           }
 
           // Re-measure after ensuring DOM update and style application
@@ -4043,8 +4256,12 @@ export default function App() {
         const renderFrame = async (frame: number) => {
           const progress = frame / (totalFrames - 1);
           
-          ctx.fillStyle = settings.bgColor;
-          ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+          if (false) {
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+          } else {
+            ctx.fillStyle = settings.bgColor;
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+          }
 
           if (settings.animationType === 'scroll') {
             let drawY = 0;
@@ -4211,7 +4428,9 @@ export default function App() {
     try {
       let result = await runEncode();
       if (!result.success) {
-        alert("Ekspor gagal karena memori tidak cukup atau browser tidak mendukung. Coba perpendek durasi atau gunakan desktop.");
+        alert(lang === 'id' 
+          ? "Ekspor gagal karena memori tidak cukup atau browser tidak mendukung. Coba perpendek durasi atau gunakan desktop." 
+          : "Export failed due to insufficient memory or unsupported browser. Try shortening the duration or using desktop.");
       }
     } catch (outerErr) {
       console.error("Outer capture error:", outerErr);
@@ -4336,7 +4555,7 @@ export default function App() {
               exit={{ opacity: 0 }}
               className="min-h-screen flex flex-col items-center justify-center p-6 md:p-8 text-center relative overflow-hidden bg-black"
             >
-              <BackgroundElements />
+              <BackgroundElements showPerspectiveGrid={true} />
               
               <div className="max-w-7xl space-y-12 md:space-y-16 z-10 w-full px-4 pt-20 sm:pt-32 pb-10 sm:pb-20">
                 <div className="space-y-6">
@@ -4398,34 +4617,10 @@ export default function App() {
                     onClick={() => {
                       triggerClapperTransition();
                     }}
-                    className="group relative px-6 sm:px-10 py-3 sm:py-4 text-[10px] sm:text-[12px] font-bold uppercase tracking-[0.5em] transition-all overflow-hidden border border-white/40 rounded-none bg-black/50 backdrop-blur-xl shadow-[4px_4px_0px_rgba(255,255,255,0.05)] hover:shadow-[8px_8px_0px_rgba(255,255,255,0.1)] active:scale-[0.98] hero-button"
+                    className="group relative px-8 sm:px-12 py-4 sm:py-6 bg-white text-black font-black uppercase tracking-[0.4em] text-[10px] sm:text-[12px] overflow-hidden transition-all hover:scale-105 active:scale-95 hero-button shadow-[4px_4px_0px_rgba(255,255,255,0.15)] hover:shadow-[8px_8px_0px_rgba(255,255,255,0.25)] border border-white"
                   >
-                    {/* Pulsing Core */}
-                    <motion.div 
-                      animate={{ 
-                        opacity: [0.2, 0.5, 0.2]
-                      }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                      className="absolute inset-0 bg-white/5 z-0"
-                    />
-
-                    {/* Advanced Shimmer Animation */}
-                    <motion.div 
-                      animate={{ 
-                        left: ['-100%', '200%'],
-                        opacity: [0, 0.4, 0]
-                      }}
-                      transition={{ 
-                        duration: 3, 
-                        repeat: Infinity, 
-                        ease: "easeInOut",
-                        repeatDelay: 0.5
-                      }}
-                      className="absolute top-0 bottom-0 w-[50%] bg-gradient-to-r from-transparent via-white/50 to-transparent skew-x-[-30deg] z-10"
-                    />
-
-                    <div className="absolute inset-0 bg-white translate-x-[-101%] group-hover:translate-x-0 transition-transform duration-700 ease-[0.16, 1, 0.3, 1] z-0" />
-                    <span className="relative z-20 text-white group-hover:text-black transition-colors duration-500 flex items-center gap-10">
+                    <div className="absolute inset-0 bg-black translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[0.16, 1, 0.3, 1]" />
+                    <span className="relative z-10 group-hover:text-white transition-colors duration-300 flex items-center gap-10">
                       {translations[lang].hero.button}
                       <motion.div
                         animate={{ 
@@ -5310,7 +5505,7 @@ export default function App() {
                     <div className="absolute top-4 right-4 flex gap-2 z-[70] opacity-100 transition-opacity">
                       <button 
                         onClick={() => setIsFullscreen(true)}
-                        className="p-2 bg-black/60 backdrop-blur-md border border-white/20 hover:bg-white hover:text-black transition-all flex items-center justify-center"
+                        className="p-2 bg-black/60 backdrop-blur-md border border-white/20 hover:bg-white hover:text-black transition-all flex items-center justify-center cursor-pointer"
                         title="Fullscreen Preview"
                       >
                         <Maximize className="w-4 h-4" />
@@ -5366,7 +5561,7 @@ export default function App() {
                     >
                       <div 
                         ref={canvasRef}
-                        className="absolute flex-shrink-0"
+                        className="absolute flex-shrink-0 transition-all duration-300"
                         style={{ 
                           width: DESIGN_BASE_WIDTH,
                           height: DESIGN_BASE_HEIGHT,
@@ -5831,17 +6026,17 @@ export default function App() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[1000] bg-black flex flex-col"
           >
-            <div className="h-16 flex items-center justify-between px-8 border-b border-white/10 z-[1010]">
-              <div className="flex items-center gap-4">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-zinc-500">{translations[lang].editor.previewMode}</span>
+            <div className="h-16 flex items-center justify-between px-4 sm:px-8 border-b border-white/10 z-[1010] gap-4">
+              <div className="flex items-center gap-2 sm:gap-4 overflow-hidden">
+                <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.4em] text-zinc-500 truncate">{translations[lang].editor.previewMode}</span>
               </div>
               <button 
                 onClick={() => setIsFullscreen(false)}
-                className="group relative flex items-center gap-3 px-6 py-3 rounded-none bg-black border border-white/20 hover:border-white transition-all duration-500 overflow-hidden"
+                className="group relative flex items-center gap-1.5 sm:gap-3 px-3 sm:px-6 py-2 sm:py-3 rounded-none bg-black border border-white/20 hover:border-white transition-all duration-500 overflow-hidden shrink-0"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                 <X className="w-3.5 h-3.5 text-zinc-400 group-hover:text-white group-hover:rotate-90 transition-all duration-500" />
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 group-hover:text-white transition-colors">
+                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.1em] sm:tracking-[0.3em] text-zinc-500 group-hover:text-white transition-colors">
                   {translations[lang].editor.exitFullscreen}
                 </span>
               </button>
@@ -5849,6 +6044,7 @@ export default function App() {
             
             <div className="flex-1 relative overflow-hidden flex items-center justify-center p-4 sm:p-12">
                <div 
+                ref={fullscreenContainerRef}
                 className="w-full h-full relative border border-white/5 bg-black overflow-hidden flex items-center justify-center"
                 style={{ 
                    aspectRatio: '16/9',
@@ -5861,7 +6057,7 @@ export default function App() {
                     style={{ 
                       width: DESIGN_BASE_WIDTH,
                       height: DESIGN_BASE_HEIGHT,
-                      transform: `scale(${previewScale})`,
+                      transform: `scale(${fullscreenScale})`,
                       transformOrigin: 'center center',
                       backgroundColor: settings.bgColor,
                     }}
