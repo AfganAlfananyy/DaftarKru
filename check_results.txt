@@ -1,0 +1,7 @@
+  Check,
+    // Check if pairs exist
+          // Check triggers first
+          // Check if projectName changed
+                                <Check className="w-5 h-5" />
+                                    <Check className="w-4 h-4 text-emerald-600 block shrink-0" />
+                      {editingId ? <Check className="w-8 h-8" /> : <Plus className="w-8 h-8 transition-transform group-hover:rotate-90" />}

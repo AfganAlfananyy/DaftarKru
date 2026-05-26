@@ -1797,13 +1797,22 @@ const FAQItem: React.FC<FAQProps> = ({ faq, index }) => {
               className="overflow-hidden"
             >
               <div className="px-6 sm:px-10 pb-10 pt-4">
-                <motion.div 
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  exit={{ scaleX: 0 }}
-                  transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                  className="h-[1.5px] w-full bg-gradient-to-r from-zinc-800 via-white to-zinc-800 mb-8 origin-left"
-                />
+                <div className="w-full h-[1.5px] bg-zinc-900/60 overflow-hidden relative mb-8">
+                  <motion.div 
+                    initial={{ scaleX: 0 }}
+                    animate={{ 
+                      scaleX: [0, 1, 0]
+                    }}
+                    transition={{ 
+                      duration: 3, 
+                      repeat: Infinity, 
+                      ease: [0.16, 1, 0.3, 1],
+                      times: [0, 0.5, 1]
+                    }}
+                    className="h-full w-full bg-gradient-to-r from-zinc-800 via-white to-zinc-800"
+                    style={{ originX: 0 }}
+                  />
+                </div>
                 <p className="text-xs sm:text-sm text-zinc-400 tracking-normal leading-relaxed max-w-3xl">
                   {faq.a}
                 </p>
@@ -1933,7 +1942,7 @@ const BackgroundCreditsAnimation = () => {
   }, { scope: containerRef });
 
   return (
-    <div ref={containerRef} className="absolute inset-0 z-0 opacity-[0.06] flex justify-around select-none pointer-events-none overflow-hidden max-w-7xl mx-auto px-4 md:px-12">
+    <div ref={containerRef} className="absolute inset-0 z-0 opacity-[0.15] flex justify-around select-none pointer-events-none overflow-hidden max-w-7xl mx-auto px-4 md:px-12">
       {tracks.map((track, i) => (
         <div key={i} className="w-[18%] sm:w-[22%] h-full relative overflow-hidden flex flex-col items-center">
           <div 
@@ -1948,7 +1957,7 @@ const BackgroundCreditsAnimation = () => {
                     <div key={idx} className="flex flex-col items-center text-center">
                       <span className={cn(
                         "uppercase tracking-[0.2em] font-sans text-center",
-                        isRole ? "text-[10px] font-black text-white/40" : "text-[12px] font-medium text-white/90 font-mono mt-1"
+                        isRole ? "text-[10px] font-black text-white/60" : "text-[12px] font-medium text-white/90 font-mono mt-1"
                       )}>
                         {item}
                       </span>
@@ -3356,6 +3365,8 @@ export default function App() {
   });
   const [initialProjectName, setInitialProjectName] = useState(projectName);
   const [showInfo, setShowInfo] = useState(true);
+  const [isChangeNameModalOpen, setIsChangeNameModalOpen] = useState(false);
+  const [tempProjectName, setTempProjectName] = useState(projectName);
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showSaveToast, setShowSaveToast] = useState(false);
@@ -3660,6 +3671,8 @@ export default function App() {
   const [exportProgress, setExportProgress] = useState(0);
   const [previewScaleValue, setPreviewScale] = useState(1);
   const [fullscreenScaleValue, setFullscreenScale] = useState(1);
+  const [previewWidth, setPreviewWidth] = useState(1920);
+  const [fullscreenWidth, setFullscreenWidth] = useState(1920);
   const [fadeIndex, setFadeIndex] = useState(0);
   const [isConsoleCollapsed, setIsConsoleCollapsed] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -3967,6 +3980,7 @@ export default function App() {
         const width = entry.contentRect.width;
         const height = entry.contentRect.height;
         if (width === 0 || height === 0) return;
+        setPreviewWidth(width);
         // Scale down the 1920x1080 canvas to fit the preview container
         const scaleX = width / DESIGN_BASE_WIDTH;
         const scaleY = height / DESIGN_BASE_HEIGHT;
@@ -3986,6 +4000,7 @@ export default function App() {
         const width = entry.contentRect.width;
         const height = entry.contentRect.height;
         if (width === 0 || height === 0) return;
+        setFullscreenWidth(width);
         // Scale down the 1920x1080 canvas to fit the fullscreen container
         const scaleX = width / DESIGN_BASE_WIDTH;
         const scaleY = height / DESIGN_BASE_HEIGHT;
@@ -4441,6 +4456,11 @@ export default function App() {
     }
   };
 
+  const initiateExport = () => {
+    setTempProjectName(projectName);
+    setIsChangeNameModalOpen(true);
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
@@ -4469,7 +4489,7 @@ export default function App() {
         setIsAutoPlay(false);
       } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        recordVideo();
+        initiateExport();
       } else if (e.key.toLowerCase() === 'e') {
         setIsRightSidebarCollapsed(prev => !prev);
       } else if (e.key.toLowerCase() === 'q') {
@@ -4503,7 +4523,7 @@ export default function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [history, isAutoPlay, credits.length, recordVideo, setIsSidebarCollapsed, setIsRightSidebarCollapsed, setIsConsoleCollapsed, setActiveConsole, setIsShortcutsOpen, view, setIsMobileMenuOpen, setIsMenuOpen]);
+  }, [history, isAutoPlay, credits.length, initiateExport, setIsSidebarCollapsed, setIsRightSidebarCollapsed, setIsConsoleCollapsed, setActiveConsole, setIsShortcutsOpen, view, setIsMobileMenuOpen, setIsMenuOpen]);
 
   const [tagTextIndex, setTagTextIndex] = useState(0);
   const tagTexts = [
@@ -4612,12 +4632,10 @@ export default function App() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: false }}
                     transition={{ delay: 0.8 }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
                     onClick={() => {
                       triggerClapperTransition();
                     }}
-                    className="group relative px-8 sm:px-12 py-4 sm:py-6 bg-white text-black font-black uppercase tracking-[0.4em] text-[10px] sm:text-[12px] overflow-hidden transition-all hover:scale-105 active:scale-95 hero-button shadow-[4px_4px_0px_rgba(255,255,255,0.15)] hover:shadow-[8px_8px_0px_rgba(255,255,255,0.25)] border border-white"
+                    className="group relative px-8 sm:px-12 py-4 sm:py-6 bg-white text-black font-black uppercase tracking-[0.4em] text-[10px] sm:text-[12px] overflow-hidden transition-all duration-300 hero-button shadow-[4px_4px_0px_rgba(255,255,255,0.15)] hover:shadow-[8px_8px_0px_rgba(255,255,255,0.25)] border border-white cursor-pointer"
                   >
                     <div className="absolute inset-0 bg-black translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[0.16, 1, 0.3, 1]" />
                     <span className="relative z-10 group-hover:text-white transition-colors duration-300 flex items-center gap-10">
@@ -5147,6 +5165,158 @@ export default function App() {
               )}
             </AnimatePresence>
 
+            {/* Change Name Modal before Export */}
+            <AnimatePresence>
+              {isChangeNameModalOpen && (
+                <>
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 0.8 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setIsChangeNameModalOpen(false)}
+                    className="fixed inset-0 bg-black/95 backdrop-blur-md z-[2000] cursor-pointer"
+                  />
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 30 }}
+                    transition={{ type: "spring", damping: 25, stiffness: 350 }}
+                    className="fixed inset-x-4 top-[15%] sm:top-1/2 sm:-translate-y-1/2 mx-auto max-w-md bg-black border-2 border-white/40 z-[2001] p-6 sm:p-8 flex flex-col shadow-[12px_12px_0px_rgba(255,255,255,0.05)] overflow-hidden"
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between pb-4">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 bg-white rounded-none animate-pulse" />
+                        <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-[0.3em] text-white">
+                          {lang === 'id' ? "NAMA FILE EKSPOR" : "EXPORT FILE NAME"}
+                        </h3>
+                      </div>
+                      <button 
+                        onClick={() => setIsChangeNameModalOpen(false)} 
+                        className="px-3 py-1.5 text-[9px] sm:text-[10px] font-bold border border-white/10 hover:border-white text-zinc-400 hover:text-white transition-all active:scale-95 cursor-pointer uppercase font-mono bg-zinc-950"
+                      >
+                        CLOSE
+                      </button>
+                    </div>
+
+                    {/* Looping Ambient Line mirroring FAQ line style */}
+                    <div className="w-full h-[1.5px] bg-zinc-900/60 overflow-hidden relative mb-6">
+                      <motion.div 
+                        className="h-full w-full bg-gradient-to-r from-zinc-800 via-white to-zinc-800"
+                        animate={{ 
+                          scaleX: [0, 1, 0]
+                        }}
+                        transition={{ 
+                          duration: 3, 
+                          repeat: Infinity, 
+                          ease: [0.16, 1, 0.3, 1],
+                          times: [0, 0.5, 1]
+                        }}
+                        style={{ originX: 0 }}
+                      />
+                    </div>
+
+                    {/* Form elements */}
+                    <div className="space-y-4">
+                      <p className="text-[11px] sm:text-xs text-zinc-400 font-medium leading-relaxed">
+                        {lang === 'id' 
+                          ? "Silahkan tentukan atau ubah nama proyek sebelum memulai proses ekspor."
+                          : "Please set or modify the project name before initiating the export."}
+                      </p>
+
+                      <div className="relative w-full overflow-hidden bg-zinc-950 border border-white/20 flex items-center transition-all focus-within:border-white">
+                        <input 
+                          type="text" 
+                          value={tempProjectName}
+                          onChange={(e) => setTempProjectName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              const trimmedName = tempProjectName.trim();
+                              const finalName = trimmedName !== '' ? trimmedName : 'UNTITLED_PROJECT';
+                              setProjectName(finalName);
+                              localStorage.setItem('daftarkru_projectName', finalName);
+                              setIsChangeNameModalOpen(false);
+                              setTimeout(() => {
+                                recordVideo();
+                              }, 100);
+                            }
+                          }}
+                          className="w-full bg-transparent p-4 text-xs sm:text-sm font-mono text-white focus:outline-none uppercase tracking-wide"
+                          placeholder="PROJECT_MASTER"
+                          autoFocus
+                        />
+                        <AnimatePresence>
+                          {tempProjectName !== projectName && (
+                            <motion.button
+                              initial={{ width: 0, opacity: 0 }}
+                              animate={{ width: 52, opacity: 1 }}
+                              exit={{ width: 0, opacity: 0 }}
+                              transition={{ duration: 0.3, ease: 'easeOut' }}
+                              type="button"
+                              onClick={() => {
+                                const trimmedName = tempProjectName.trim();
+                                const finalName = trimmedName !== '' ? trimmedName : 'UNTITLED_PROJECT';
+                                setProjectName(finalName);
+                                localStorage.setItem('daftarkru_projectName', finalName);
+                                setShowSaveToast(true);
+                                setTimeout(() => setShowSaveToast(false), 1500);
+                              }}
+                              className="h-[52px] w-[52px] bg-white text-black hover:bg-zinc-200 transition-all flex items-center justify-center cursor-pointer rounded-none active:scale-95 shrink-0 overflow-hidden"
+                              title={lang === 'id' ? "Simpan nama" : "Save name"}
+                            >
+                              <Check className="w-5 h-5" />
+                            </motion.button>
+                          )}
+                        </AnimatePresence>
+                        
+                        <AnimatePresence>
+                          {showSaveToast && (
+                            <motion.div
+                              initial={{ x: "-100%" }}
+                              animate={{ x: 0 }}
+                              exit={{ x: "100%" }}
+                              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                              className="absolute inset-0 bg-white text-black flex items-center justify-center font-mono font-black text-[10px] sm:text-xs tracking-widest uppercase z-10 px-4 whitespace-nowrap"
+                            >
+                              {lang === 'id' ? "NAMA TERSIMPAN" : "NAME SAVED"}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="mt-8 flex gap-3">
+                      <button
+                        onClick={() => setIsChangeNameModalOpen(false)}
+                        className="flex-1 px-4 py-3 border border-white/10 text-zinc-400 hover:text-white hover:border-white text-[10px] sm:text-xs font-bold uppercase tracking-widest transition-all rounded-none bg-transparent active:scale-[0.98]"
+                      >
+                        {lang === 'id' ? "BATAL" : "CANCEL"}
+                      </button>
+                      <button
+                        onClick={() => {
+                          const trimmedName = tempProjectName.trim();
+                          const finalName = trimmedName !== '' ? trimmedName : 'UNTITLED_PROJECT';
+                          setProjectName(finalName);
+                          localStorage.setItem('daftarkru_projectName', finalName);
+                          setIsChangeNameModalOpen(false);
+                          setTimeout(() => {
+                            recordVideo();
+                          }, 100);
+                        }}
+                        className="group relative flex-1 px-4 py-3 bg-white text-black font-black uppercase tracking-[0.3em] overflow-hidden transition-all hover:scale-[0.98] active:scale-95 border border-white shadow-[4px_4px_0px_rgba(255,255,255,0.15)] hover:shadow-[8px_8px_0px_rgba(255,255,255,0.25)]"
+                      >
+                        <div className="absolute inset-0 bg-black translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[0.16, 1, 0.3, 1]" />
+                        <span className="relative z-10 text-[10px] sm:text-xs group-hover:text-white transition-colors duration-300">
+                          {lang === 'id' ? "RENDER" : "RENDER"}
+                        </span>
+                      </button>
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+
             {/* Keyboard Shortcuts Cheat Sheet Modal */}
             <AnimatePresence>
               {isShortcutsOpen && (
@@ -5222,80 +5392,94 @@ export default function App() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-[1000] bg-black flex flex-col items-center justify-center p-4 sm:p-8 overscroll-contain overflow-y-auto"
+                    className="fixed inset-0 z-[1000] bg-[#020202] flex flex-col items-center justify-center p-6 sm:p-12 select-none"
                   >
-                    {/* Brutalist Grid Texture */}
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:64px_64px] pointer-events-none" />
-
+                    <div
+                      className="absolute inset-0 pointer-events-none opacity-[0.05]"
+                      style={{
+                        backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)',
+                        backgroundSize: '80px 80px',
+                      }}
+                    />
                     <motion.div 
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="max-w-2xl w-full border-t border-white/20 pt-8 relative z-10 font-mono"
+                      initial={{ opacity: 0, y: 12, scale: 0.99 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                      className="max-w-md w-full space-y-10 text-center relative z-10"
                     >
-                      <div className="flex flex-col gap-6 sm:gap-12">
-                        {/* Header & Status */}
-                        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
-                          <div className="space-y-2">
-                            <h2 className="text-3xl sm:text-5xl lg:text-7xl font-black uppercase text-white tracking-tighter">
-                              {translations[lang].editor.rendering}
-                            </h2>
-                            <p className="text-xs sm:text-sm uppercase tracking-widest text-zinc-500 font-bold">
-                              {translations[lang].editor.generatingFrames} <span className="text-white">{projectName}</span>
-                            </p>
-                          </div>
-                          
-                          <div className="text-right">
-                            <div className="text-5xl sm:text-7xl lg:text-8xl font-black text-white tracking-tighter">
-                              {exportProgress}%
-                            </div>
-                          </div>
+                      {/* Top Header Status */}
+                      <div className="flex flex-col items-center space-y-4">
+                        <div className="flex items-center gap-2 bg-white/[0.02] border border-white/5 py-1 px-3 rounded-none">
+                          <span className="relative flex h-1.5 w-1.5">
+                            {exportProgress < 100 ? (
+                              <>
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
+                              </>
+                            ) : (
+                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                            )}
+                          </span>
+                          <span className="text-[10px] font-mono text-zinc-450 tracking-wider">
+                            {exportProgress >= 100 
+                              ? (lang === 'id' ? "Selesai diproses" : "Rendering completed") 
+                              : (lang === 'id' ? "Sedang dirender" : "Rendering in progress")
+                            }
+                          </span>
                         </div>
+                      </div>
 
-                        {/* Minimalist Progress Bar */}
-                        <div className="w-full h-1 sm:h-2 bg-zinc-900 overflow-hidden relative">
+                      {/* Giant Clean Progress Numbers */}
+                      <div className="space-y-2">
+                        <div className="text-7xl sm:text-8xl font-black font-sans tracking-tighter text-white tabular-nums leading-none">
+                          {exportProgress}%
+                        </div>
+                        <div className="text-xs sm:text-[13px] text-zinc-400 leading-relaxed font-sans max-w-sm mx-auto">
+                          {lang === 'id' ? "Membuat frame video untuk" : "Generating video frames for"}{" "}
+                          <span className="text-white font-semibold">{projectName}</span>
+                        </div>
+                      </div>
+
+                      {/* Smooth Slider Line */}
+                      <div className="space-y-3">
+                        <div className="w-full h-1 bg-zinc-900 rounded-full overflow-hidden relative">
                           <motion.div 
                             className="absolute inset-y-0 left-0 bg-white"
                             style={{ width: `${exportProgress}%` }}
                             transition={{ type: "tween", ease: "linear", duration: 0.1 }}
                           />
                         </div>
+                        
+                        {/* Extra Status details in sentence case */}
+                        <div className="flex justify-between items-center text-[10px] sm:text-xs text-zinc-500 font-mono">
+                          <span>
+                            {exportProgress >= 100 
+                              ? (lang === 'id' ? "Menyimpan file..." : "Saving file...") 
+                              : (lang === 'id' ? "Sedang memproses..." : "Processing...")
+                            }
+                          </span>
+                          <span>
+                            {Math.min(240, Math.floor(exportProgress * 2.4))} / 240 frames
+                          </span>
+                        </div>
+                      </div>
 
-                        {/* Metadata Grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8 pt-4 sm:pt-8 border-t border-white/10 uppercase tracking-widest">
-                          <div className="space-y-2">
-                            <div className="text-[10px] text-zinc-600 font-bold">Resolution</div>
-                            <div className="text-xs sm:text-sm font-bold text-white">1920 X 1080</div>
-                          </div>
-                          <div className="space-y-2">
-                            <div className="text-[10px] text-zinc-600 font-bold">Framerate</div>
-                            <div className="text-xs sm:text-sm font-bold text-white">60 FPS</div>
-                          </div>
-                          <div className="space-y-2">
-                            <div className="text-[10px] text-zinc-600 font-bold">Format</div>
-                            <div className="text-xs sm:text-sm font-bold text-white">WEBM / VP9</div>
-                          </div>
-                          <div className="space-y-2">
-                            <div className="text-[10px] text-zinc-600 font-bold">Status</div>
-                            <div className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
-                              {exportProgress >= 100 ? "DONE" : "RENDERING"}
-                              {exportProgress < 100 && (
-                                <motion.div 
-                                  animate={{ opacity: [1, 0, 1] }} 
-                                  transition={{ repeat: Infinity, duration: 1 }}
-                                  className="w-2 h-2 bg-white"
-                                />
-                              )}
-                            </div>
-                          </div>
+                      {/* Technical details in a calm, flat grid */}
+                      <div className="pt-8 border-t border-white/5 grid grid-cols-3 gap-4 text-center text-[10px] sm:text-[11px] font-sans">
+                        <div className="space-y-1">
+                          <div className="text-zinc-600 font-bold uppercase tracking-wider text-[8px] sm:text-[9px]">Format</div>
+                          <div className="text-zinc-300 font-semibold">WebM / VP9</div>
+                        </div>
+                        <div className="space-y-1 border-x border-white/5">
+                          <div className="text-zinc-600 font-bold uppercase tracking-wider text-[8px] sm:text-[9px]">Resolusi</div>
+                          <div className="text-zinc-300 font-semibold">1920 × 1080</div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-zinc-600 font-bold uppercase tracking-wider text-[8px] sm:text-[9px]">Kecepatan</div>
+                          <div className="text-zinc-300 font-semibold">60 fps</div>
                         </div>
                       </div>
                     </motion.div>
-
-                    {/* Footer decoration */}
-                    <div className="absolute bottom-8 left-8 right-8 flex justify-between items-end border-t border-white/10 pt-4 pointer-events-none text-zinc-600 font-mono text-[10px] sm:text-xs uppercase tracking-widest hidden sm:flex">
-                      <div>// OFFLINE RENDER ENGINE</div>
-                      <div>DAFTARKRU.STUDIO</div>
-                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -5344,16 +5528,22 @@ export default function App() {
                     <button 
                       onClick={addRole}
                       disabled={!newRole.trim() || !newNames.trim()}
-                      className="w-full h-16 lg:h-20 border border-white flex items-center justify-center hover:bg-white hover:text-black transition-all disabled:opacity-20 rounded-none group bg-zinc-950"
+                      className="relative w-full h-16 lg:h-20 border border-white flex items-center justify-center overflow-hidden transition-all duration-300 ease-out disabled:opacity-20 rounded-none group bg-zinc-950 cursor-pointer"
                     >
-                      {editingId ? <Check className="w-8 h-8" /> : <Plus className="w-8 h-8 transition-transform group-hover:rotate-90" />}
+                      <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[0.16,1,0.3,1]" />
+                      <div className="relative z-10 text-white group-hover:text-black transition-colors duration-300 flex items-center justify-center w-full h-full">
+                        {editingId ? <Check className="w-8 h-8" /> : <Plus className="w-8 h-8 transition-transform group-hover:rotate-90" />}
+                      </div>
                     </button>
                     {editingId && (
                       <button 
                         onClick={cancelEdit}
-                        className="w-full border border-white/20 text-white p-4 lg:p-5 text-[10px] lg:text-[11px] font-bold uppercase tracking-widest hover:bg-white/10 transition-all font-mono"
+                        className="relative w-full border border-white/20 text-white p-4 lg:p-5 text-[10px] lg:text-[11px] font-bold uppercase tracking-widest overflow-hidden transition-all duration-300 ease-out font-mono cursor-pointer group"
                       >
-                        {translations[lang].editor.cancelEditing}
+                        <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[0.16,1,0.3,1]" />
+                        <span className="relative z-10 group-hover:text-black transition-colors duration-300">
+                          {translations[lang].editor.cancelEditing}
+                        </span>
                       </button>
                     )}
                   </div>
@@ -5438,12 +5628,18 @@ export default function App() {
                   {/* Move Export here for Mobile */}
                   <div className="pt-6 border-t border-white/20">
                     <button 
-                      onClick={() => recordVideo()}
+                      onClick={() => initiateExport()}
                       disabled={isExporting}
-                      className="w-full bg-white text-black border border-white py-4 text-[12px] font-bold uppercase tracking-[0.3em] hover:bg-black hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-20 rounded-none shadow-[8px_8px_0px_rgba(255,255,255,0.05)] active:scale-[0.98]"
+                      className={cn(
+                        "relative w-full bg-white text-black border border-white py-4 text-[12px] font-bold uppercase tracking-[0.3em] flex items-center justify-center gap-2 rounded-none transition-all duration-500 ease-[0.16,1,0.3,1] shadow-[8px_8px_0px_rgba(255,255,255,0.05)] overflow-hidden group cursor-pointer",
+                        isExporting ? "opacity-40 cursor-not-allowed" : "hover:shadow-[12px_12px_0px_rgba(255,255,255,0.1)]"
+                      )}
                     >
-                      {isExporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Film className="w-5 h-5" />}
-                      {isExporting ? `${translations[lang].editor.rendering} ${exportProgress}%` : translations[lang].editor.renderExport}
+                      <div className="absolute inset-0 bg-black translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[0.16,1,0.3,1]" />
+                      <div className="relative z-10 flex items-center justify-center gap-2 group-hover:text-white transition-colors duration-300">
+                        {isExporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Film className="w-5 h-5" />}
+                        {isExporting ? `${translations[lang].editor.rendering} ${exportProgress}%` : translations[lang].editor.renderExport}
+                      </div>
                     </button>
                     <div className="mt-2 text-[8px] text-zinc-600 uppercase tracking-widest text-center hidden sm:block">Shortcut: Space (Play/Pause) • Q/E/S (Layout) • 1-5 (Menu) • Arrows (Skip) • Ctrl+S (Export)</div>
                   </div>
@@ -5487,11 +5683,16 @@ export default function App() {
                   "flex-1 p-2 sm:p-6 lg:p-12 flex flex-col items-center justify-center overflow-hidden relative transition-all duration-300",
                   isPreviewCollapsedMobile ? "hidden lg:flex lg:min-h-0 lg:p-12" : "min-h-[250px] sm:min-h-[300px] lg:min-h-0"
                 )}>
-                  <div className={cn(
-                    "w-full aspect-video relative border border-white/10 group shadow-[0_0_100px_rgba(255,255,255,0.05)] overflow-hidden bg-black ring-1 ring-white/5 preview-viewport transition-all duration-500",
-                    isSidebarCollapsed ? "max-w-[1600px]" : "max-w-[1400px]",
-                    isConsoleCollapsed ? "max-h-[75vh] lg:max-h-[90vh]" : "max-h-[75vh]"
-                  )}>
+                   <div 
+                    className={cn(
+                      "w-full aspect-video relative border border-white/10 group shadow-[0_0_100px_rgba(255,255,255,0.05)] overflow-hidden bg-black ring-1 ring-white/5 preview-viewport transition-all duration-500",
+                      isSidebarCollapsed ? "max-w-[1600px]" : "max-w-[1400px]",
+                      isConsoleCollapsed ? "max-h-[75vh] lg:max-h-[90vh]" : "max-h-[75vh]"
+                    )}
+                    style={{
+                      fontSize: `${(previewWidth / DESIGN_BASE_WIDTH) * settings.fontSize}px`
+                    }}
+                  >
 
               {/* Viewport Grid Overlay */}
               <div className="absolute inset-x-0 bottom-0 top-6 pointer-events-none grid grid-cols-6 grid-rows-6 opacity-0 lg:group-hover:opacity-10 transition-opacity z-20">
@@ -5909,20 +6110,20 @@ export default function App() {
 
                   {/* Info Text / Export Warning di bawah Preview */}
                   {showInfo && (
-                    <div className="mt-4 w-full max-w-[1400px] bg-white/[0.02] border border-white/10 p-4 pr-12 flex gap-3 items-start relative overflow-hidden">
-                      <Info className="w-4 h-4 text-white mt-0.5 flex-shrink-0" />
-                      <div className="space-y-1">
-                        <div className="text-[9px] font-bold uppercase tracking-widest text-white/40">
+                    <div className="mt-4 w-full max-w-[1400px] bg-white/[0.02] border border-white/10 p-4 sm:p-6 pr-12 sm:pr-16 flex gap-3 items-start relative overflow-hidden transition-all duration-300">
+                      <Info className="w-4 h-4 sm:w-5 sm:h-5 text-white mt-0.5 flex-shrink-0" />
+                      <div className="space-y-1 sm:space-y-2">
+                        <div className="text-[9px] sm:text-xs font-bold uppercase tracking-widest text-white/40">
                           {lang === 'id' ? 'INFORMASI TAMBAHAN' : 'ADDITIONAL INFORMATION'}
                         </div>
-                        <p className="text-[10px] text-zinc-400 font-medium leading-relaxed tracking-normal">
+                        <p className="text-[10px] sm:text-[13px] md:text-sm text-zinc-300 font-medium leading-relaxed tracking-normal">
                           {translations[lang].editor.exportWarning}
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={() => setShowInfo(false)}
-                        className="absolute top-3 right-3 text-white/40 hover:text-white transition-colors cursor-pointer active:scale-90"
+                        className="absolute top-3 right-3 sm:top-5 sm:right-5 text-white/40 hover:text-white transition-colors cursor-pointer active:scale-90"
                         title={lang === 'id' ? 'Tutup' : 'Close'}
                       >
                         <X className="w-4 h-4" />
@@ -5966,12 +6167,12 @@ export default function App() {
                         {/* Export Button for Desktop */}
                         <div className="mt-10 pt-10 border-t border-white/10 flex justify-end">
                         <button 
-                            onClick={() => recordVideo()}
+                            onClick={() => initiateExport()}
                             disabled={isExporting}
                             title={translations[lang].editor.renderExport}
                             className={cn(
-                              "min-w-[240px] bg-white text-black py-4 lg:py-5 text-[11px] lg:text-[13px] font-bold uppercase tracking-[0.3em] transition-all rounded-none shadow-[8px_8px_0px_rgba(255,255,255,0.05)] render-button",
-                              isExporting ? "opacity-50 cursor-not-allowed" : "hover:bg-zinc-200"
+                              "min-w-[240px] bg-white text-black py-4 lg:py-5 text-[11px] lg:text-[13px] font-bold uppercase tracking-[0.3em] rounded-none transition-all duration-300 ease-out hover:scale-[1.01] hover:shadow-[12px_12px_0px_rgba(255,255,255,0.1)] active:scale-[0.99] shadow-[8px_8px_0px_rgba(255,255,255,0.05)] render-button",
+                              isExporting ? "opacity-40 cursor-not-allowed scale-100 shadow-[8px_8px_0px_rgba(255,255,255,0.05)]" : "hover:bg-zinc-100"
                             )}
                           >
                             {isExporting ? (
@@ -6042,18 +6243,15 @@ export default function App() {
               </button>
             </div>
             
-            <div className="flex-1 relative overflow-hidden flex items-center justify-center p-4 sm:p-12">
-               <div 
-                ref={fullscreenContainerRef}
-                className="w-full h-full relative border border-white/5 bg-black overflow-hidden flex items-center justify-center"
-                style={{ 
-                   aspectRatio: '16/9',
-                   maxWidth: '100%',
-                   maxHeight: '100%'
-                }}
-               >
-                  <div 
-                    className="absolute flex-shrink-0"
+            <div 
+              ref={fullscreenContainerRef}
+              className="flex-1 relative overflow-hidden flex items-center justify-center p-0 bg-black"
+              style={{
+                fontSize: `${(fullscreenWidth / DESIGN_BASE_WIDTH) * settings.fontSize}px`
+              }}
+            >
+              <div 
+                className="flex-shrink-0 border border-white/5 bg-black shadow-2xl"
                     style={{ 
                       width: DESIGN_BASE_WIDTH,
                       height: DESIGN_BASE_HEIGHT,
@@ -6339,7 +6537,6 @@ export default function App() {
                     </div>
                   </div>
                </div>
-            </div>
 
             {/* Fullscreen Seeker Slider */}
             {credits.length > 0 && (
