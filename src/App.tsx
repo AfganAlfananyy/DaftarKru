@@ -1586,9 +1586,15 @@ const AboutSection = ({ lang, onStart }: { lang: Lang, onStart: () => void }) =>
         className="w-full lg:flex-1 space-y-6 lg:space-y-12 z-10"
       >
         <div className="space-y-4">
-          <h2 className="text-4xl sm:text-6xl lg:text-8xl font-black italic tracking-tighter uppercase leading-[0.85] break-words">
-            {displayedTitle}
-            <span className="inline-block w-1.5 h-8 sm:h-12 lg:h-20 bg-white ml-2 animate-pulse align-middle" />
+          <h2 className="flex flex-col text-4xl sm:text-6xl lg:text-8xl font-black italic tracking-tighter uppercase leading-[0.85] break-words">
+            {displayedTitle.split(" ").map((word, i) => (
+              <div key={i}>
+                {word}
+                {i === displayedTitle.split(" ").length - 1 && displayedTitle.length < titleText.length && (
+                  <span className="inline-block w-1.5 h-8 sm:h-12 lg:h-20 bg-white ml-2 animate-pulse align-middle" />
+                )}
+              </div>
+            ))}
           </h2>
         </div>
         
@@ -1659,7 +1665,7 @@ const DocumentationSection = ({ lang }: { lang: Lang }) => {
               transition={{ duration: 0.8, ease: "easeOut" }}
               className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tighter uppercase leading-none italic"
             >
-              DOKUMENTASI DAFTARKRU
+              DOKUMENTASI<br />DAFTARKRU
             </motion.h2>
           </div>
           <p className="text-xs sm:text-sm text-zinc-400 max-w-sm tracking-normal leading-relaxed">
