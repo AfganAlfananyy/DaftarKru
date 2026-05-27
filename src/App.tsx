@@ -255,10 +255,10 @@ const translations = {
       tutorialDesc: "Pelajari teknik dasar pembuatan kredit engine dalam hitungan detik. Semua fitur didesain untuk kemudahan workflow anda."
     },
     documentation: {
-      title: "Dokumentasi",
+      title: "SEMUA",
       heading: "Tutorial &\nPanduan",
-      subheading: "Kuasai cara penggunaan DaftarKru Engine dengan pintasan keyboard dan panduan lengkap.",
-      videoTitle: "Video Tutorial Resmi",
+      subheading: "Kuasai cara penggunaan DaftarKru Engine dengan pintasan keyboard dan tonton video demo.",
+      videoTitle: "VIDIO DEMO DAFTARKRU ENGINE",
       kbdTitle: "Pintasan Keyboard",
       kbdDesc: "Tingkatkan produktivitas Anda menggunakan pintasan keyboard berikut di layar workspace (Laptop/Desktop):",
       guidesTitle: "Panduan Fitur Utama",
@@ -387,7 +387,7 @@ const translations = {
       tutorialDesc: "Learn the basic techniques of creating credits engine in seconds. All features are designed for your workflow convenience."
     },
     documentation: {
-      title: "DOCUMENTATION",
+      title: "SEMUA",
       heading: "Tutorials &\nGuides",
       subheading: "Master the use of DaftarKru Engine with specialized keyboard shortcuts and feature overviews.",
       videoTitle: "Official Video Tutorial",
@@ -513,6 +513,38 @@ const TypingDescription = ({ lang }: { lang: Lang }) => {
     </motion.p>
   );
 };
+
+export function ArcadeEmbed() {
+  const [interactable, setInteractable] = useState(false);
+  return (
+    <div style={{ position: 'relative', paddingBottom: 'calc(56.25%)', height: '0', width: '100%', touchAction: 'pan-y' }}>
+      {!interactable && (
+         <div 
+           className="absolute inset-0 z-10 cursor-pointer"
+           onClick={() => setInteractable(true)}
+         />
+      )}
+      <iframe
+        src="https://demo.arcade.software/video/zMXkmLADuD2y4SIM7LJx?embed&embed_mobile=inline&embed_desktop=inline&squared=true&show_copy_link=true"
+        title="Ekspor dan Kustomisasi Kredit Video di DaftarKru Engine"
+        frameBorder="0"
+        loading="lazy"
+        allowFullScreen
+        allow="clipboard-write"
+        scrolling="no"
+        style={{ 
+           position: 'absolute', 
+           top: 0, 
+           left: 0, 
+           width: '100%', 
+           height: '100%', 
+           colorScheme: 'light',
+           pointerEvents: interactable ? 'auto' : 'none'
+        }}
+      />
+    </div>
+  )
+}
 
 const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSection, setActiveSection, view, setView, isHidden, isScrolled, lenisRef }: { 
   lang: Lang, 
@@ -1581,8 +1613,6 @@ const AboutSection = ({ lang, onStart }: { lang: Lang, onStart: () => void }) =>
 };
 
 const DocumentationSection = ({ lang }: { lang: Lang }) => {
-  const [embedId, setEmbedId] = useState("dQw4w9WgXcQ");
-  const [isPlaying, setIsPlaying] = useState(false);
   const [showAllShortcuts, setShowAllShortcuts] = useState(false);
 
   const shortcuts = [
@@ -1629,7 +1659,7 @@ const DocumentationSection = ({ lang }: { lang: Lang }) => {
               transition={{ duration: 0.8, ease: "easeOut" }}
               className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tighter uppercase leading-none italic"
             >
-              {lang === 'id' ? "PANDUAN STUDIO" : "STUDIO GUIDELINE"}
+              DOKUMENTASI DAFTARKRU
             </motion.h2>
           </div>
           <p className="text-xs sm:text-sm text-zinc-400 max-w-sm tracking-normal leading-relaxed">
@@ -1645,44 +1675,11 @@ const DocumentationSection = ({ lang }: { lang: Lang }) => {
                 {translations[lang].documentation.videoTitle}
               </h3>
               
-              <div className="relative aspect-video w-full bg-black border border-white/10 group overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
-                {!isPlaying ? (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-zinc-950/90 transition-all duration-500">
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#111_1px,transparent_1px),linear-gradient(to_bottom,#111_1px,transparent_1px)] bg-[size:32px_32px] opacity-20 pointer-events-none" />
-                    <button 
-                      onClick={() => setIsPlaying(true)}
-                      className="group/btn relative flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-white hover:bg-white text-black transition-all duration-300 active:scale-95 z-20 cursor-pointer shadow-[0_0_50px_rgba(255,255,255,0.15)] rounded-none"
-                    >
-                      <Play className="w-6 h-6 sm:w-8 sm:h-8 text-black fill-black ml-1 transition-transform group-hover/btn:scale-110" />
-                    </button>
-                    <span className="mt-8 text-[10px] sm:text-xs font-bold uppercase tracking-[0.4em] text-zinc-400 font-mono">PLAY TUTORIAL VIDEO</span>
-                  </div>
-                ) : (
-                  <iframe
-                    className="w-full h-full object-cover relative z-10"
-                    src={`https://www.youtube.com/embed/${embedId}?autoplay=1&rel=0&modestbranding=1`}
-                    title="DaftarKru Tutorial Guide"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                )}
+              <div className="relative w-full bg-black border border-white/10 group overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+                <ArcadeEmbed />
                 <div className="absolute top-0 inset-x-0 h-[1px] bg-white/20 z-20 pointer-events-none" />
               </div>
 
-              <div className="flex items-center gap-2 bg-zinc-900/40 border border-white/5 px-4 py-2.5">
-                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">CUSTOM_YT_ID:</span>
-                <input 
-                  type="text" 
-                  value={embedId} 
-                  onChange={(e) => {
-                    setEmbedId(e.target.value.trim());
-                    setIsPlaying(false);
-                  }}
-                  placeholder="e.g., dQw4w9WgXcQ"
-                  className="bg-transparent border-none text-[10px] font-mono text-white focus:outline-none flex-1 placeholder-zinc-700 uppercase"
-                />
-              </div>
             </div>
           </div>
 
@@ -1695,19 +1692,31 @@ const DocumentationSection = ({ lang }: { lang: Lang }) => {
               {translations[lang].documentation.kbdDesc}
             </p>
 
-            <div className="grid grid-cols-1 gap-2.5">
-              {displayedShortcuts.map((shortcut, index) => (
-                <div 
-                  key={index} 
-                  className="flex items-center justify-between p-3.5 bg-zinc-950 border border-white/5 transition-all hover:bg-zinc-900/50 hover:border-white/10 group animate-none"
-                >
-                  <span className="text-xs text-zinc-400 tracking-normal leading-relaxed group-hover:text-zinc-200 transition-colors mr-4">{shortcut.desc}</span>
-                  <kbd className="px-3 py-1 bg-zinc-900 border border-white/20 rounded font-mono text-[9px] font-bold text-white uppercase shadow-[3px_3px_0px_rgba(255,255,255,0.05)] tracking-widest whitespace-nowrap group-hover:bg-white group-hover:text-black group-hover:border-white transition-all duration-300">
-                    {shortcut.key}
-                  </kbd>
-                </div>
-              ))}
-            </div>
+            <motion.div className="grid grid-cols-1 gap-2.5">
+              <AnimatePresence mode="popLayout">
+                {displayedShortcuts.map((shortcut) => (
+                  <motion.div 
+                    key={shortcut.key}
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ 
+                      height: { duration: 0.35, ease: [0.16, 1, 0.3, 1] },
+                      opacity: { duration: 0.25 }
+                    }}
+                    layout
+                    className="overflow-hidden"
+                  >
+                    <div className="flex items-center justify-between p-3.5 bg-zinc-950 border border-white/5 transition-all hover:bg-zinc-900/50 hover:border-white/10 group">
+                      <span className="text-xs text-zinc-400 tracking-normal leading-relaxed group-hover:text-zinc-200 transition-colors mr-4">{shortcut.desc}</span>
+                      <kbd className="px-3 py-1 bg-zinc-900 border border-white/20 rounded font-mono text-[9px] font-bold text-white uppercase shadow-[3px_3px_0px_rgba(255,255,255,0.05)] tracking-widest whitespace-nowrap group-hover:bg-white group-hover:text-black group-hover:border-white transition-all duration-300">
+                        {shortcut.key}
+                      </kbd>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
 
             <button
               onClick={() => setShowAllShortcuts(!showAllShortcuts)}
@@ -3354,7 +3363,7 @@ export default function App() {
   });
 
   useEffect(() => {
-    if (view === 'hero') {
+    if (view === 'hero' && window.innerWidth >= 768) {
       const lenis = new Lenis({
         duration: 1.8,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
