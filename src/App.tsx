@@ -6,7 +6,6 @@ import {
   Film, 
   Loader2,
   Rocket,
-  Menu,
   X,
   ChevronRight,
   ChevronLeft,
@@ -24,6 +23,9 @@ import {
   Upload,
   Columns,
   Trash,
+  Trash2,
+  Copy,
+  Pencil,
   Globe,
   Instagram,
   Github,
@@ -224,14 +226,20 @@ const PRESETS = {
   }
 };
 
+const RENDERING_TEXTS = [
+  "SEDANG RENDER",
+  "MENGEKSPOR FRAME",
+  "DALAM PROSES EKSPOR"
+];
+
 const translations = {
   id: {
-    nav: { home: 'BERANDA', about: 'TENTANG', documentation: 'DOKUMENTASI', faq: 'FAQ', getStarted: 'MULAI' },
+    nav: { home: 'BERANDA', about: 'TENTANG', documentation: 'DOKUMENTASI', faq: 'FAQ', getStarted: 'MULAI', selectLanguage: 'PILIH BAHASA' },
     hero: {
-      tag1: "Next Generation Credits Engine",
-      tag2: "Sangat mudah digunakan",
-      tag3: "Buat credit dengan gratis",
-      tag4: "Buat credit dimana pun dan kapanpun",
+      tag1: "Engine Kredit Generasi Baru",
+      tag2: "Sangat Mudah Digunakan",
+      tag3: "Buat Kredit Secara Gratis",
+      tag4: "Akses Dimana Saja & Kapan Saja",
       description: "Alat Profesional untuk membuat kredit film secara otomatis",
       button: "Mulai Produksi",
       scroll: "SCROLL UNTUK EKSPLORASI"
@@ -307,6 +315,7 @@ const translations = {
       version: "Versi 1",
       editTape: "Edit Tape",
       deleteTape: "Hapus Tape",
+      duplicateTape: "Duplikat Tape",
       fontStyle: "1. Gaya Font",
       motionType: "2. Tipe Gerak",
       appearance: "3. Tampilan",
@@ -357,7 +366,7 @@ const translations = {
     }
   },
   en: {
-    nav: { home: 'HOME', about: 'ABOUT', documentation: 'DOCUMENTATION', faq: 'FAQ', getStarted: 'START' },
+    nav: { home: 'HOME', about: 'ABOUT', documentation: 'DOCUMENTATION', faq: 'FAQ', getStarted: 'START', selectLanguage: 'SELECT LANGUAGE' },
     hero: {
       tag1: "Next Generation Credits Engine",
       tag2: "Extremely easy to use",
@@ -438,6 +447,7 @@ const translations = {
       version: "Version 1",
       editTape: "Edit Tape",
       deleteTape: "Delete Tape",
+      duplicateTape: "Duplicate Tape",
       fontStyle: "1. Font Style",
       motionType: "2. Motion Type",
       appearance: "3. Appearance",
@@ -521,9 +531,9 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSe
     const el = document.getElementById(id);
     if (el) {
       const scrollOptions = {
-        duration: 1.5,
+        duration: 1.2,
         lock: true,
-        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        easing: (t: number) => 1 - Math.pow(1 - t, 4), // Smooth power4 out
         onComplete: () => {
           ScrollTrigger.refresh();
         }
@@ -584,7 +594,7 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSe
             onClick={() => setIsMobileMenuOpen(true)}
             className="flex items-center gap-1.5 bg-white/5 hover:bg-white text-white hover:text-black hover:border-white border border-white/10 px-2.5 sm:px-3.5 py-1 sm:py-1.5 text-[8px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-300 cursor-pointer shadow-[2px_2px_0px_rgba(255,255,255,0.05)] active:translate-x-[1px] active:translate-y-[1px]"
           >
-            <Menu className="w-3.5 h-3.5" />
+            <Menu2Lines className="w-4 h-4" />
             <span>MENU</span>
           </button>
         </div>
@@ -615,7 +625,7 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSe
             {/* Header Area */}
             <div className="flex items-center justify-between border-b border-white/10 pb-6 relative z-10 shrink-0">
               <div className="flex items-center gap-2">
-                <span className="font-mono text-[9px] sm:text-[11px] font-bold text-zinc-500 uppercase tracking-[0.25em]">// NAV_DAFTARKRU</span>
+                <span className="font-mono text-[9px] sm:text-[11px] font-bold text-zinc-500 uppercase tracking-[0.25em]">NAVBAR DAFTARKRU</span>
               </div>
               <button 
                 onClick={() => setIsMobileMenuOpen(false)} 
@@ -700,7 +710,7 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSe
 
             {/* Language Selection inside Drawer Menu */}
             <div className="border-t border-white/10 pt-6 relative z-10 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4 max-w-md w-full mx-auto">
-              <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">// SELECT LANGUAGE</span>
+              <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">{translations[lang].nav.selectLanguage}</span>
               <div className="flex gap-2 w-full sm:w-auto">
                 {(['id', 'en'] as Lang[]).map((l) => (
                   <button
@@ -819,7 +829,7 @@ const FilmStrip = ({ speed = 40, reverse = false, rotate = -4, yOffset = "25%", 
   );
 };
 
-const BackgroundElements = ({ hideExtra = false, showPerspectiveGrid = false }: { hideExtra?: boolean; showPerspectiveGrid?: boolean }) => {
+const BackgroundElements = React.memo(({ hideExtra = false, showPerspectiveGrid = false }: { hideExtra?: boolean; showPerspectiveGrid?: boolean }) => {
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-[#020202]">
       {!hideExtra && (
@@ -914,7 +924,7 @@ const BackgroundElements = ({ hideExtra = false, showPerspectiveGrid = false }: 
       )}
     </div>
   );
-};
+});
 
 const ClapperboardTransition = ({ isOpen }: { isOpen: boolean }) => {
   if (!isOpen) return null;
@@ -1266,7 +1276,7 @@ const SaveIndicator = ({ isSaving, lastSaved, lang }: { isSaving: boolean, lastS
     </div>
   );
 };
-const Marquee = ({ text, reverse = false, speed = 30 }: { text: string, reverse?: boolean, speed?: number }) => {
+const Marquee = React.memo(({ text, reverse = false, speed = 30 }: { text: string, reverse?: boolean, speed?: number }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   
   useGSAP(() => {
@@ -1292,7 +1302,7 @@ const Marquee = ({ text, reverse = false, speed = 30 }: { text: string, reverse?
           transform: `translateX(${reverse ? -1000 : 0}px)` 
         }}
       >
-        {[...Array(10)].map((_, i) => (
+        {[...Array(6)].map((_, i) => (
           <div key={i} className="flex items-center gap-8 sm:gap-16">
             <span className="text-4xl sm:text-7xl font-bold uppercase tracking-tighter text-white/10 italic hover:text-white/40 transition-colors cursor-default select-none">
               {text}
@@ -1303,7 +1313,7 @@ const Marquee = ({ text, reverse = false, speed = 30 }: { text: string, reverse?
       </div>
     </div>
   );
-};
+});
 
 const GsapAnimatedConsole = ({ onPlay, lang }: { onPlay: () => void, lang: Lang }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -2996,6 +3006,21 @@ const ConsoleContent = React.memo(({ settings, setSettings, activeConsole, setAc
   );
 });
 
+const Menu2Lines = ({ className }: { className?: string }) => (
+  <svg 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2.5" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <line x1="4" y1="8" x2="20" y2="8" />
+    <line x1="4" y1="16" x2="20" y2="16" />
+  </svg>
+);
+
 const CreditItem = React.memo(({ 
   item, 
   selectedIds, 
@@ -3004,6 +3029,7 @@ const CreditItem = React.memo(({
   setOpenSettingsId, 
   startEditing, 
   removeRole,
+  duplicateTape,
   togglePairs,
   lang
 }: any) => {
@@ -3101,6 +3127,18 @@ const CreditItem = React.memo(({
                       className="w-full text-left px-4 py-3 text-xs font-semibold tracking-normal hover:bg-white hover:text-black transition-colors flex items-center justify-between text-white border-b border-white/10"
                     >
                       {translations[lang].editor.editTape}
+                      <Pencil className="w-3.5 h-3.5 opacity-50" />
+                    </button>
+
+                    <button 
+                      onClick={() => {
+                        duplicateTape(item.id);
+                        setOpenSettingsId(null);
+                      }}
+                      className="w-full text-left px-4 py-3 text-xs font-semibold tracking-normal hover:bg-white hover:text-black transition-colors flex items-center justify-between text-white border-b border-white/10"
+                    >
+                      {translations[lang].editor.duplicateTape}
+                      <Copy className="w-3.5 h-3.5 opacity-50" />
                     </button>
 
                     <button 
@@ -3108,9 +3146,10 @@ const CreditItem = React.memo(({
                         removeRole(item.id);
                         setOpenSettingsId(null);
                       }}
-                      className="w-full text-left px-4 py-3 text-xs font-semibold tracking-normal text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+                      className="w-full text-left px-4 py-3 text-xs font-semibold tracking-normal text-white hover:text-red-500 hover:bg-white/5 transition-colors flex items-center justify-between"
                     >
                       {translations[lang].editor.deleteTape}
+                      <Trash2 className="w-3.5 h-3.5 opacity-50" />
                     </button>
                   </motion.div>
                 </>
@@ -3667,6 +3706,16 @@ export default function App() {
   }, [projectName]);
 
   const [isExporting, setIsExporting] = useState(false);
+  const [renderingTextIndex, setRenderingTextIndex] = useState(0);
+
+  useEffect(() => {
+    if (isExporting) {
+      const interval = setInterval(() => {
+        setRenderingTextIndex((prev) => (prev + 1) % 3);
+      }, 2500);
+      return () => clearInterval(interval);
+    }
+  }, [isExporting]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [previewScaleValue, setPreviewScale] = useState(1);
@@ -3971,6 +4020,20 @@ export default function App() {
     ));
   };
 
+  const duplicateTape = (id: string) => {
+    const tape = credits.find(c => c.id === id);
+    if (tape) {
+      const newTape = {
+        ...tape,
+        id: Math.random().toString(36).substr(2, 9)
+      };
+      const index = credits.findIndex(c => c.id === id);
+      const updated = [...credits];
+      updated.splice(index + 1, 0, newTape);
+      setCredits(updated);
+    }
+  };
+
 
   useEffect(() => {
     if (!previewRef.current) return;
@@ -4125,6 +4188,29 @@ export default function App() {
             resolve({ success: false, isAlphaError: false });
             return;
           }
+
+          // Pre-render noise texture for performance
+          const noiseCanvas = document.createElement('canvas');
+          noiseCanvas.width = canvasWidth;
+          noiseCanvas.height = canvasHeight;
+          const nCtx = noiseCanvas.getContext('2d');
+          if (nCtx) {
+            nCtx.fillStyle = 'rgba(255,255,255,0.05)';
+            for (let i = 0; i < 40000; i++) {
+              nCtx.fillRect(Math.random() * canvasWidth, Math.random() * canvasHeight, 1, 1);
+            }
+          }
+
+          // Pre-render scanline pattern
+          const scanlineCanvas = document.createElement('canvas');
+          scanlineCanvas.width = 1;
+          scanlineCanvas.height = 4;
+          const sCtx = scanlineCanvas.getContext('2d');
+          if (sCtx) {
+            sCtx.fillStyle = 'rgba(0,0,0,0.2)';
+            sCtx.fillRect(0, 0, 1, 2);
+          }
+          const scanlinePattern = ctx.createPattern(scanlineCanvas, 'repeat');
 
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
@@ -4335,23 +4421,24 @@ export default function App() {
             ctx.restore();
           }
 
-          // Overlay effects in export
+          // Optimized Overlay effects in export
           if (settings.showNoise) {
-            ctx.fillStyle = `rgba(255,255,255,${settings.noiseOpacity * 0.8})`;
-            for (let i = 0; i < 15000; i++) {
-              ctx.fillRect(Math.random() * canvasWidth, Math.random() * canvasHeight, 1, 1);
-            }
+            ctx.save();
+            ctx.globalAlpha = settings.noiseOpacity * 0.8;
+            const ox = Math.random() * 40 - 20;
+            const oy = Math.random() * 40 - 20;
+            ctx.drawImage(noiseCanvas, ox, oy);
+            ctx.restore();
           }
-          if (settings.showScanlines) {
-            ctx.fillStyle = 'rgba(0,0,0,0.3)';
-            for (let i = 0; i < canvasHeight; i += 2) {
-               ctx.fillRect(0, i, canvasWidth, 1);
-            }
+          if (settings.showScanlines && scanlinePattern) {
+            ctx.fillStyle = scanlinePattern;
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
           }
           if (settings.vignette > 0) {
+            const vRange = Math.max(canvasWidth, canvasHeight) / 1.1;
             const gradient = ctx.createRadialGradient(
               canvasWidth / 2, canvasHeight / 2, 0,
-              canvasWidth / 2, canvasHeight / 2, Math.max(canvasWidth, canvasHeight) / 1.1
+              canvasWidth / 2, canvasHeight / 2, vRange
             );
             gradient.addColorStop(0, 'transparent');
             gradient.addColorStop(1, `rgba(0,0,0,${settings.vignette * 0.95})`);
@@ -4943,7 +5030,7 @@ export default function App() {
                     isMenuOpen ? "bg-white text-black" : "hover:bg-white hover:text-black cursor-pointer"
                   )}
                 >
-                  <Menu className="w-4 h-4 md:w-5 md:h-5" />
+                  <Menu2Lines className="w-4 h-4 md:w-5 md:h-5" />
                 </button>
               </div>
             </header>
@@ -4979,7 +5066,7 @@ export default function App() {
                   >
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-[9px] sm:text-[11px] font-bold text-zinc-500 uppercase tracking-[0.25em]">
-                        // {translations[lang].editor.projectOptions.toUpperCase()} v1.12
+                        {translations[lang].editor.projectOptions.toUpperCase()}
                       </span>
                     </div>
                     <button 
@@ -5096,8 +5183,8 @@ export default function App() {
                                     transition={{ delay: 0.15, duration: 0.3 }}
                                     className="flex items-center gap-2"
                                   >
-                                    <Check className="w-4 h-4 text-emerald-600 block shrink-0" />
-                                    <span>{lang === 'id' ? "NAMA PROYEK DISIMPAN" : "PROJECT NAME SAVED"}</span>
+                                  <Check className="w-4 h-4 block shrink-0" />
+                                  <span>{lang === 'id' ? "NAMA PROYEK DISIMPAN" : "PROJECT NAME SAVED"}</span>
                                   </motion.div>
                                 </motion.div>
                               )}
@@ -5140,7 +5227,7 @@ export default function App() {
                     transition={{ delay: 0.36, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                     className="border-t border-white/10 pt-6 relative z-10 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4 max-w-md w-full mx-auto pb-6"
                   >
-                    <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">// SELECT LANGUAGE</span>
+                    <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">{translations[lang].nav.selectLanguage}</span>
                     <div className="flex gap-2 w-full sm:w-auto">
                       {(['id', 'en'] as Lang[]).map((l) => (
                         <button
@@ -5276,8 +5363,9 @@ export default function App() {
                               animate={{ x: 0 }}
                               exit={{ x: "100%" }}
                               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                              className="absolute inset-0 bg-white text-black flex items-center justify-center font-mono font-black text-[10px] sm:text-xs tracking-widest uppercase z-10 px-4 whitespace-nowrap"
+                              className="absolute inset-0 bg-white text-black flex items-center justify-center gap-2 font-mono font-black text-[10px] sm:text-xs tracking-widest uppercase z-10 px-4 whitespace-nowrap"
                             >
+                              <Check className="w-3 h-3 sm:w-4 sm:h-4" />
                               {lang === 'id' ? "NAMA TERSIMPAN" : "NAME SAVED"}
                             </motion.div>
                           )}
@@ -5409,23 +5497,59 @@ export default function App() {
                     >
                       {/* Top Header Status */}
                       <div className="flex flex-col items-center space-y-4">
-                        <div className="flex items-center gap-2 bg-white/[0.02] border border-white/5 py-1 px-3 rounded-none">
-                          <span className="relative flex h-1.5 w-1.5">
-                            {exportProgress < 100 ? (
-                              <>
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
-                              </>
-                            ) : (
-                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-                            )}
-                          </span>
-                          <span className="text-[10px] font-mono text-zinc-450 tracking-wider">
-                            {exportProgress >= 100 
-                              ? (lang === 'id' ? "Selesai diproses" : "Rendering completed") 
-                              : (lang === 'id' ? "Sedang dirender" : "Rendering in progress")
-                            }
-                          </span>
+                        <div className="flex flex-col items-center gap-3 bg-white/[0.03] border border-white/10 py-2.5 px-5 rounded-none relative overflow-hidden min-w-[180px] shadow-[8px_8px_0px_rgba(255,255,255,0.02)]">
+                          {/* Animated Looping Line at top */}
+                          <div className="absolute top-0 left-0 w-full h-[1.5px] bg-zinc-900/60 overflow-hidden">
+                            <motion.div 
+                              animate={{ 
+                                x: ["-100%", "100%"]
+                              }}
+                              transition={{ 
+                                duration: 2.5, 
+                                repeat: Infinity, 
+                                ease: "linear"
+                              }}
+                              className="h-full w-full bg-gradient-to-r from-transparent via-white to-transparent"
+                            />
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <span className="relative flex items-center justify-center">
+                              {exportProgress < 100 ? (
+                                <span className="relative flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                                </span>
+                              ) : (
+                                <Check className="w-3.5 h-3.5 text-white" />
+                              )}
+                            </span>
+                            
+                            <div className="h-6 flex items-center justify-center overflow-hidden">
+                              <AnimatePresence mode="wait">
+                                {exportProgress < 100 ? (
+                                  <motion.span
+                                    key={exportProgress >= 80 ? 'finishing' : renderingTextIndex}
+                                    initial={{ y: 20, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    exit={{ y: -20, opacity: 0 }}
+                                    transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                                    className="text-[9px] font-black font-mono text-white tracking-[0.35em] uppercase whitespace-nowrap"
+                                  >
+                                    {exportProgress >= 80 ? (lang === 'id' ? "MENYEMPURNAKAN HASIL" : "FINALIZING RESULT") : RENDERING_TEXTS[renderingTextIndex]}
+                                  </motion.span>
+                                ) : (
+                                  <motion.span
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="text-[9px] font-black font-mono text-white tracking-[0.35em] uppercase"
+                                  >
+                                    {lang === 'id' ? "PROSES SELESAI" : "PROCESS COMPLETED"}
+                                  </motion.span>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
@@ -5442,12 +5566,36 @@ export default function App() {
 
                       {/* Smooth Slider Line */}
                       <div className="space-y-3">
-                        <div className="w-full h-1 bg-zinc-900 rounded-full overflow-hidden relative">
+                        <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden relative">
                           <motion.div 
                             className="absolute inset-y-0 left-0 bg-white"
-                            style={{ width: `${exportProgress}%` }}
-                            transition={{ type: "tween", ease: "linear", duration: 0.1 }}
-                          />
+                            animate={{ width: `${exportProgress}%` }}
+                            transition={{ type: "spring", bounce: 0, duration: 0.8 }}
+                          >
+                            <motion.div 
+                              animate={{ 
+                                opacity: [0.3, 1, 0.3],
+                                scaleX: [1, 1.2, 1],
+                              }}
+                              transition={{ 
+                                duration: 2, 
+                                repeat: Infinity, 
+                                ease: "easeInOut"
+                              }}
+                              className="absolute inset-0 bg-white shadow-[0_0_15px_rgba(255,255,255,0.6)]"
+                            />
+                            <motion.div 
+                              animate={{ 
+                                x: ["-100%", "200%"]
+                              }}
+                              transition={{ 
+                                duration: 3, 
+                                repeat: Infinity, 
+                                ease: "linear"
+                              }}
+                              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-full"
+                            />
+                          </motion.div>
                         </div>
                         
                         {/* Extra Status details in sentence case */}
@@ -5472,11 +5620,11 @@ export default function App() {
                         </div>
                         <div className="space-y-1 border-x border-white/5">
                           <div className="text-zinc-600 font-bold uppercase tracking-wider text-[8px] sm:text-[9px]">Resolusi</div>
-                          <div className="text-zinc-300 font-semibold">1920 × 1080</div>
+                          <div className="text-zinc-300 font-semibold">FHD 1080p</div>
                         </div>
                         <div className="space-y-1">
-                          <div className="text-zinc-600 font-bold uppercase tracking-wider text-[8px] sm:text-[9px]">Kecepatan</div>
-                          <div className="text-zinc-300 font-semibold">60 fps</div>
+                          <div className="text-zinc-600 font-bold uppercase tracking-wider text-[8px] sm:text-[9px]">Status</div>
+                          <div className="text-zinc-300 font-semibold">Optimized</div>
                         </div>
                       </div>
                     </motion.div>
@@ -5528,10 +5676,23 @@ export default function App() {
                     <button 
                       onClick={addRole}
                       disabled={!newRole.trim() || !newNames.trim()}
-                      className="relative w-full h-16 lg:h-20 border border-white flex items-center justify-center overflow-hidden transition-all duration-300 ease-out disabled:opacity-20 rounded-none group bg-zinc-950 cursor-pointer"
+                      className={cn(
+                        "relative w-full h-16 lg:h-20 border border-white flex items-center justify-center overflow-hidden transition-all duration-300 ease-out disabled:opacity-20 rounded-none group cursor-pointer",
+                        editingId ? "bg-white" : "bg-zinc-950"
+                      )}
                     >
-                      <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[0.16,1,0.3,1]" />
-                      <div className="relative z-10 text-white group-hover:text-black transition-colors duration-300 flex items-center justify-center w-full h-full">
+                      <div className={cn(
+                        "absolute inset-0 transition-transform duration-500 ease-[0.16,1,0.3,1]",
+                        editingId 
+                          ? "bg-black translate-y-full group-hover:translate-y-0" 
+                          : "bg-white translate-y-full group-hover:translate-y-0"
+                      )} />
+                      <div className={cn(
+                        "relative z-10 transition-colors duration-300 flex items-center justify-center w-full h-full",
+                        editingId 
+                          ? "text-black group-hover:text-white" 
+                          : "text-white group-hover:text-black"
+                      )}>
                         {editingId ? <Check className="w-8 h-8" /> : <Plus className="w-8 h-8 transition-transform group-hover:rotate-90" />}
                       </div>
                     </button>
@@ -5558,8 +5719,9 @@ export default function App() {
                       {selectedIds.size > 0 && (
                         <button 
                           onClick={bulkDelete}
-                          className="text-[10px] lg:text-[11px] font-bold text-red-500 hover:scale-105 transition-transform uppercase tracking-widest"
+                          className="text-[10px] lg:text-[11px] font-bold text-white hover:text-red-500 hover:scale-105 transition-all uppercase tracking-widest flex items-center gap-1.5"
                         >
+                          <Trash2 className="w-3.5 h-3.5" />
                           {translations[lang].editor.delete} ({selectedIds.size})
                         </button>
                       )}
@@ -5590,6 +5752,7 @@ export default function App() {
                         setOpenSettingsId={setOpenSettingsId}
                         startEditing={startEditing}
                         removeRole={removeRole}
+                        duplicateTape={duplicateTape}
                         togglePairs={togglePairs}
                         lang={lang}
                       />
@@ -5656,9 +5819,9 @@ export default function App() {
                 {/* Mobile Preview Control Header (Only below lg) */}
                 <div className="flex lg:hidden bg-[#0a0a0a] border-b border-white/10 px-4 py-2.5 items-center justify-between z-20">
                   <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
                     <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400">
-                      PREVIEW VIEWPORT ({settings.animationType.toUpperCase()})
+                      PREVIEW ({settings.animationType.toUpperCase()})
                     </span>
                   </div>
                   <button
@@ -5680,13 +5843,13 @@ export default function App() {
                 </div>
 
                 <main className={cn(
-                  "flex-1 p-2 sm:p-6 lg:p-12 flex flex-col items-center justify-center overflow-hidden relative transition-all duration-300",
-                  isPreviewCollapsedMobile ? "hidden lg:flex lg:min-h-0 lg:p-12" : "min-h-[250px] sm:min-h-[300px] lg:min-h-0"
+                  "flex-1 p-2 sm:p-4 lg:p-10 flex flex-col items-center justify-center overflow-hidden relative transition-all duration-300",
+                  isPreviewCollapsedMobile ? "hidden lg:flex lg:min-h-0 lg:p-10" : "min-h-[250px] sm:min-h-[300px] lg:min-h-0"
                 )}>
                    <div 
                     className={cn(
                       "w-full aspect-video relative border border-white/10 group shadow-[0_0_100px_rgba(255,255,255,0.05)] overflow-hidden bg-black ring-1 ring-white/5 preview-viewport transition-all duration-500",
-                      isSidebarCollapsed ? "max-w-[1600px]" : "max-w-[1400px]",
+                      isSidebarCollapsed ? "max-w-[1400px]" : "max-w-[1100px]",
                       isConsoleCollapsed ? "max-h-[75vh] lg:max-h-[90vh]" : "max-h-[75vh]"
                     )}
                     style={{
@@ -6110,7 +6273,7 @@ export default function App() {
 
                   {/* Info Text / Export Warning di bawah Preview */}
                   {showInfo && (
-                    <div className="mt-4 w-full max-w-[1400px] bg-white/[0.02] border border-white/10 p-4 sm:p-6 pr-12 sm:pr-16 flex gap-3 items-start relative overflow-hidden transition-all duration-300">
+                    <div className="mt-4 w-full max-w-[1400px] bg-white/[0.02] border border-white/10 p-4 sm:p-6 pr-12 sm:pr-16 flex gap-3 items-start relative transition-all duration-300">
                       <Info className="w-4 h-4 sm:w-5 sm:h-5 text-white mt-0.5 flex-shrink-0" />
                       <div className="space-y-1 sm:space-y-2">
                         <div className="text-[9px] sm:text-xs font-bold uppercase tracking-widest text-white/40">
