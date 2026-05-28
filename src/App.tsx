@@ -593,8 +593,8 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSe
         className={cn(
           "fixed top-6 sm:top-8 left-1/2 -translate-x-1/2 z-[999] p-1 rounded-none border transition-all duration-200 flex items-center justify-between gap-1",
           isScrolled 
-            ? "bg-black/90 backdrop-blur-2xl border-white/20 f1-shadow" 
-            : "bg-black/80 backdrop-blur-md border-white/20"
+            ? "bg-black sm:bg-black/90 backdrop-blur-2xl border-white/20 f1-shadow" 
+            : "bg-black sm:bg-black/60 backdrop-blur-md border-white/10"
         )}
       >
         {/* UNIFIED COMPACT PILL LAYOUT FOR ALL SCREEN BREAKPOINTS */}
@@ -636,7 +636,7 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSe
             />
 
             {/* Tech-brutalist grid background behind the mobile drawer */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff10_1px,transparent_1px),linear-gradient(to_bottom,#ffffff10_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
             
             {/* Header Area */}
             <div className="flex items-center justify-between border-b border-white/10 pb-6 relative z-10 shrink-0">
@@ -915,7 +915,7 @@ const BackgroundElements = React.memo(({ hideExtra = false, showPerspectiveGrid 
       ) : (
         /* Static Tech Grid - Reduced opacity and simplified for normal section flow */
         <div 
-          className="absolute inset-0 opacity-[0.05]" 
+          className="absolute inset-0 opacity-100 sm:opacity-[0.05]" 
           style={{ 
             backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)',
             backgroundSize: '80px 80px',
@@ -5054,7 +5054,7 @@ export default function App() {
                   />
 
                   {/* Tech-brutalist grid background behind the menu */}
-                  <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff10_1px,transparent_1px),linear-gradient(to_bottom,#ffffff10_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+                  <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
                   
                   {/* Header Area */}
                   <motion.div 
