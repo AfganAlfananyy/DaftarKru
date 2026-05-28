@@ -593,8 +593,8 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSe
         className={cn(
           "fixed top-6 sm:top-8 left-1/2 -translate-x-1/2 z-[999] p-1 rounded-none border transition-all duration-200 flex items-center justify-between gap-1",
           isScrolled 
-            ? "bg-black sm:bg-black/90 backdrop-blur-2xl border-white/20 f1-shadow" 
-            : "bg-black sm:bg-black/60 backdrop-blur-md border-white/10"
+            ? "bg-black/90 backdrop-blur-2xl border-white/20 f1-shadow" 
+            : "bg-black/60 backdrop-blur-md border-white/10"
         )}
       >
         {/* UNIFIED COMPACT PILL LAYOUT FOR ALL SCREEN BREAKPOINTS */}
@@ -915,7 +915,7 @@ const BackgroundElements = React.memo(({ hideExtra = false, showPerspectiveGrid 
       ) : (
         /* Static Tech Grid - Reduced opacity and simplified for normal section flow */
         <div 
-          className="absolute inset-0 opacity-100 sm:opacity-[0.05]" 
+          className="absolute inset-0 opacity-[0.05]" 
           style={{ 
             backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)',
             backgroundSize: '80px 80px',
@@ -1557,7 +1557,7 @@ const AboutSection = ({ lang, onStart }: { lang: Lang, onStart: () => void }) =>
   }, [titleVisible, displayedTitle, titleText]);
 
   return (
-    <section ref={sectionRef} id="about" className="min-h-screen w-full bg-[#050505] flex flex-col lg:flex-row items-center justify-start lg:justify-center p-4 sm:p-12 lg:p-24 gap-0 sm:gap-8 lg:gap-24 relative overflow-hidden border-t border-white/10 pt-12 lg:pt-24">
+    <section ref={sectionRef} id="about" className="min-h-screen w-full bg-[#050505] flex flex-col lg:flex-row items-center justify-start lg:justify-center p-4 sm:p-12 lg:p-24 gap-0 sm:gap-8 lg:gap-24 relative overflow-hidden border-t border-white/5 pt-12 lg:pt-24">
       <BackgroundElements hideExtra={true} />
 
       <motion.div 
@@ -1623,7 +1623,7 @@ const DocumentationSection = ({ lang }: { lang: Lang }) => {
   const displayedShortcuts = showAllShortcuts ? shortcuts : shortcuts.slice(0, 5);
 
   return (
-    <section id="documentation" className="min-h-screen w-full bg-[#050505] flex flex-col items-center justify-center p-6 sm:p-12 lg:p-24 relative overflow-hidden border-t border-white/10">
+    <section id="documentation" className="min-h-screen w-full bg-[#050505] flex flex-col items-center justify-center p-6 sm:p-12 lg:p-24 relative overflow-hidden border-t border-white/5">
       {/* Static Background instead of animated one */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03]">
         <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-white rounded-full blur-[160px]" />
@@ -1844,7 +1844,7 @@ const FAQSection = ({ lang }: { lang: Lang }) => {
   ];
 
   return (
-    <section id="faq" style={{ overflowAnchor: "none" }} className="min-h-screen w-full bg-[#020202] flex flex-col items-center justify-center py-16 sm:py-24 px-6 sm:px-12 lg:px-24 relative overflow-hidden border-t border-white/10">
+    <section id="faq" style={{ overflowAnchor: "none" }} className="min-h-screen w-full bg-[#020202] flex flex-col items-center justify-center py-16 sm:py-24 px-6 sm:px-12 lg:px-24 relative overflow-hidden border-t border-white/5">
        <div className="absolute bottom-0 left-0 w-[800px] h-[800px] bg-white/[0.01] blur-[120px] rounded-full translate-y-1/2 -translate-x-1/2" />
        
        <div className="max-w-7xl w-full flex flex-col lg:grid lg:grid-cols-[1fr_1.5fr] gap-12 sm:gap-20 items-start">
@@ -2433,7 +2433,7 @@ const CategoryPopover = ({ id, title, children, activeConsole, closeConsole, lan
             "lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:w-[700px] lg:max-h-[min(750px,85vh)] lg:border lg:border-white/20 bg-black/95 lg:backdrop-blur-3xl"
           )}
         >
-          <div className="p-4 sm:p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-zinc-950/80 lg:bg-white/10 backdrop-blur-xl z-20 shrink-0">
+          <div className="p-4 sm:p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-zinc-950/80 lg:bg-white/5 backdrop-blur-xl z-20 shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
               <span className="text-[10px] lg:text-[12px] font-bold uppercase tracking-[0.4em] text-white underline decoration-white/30 underline-offset-8 transition-all hover:decoration-white">{title}</span>
