@@ -515,32 +515,16 @@ const TypingDescription = ({ lang }: { lang: Lang }) => {
 };
 
 export function ArcadeEmbed() {
-  const [interactable, setInteractable] = useState(false);
   return (
-    <div style={{ position: 'relative', paddingBottom: 'calc(56.25%)', height: '0', width: '100%', touchAction: 'pan-y' }}>
-      {!interactable && (
-         <div 
-           className="absolute inset-0 z-10 cursor-pointer"
-           onClick={() => setInteractable(true)}
-         />
-      )}
+    <div style={{ position: 'relative', paddingBottom: 'calc(56.25%)', height: '0', width: '100%' }}>
       <iframe
-        src="https://demo.arcade.software/video/zMXkmLADuD2y4SIM7LJx?embed&embed_mobile=inline&embed_desktop=inline&squared=true&show_copy_link=true"
-        title="Ekspor dan Kustomisasi Kredit Video di DaftarKru Engine"
+        src="https://demo.arcade.software/video/hNLbRuPlfW6ZLvStZdyH?embed&embed_mobile=tab&embed_desktop=inline&squared=true&show_copy_link=true"
+        title="Panduan Lengkap DaftarKru Engine Dari Awal Hingga Rendering"
         frameBorder="0"
         loading="lazy"
         allowFullScreen
         allow="clipboard-write"
-        scrolling="no"
-        style={{ 
-           position: 'absolute', 
-           top: 0, 
-           left: 0, 
-           width: '100%', 
-           height: '100%', 
-           colorScheme: 'light',
-           pointerEvents: interactable ? 'auto' : 'none'
-        }}
+        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', colorScheme: 'light' }}
       />
     </div>
   )
