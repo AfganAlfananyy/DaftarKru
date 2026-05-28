@@ -3853,8 +3853,6 @@ export default function App() {
         });
         
         setSettings((prev: any) => ({ ...prev, fontFamily: fontNameValue }));
-        
-        alert(`Berhasil! Font "${fontDisplayName}" telah ditambahkan dan diaplikasikan.`);
       } catch {
         alert("Gagal memproses font. Silakan coba file lain.");
       }
