@@ -280,7 +280,7 @@ const translations = {
       q4: "Apakah DaftarKru sepenuhnya gratis?",
       a4: "Ya. DaftarKru hadir untuk mempermudah proses pembuatan Credit Title anda secara otomatis tanpa mengeluarkan biaya sedikitpun.",
       q5: "Kenapa ukuran teks pada hasil ekspor tidak sama seperti pada pratinjau?",
-      a5: "Karena rasio pada pratinjau dan hasil ekspor berbeda. Kami sarankan anda menginput ukuran teks lebih besar dari yang seharusnya anda inginkan (teks yang terpotong pada pratinjau tidak akan memengaruhi hasil ekspor)."
+      a5: "Karena rasio pada preview dan hasil ekspor berbeda. Kami sarankan anda menginput ukuran teks lebih besar dari yang seharusnya anda inginkan. Teks yang terpotong pada preview tidak akan memengaruhi hasil ekspor. Tampilan pada mode fullscreen preview akan sama seperti hasil ekspor nantinya.",
     },
     getStarted: {
       title: "Siap Untuk Memulai?",
@@ -349,7 +349,7 @@ const translations = {
       nameGap: "Jarak Nama",
       lineHeight: "Tinggi Baris",
       previewMode: "Mode Pratinjau: High Fidelity",
-      exportWarning: "Pastikan anda sedikit menambahkan ukuran nama dari yang seharusnya anda inginkan. Teks yang terpotong di layar preview tidak akan memengaruhi hasil ekspor.",
+      exportWarning: "Pastikan anda sedikit menambahkan ukuran nama dari yang seharusnya anda inginkan. Teks yang terpotong di layar preview tidak akan memengaruhi hasil ekspor. Tampilan pada mode fullscreen preview akan sama seperti hasil ekspor nantinya.",
       pairsMode: "Mode Pairs",
       pairsGap: "Jarak Pairs",
       presets: "5. PRESET",
