@@ -530,7 +530,7 @@ export function ArcadeEmbed() {
   )
 }
 
-const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSection, setActiveSection, view, setView, isHidden, isScrolled, lenisRef }: { 
+const Navbar = React.memo(({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSection, setActiveSection, view, setView, isHidden, isScrolled, lenisRef }: { 
   lang: Lang, 
   setLang: (l: Lang) => void, 
   isMobileMenuOpen: boolean, 
@@ -749,7 +749,7 @@ const Navbar = ({ lang, setLang, isMobileMenuOpen, setIsMobileMenuOpen, activeSe
       </AnimatePresence>
     </header>
   );
-};
+});
 
 const FilmFrame = ({ ke }: { ke: number; key?: string }) => (
   <div className="w-[280px] h-[90px] bg-zinc-950 border-y border-zinc-800 flex flex-col justify-between p-1.5 relative shrink-0 select-none">
@@ -3353,15 +3353,16 @@ export default function App() {
   });
 
   useEffect(() => {
-    if (view === 'hero' && window.innerWidth >= 768) {
+    if (view === 'hero') {
+      const isMobile = window.innerWidth < 768;
       const lenis = new Lenis({
-        duration: 1.8,
+        duration: isMobile ? 1.5 : 1.8,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         orientation: 'vertical',
         gestureOrientation: 'vertical',
         smoothWheel: true,
         wheelMultiplier: 0.6,
-        touchMultiplier: 0.5,
+        touchMultiplier: isMobile ? 0.3 : 0.5,
         syncTouch: true,
       });
 
