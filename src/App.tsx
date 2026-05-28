@@ -2182,7 +2182,7 @@ const SliderWithControls = ({
             disabled={disabled}
             className="w-5 h-5 flex items-center justify-center border border-white/20 hover:bg-white hover:text-black transition-all bg-white/[0.02] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Minus className="w-3 h-3 text-white" />
+            <Minus className="w-3 h-3" />
           </button>
           <span className="min-w-[40px] text-right font-mono text-[11px] font-medium text-white">{value.toFixed(precision)}{unit}</span>
           <button 
@@ -2191,7 +2191,7 @@ const SliderWithControls = ({
             disabled={disabled}
             className="w-5 h-5 flex items-center justify-center border border-white/20 hover:bg-white hover:text-black transition-all bg-white/[0.02] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Plus className="w-3 h-3 text-white" />
+            <Plus className="w-3 h-3" />
           </button>
         </div>
       </div>
