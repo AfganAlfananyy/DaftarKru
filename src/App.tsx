@@ -518,7 +518,7 @@ export function ArcadeEmbed() {
   return (
     <div style={{ position: 'relative', paddingBottom: 'calc(56.25%)', height: '0', width: '100%' }}>
       <iframe
-        src="https://demo.arcade.software/video/hNLbRuPlfW6ZLvStZdyH?embed&embed_mobile=tab&embed_desktop=inline&squared=true&show_copy_link=true"
+        src="https://demo.arcade.software/video/hNLbRuPlfW6ZLvStZdyH?embed&embed_mobile=inline&embed_desktop=inline&squared=true&show_copy_link=true"
         title="Panduan Lengkap DaftarKru Engine Dari Awal Hingga Rendering"
         frameBorder="0"
         loading="lazy"
