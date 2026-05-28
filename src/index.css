@@ -18,8 +18,14 @@ body {
   font-family: var(--font-sans);
   background-color: black;
   color: white;
-  overscroll-behavior: none;
+  overscroll-behavior: auto;
   width: 100%;
+}
+
+@media (min-width: 768px) {
+  body {
+    overscroll-behavior: none;
+  }
 }
 
 /* F1 Style Shadows */
